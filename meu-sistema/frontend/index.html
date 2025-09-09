@@ -9,34 +9,34 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .rag-verde {
-      background-color: #16a34a;
+      background-color: #16a34a
     }
 
     .rag-amarelo {
-      background-color: #f59e0b;
+      background-color: #f59e0b
     }
 
     .rag-vermelho {
-      background-color: #dc2626;
+      background-color: #dc2626
     }
 
     .status-concluido {
-      background-color: #2563eb;
+      background-color: #2563eb
     }
 
     .project-card {
-      transition: all 0.3s ease;
+      transition: all .3s ease
     }
 
     .project-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, .15);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, .15)
     }
 
     .slider {
       -webkit-appearance: none;
       appearance: none;
-      background: linear-gradient(to right, #3b82f6 0%, #3b82f6 0%, #e5e7eb 0%, #e5e7eb 100%);
+      background: linear-gradient(to right, #3b82f6 0%, #3b82f6 0%, #e5e7eb 0%, #e5e7eb 100%)
     }
 
     .slider::-webkit-slider-thumb {
@@ -47,8 +47,8 @@
       border-radius: 50%;
       background: #3b82f6;
       cursor: pointer;
-      border: 2px solid #ffffff;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, .2);
+      border: 2px solid #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .2)
     }
 
     .slider::-moz-range-thumb {
@@ -57,29 +57,24 @@
       border-radius: 50%;
       background: #3b82f6;
       cursor: pointer;
-      border: 2px solid #ffffff;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, .2);
+      border: 2px solid #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .2)
     }
-
-
-
 
     #userRole:focus {
       box-shadow: 0 0 0 2px rgba(255, 255, 255, .25);
-      border-color: rgba(255, 255, 255, .35);
+      border-color: rgba(255, 255, 255, .35)
     }
 
-    /* ===== Header refinements ===== */
     .no-scrollbar::-webkit-scrollbar {
-      display: none;
+      display: none
     }
 
     .no-scrollbar {
       -ms-overflow-style: none;
-      scrollbar-width: none;
+      scrollbar-width: none
     }
 
-    /* select do perfil */
     .header-select {
       background: #fff;
       border: 1px solid #e5e7eb;
@@ -87,15 +82,14 @@
       padding: .5rem .75rem;
       border-radius: .5rem;
       font-size: .875rem;
-      outline: 0;
+      outline: 0
     }
 
     .header-select:focus {
       box-shadow: 0 0 0 2px rgba(59, 130, 246, .35);
-      border-color: #93c5fd;
+      border-color: #93c5fd
     }
 
-    /* botões da nav: alinhamento perfeito entre emoji + texto */
     .nav-tab {
       display: inline-flex;
       align-items: center;
@@ -105,82 +99,72 @@
       color: #6b7280;
       border-bottom: 2px solid transparent;
       white-space: nowrap;
-      transition: color .15s ease, border-color .15s ease;
+      transition: color .15s ease, border-color .15s ease
     }
 
     .nav-tab .icon {
       display: inline-flex;
-      line-height: 1;
+      line-height: 1
     }
 
     .nav-tab:hover {
-      color: #111827;
+      color: #111827
     }
 
     .nav-tab.active {
       color: #2563eb;
-      border-bottom-color: #2563eb;
+      border-bottom-color: #2563eb
     }
 
-    /* densidade/espacamento */
     .app-header .container>.grid {
-      row-gap: .25rem;
+      row-gap: .25rem
     }
 
     .brand-area .logo-img {
-      max-width: 220px;
+      max-width: 220px
     }
 
-    /* evita linha azul “solta” entre header e conteúdo */
     .app-header+* {
-      border-top-color: transparent;
+      border-top-color: transparent
     }
   </style>
 </head>
 
 <body class="bg-gray-50 min-h-screen">
 
-  <!-- ====== TOP BRAND BAR (fino) ====== -->
+  <!-- TOP BRAND -->
   <div class="bg-[#0b1e3b] text-white text-xs">
     <div class="container mx-auto px-4 h-8 flex items-center justify-between">
       <span class="tracking-wide font-medium">MINISTÉRIO DO TRABALHO E EMPREGO</span>
-      <span class="opacity-80">SigSOL · Sistema de Gestão e Monitoramento</span>
+      <span class="opacity-80">CGSOL · Coordenação Geral de Soluções</span>
     </div>
   </div>
 
-  <!-- ====== CABEÇALHO PRINCIPAL ====== -->
+  <!-- HEADER -->
   <header class="bg-blue-900 text-white shadow">
     <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-      <!-- Marca do sistema -->
       <div class="flex items-baseline space-x-3">
-        <span class="text-2xl font-extrabold tracking-tight">CGSOL - Coordenação Geral de Soluções</span>
+        <span class="text-2xl font-extrabold tracking-tight">SigSOL · Sistema de Gestão e Monitoramento</span>
       </div>
-
-      <!-- Usuário + Logo à direita -->
       <div class="flex items-center space-x-4">
         <span class="text-blue-200 hidden md:inline">👤 Admin</span>
-        <!-- coloque aqui seu arquivo SVG/PNG da marca do governo -->
         <img src="assets/img/mte-logo-azul-transp.png" alt="Governo Federal"
           class="h-9 md:h-14 w-auto object-contain" />
       </div>
     </div>
 
-    <!-- ====== ABA/TABS (mantém sua lógica .nav-btn e showPage) ====== -->
+    <!-- NAV -->
     <nav class="bg-white border-t border-blue-800/20">
       <div class="container mx-auto px-4">
         <div class="flex space-x-8">
           <button class="nav-btn py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium"
             onclick="showPage('home', this)">🏠 Visão Geral</button>
-
           <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
             onclick="showPage('codes', this)">💻 CODES</button>
-
           <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
             onclick="showPage('coset', this)">🏗️ COSET</button>
-
           <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
             onclick="showPage('cgod', this)">📊 CGOD</button>
-
           <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
             onclick="showPage('pdti', this)">📋 PDTI</button>
         </div>
@@ -188,12 +172,10 @@
     </nav>
   </header>
 
-
-
-
-  <!-- Main Content -->
+  <!-- MAIN -->
   <main class="container mx-auto px-4 py-6">
-    <!-- Home Page -->
+
+    <!-- ========================== HOME ========================== -->
     <div class="page-content" id="homePage">
       <div class="mb-8">
         <div class="flex justify-between items-center">
@@ -208,8 +190,8 @@
         </div>
       </div>
 
-      <!-- KPIs Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- KPIs linha 1 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 mt-4">
         <div class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-blue-100 text-blue-600">📋</div>
@@ -254,18 +236,82 @@
         </div>
       </div>
 
-      <!-- Charts Row -->
+      <!-- KPIs linha 2 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">✅</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Concluídos no Mês</p>
+              <p class="text-2xl font-bold text-gray-900" id="kpiConcluidosMes">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Fora do Prazo</p>
+              <p class="text-2xl font-bold text-gray-900" id="kpiForaPrazo">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">📈</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Progresso Médio</p>
+              <p class="text-2xl font-bold text-gray-900" id="kpiProgressoMedio">0%</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🚀</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Projetos Ativos</p>
+              <p class="text-2xl font-bold text-gray-900" id="kpiProjetosAtivos">0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow-md p-6">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">Projetos por Coordenação</h3>
-          <div class="h-64 flex items-center justify-center">
-            <canvas class="max-h-48" id="coordenacaoChart"></canvas>
+          <div class="h-96 flex items-center justify-center">
+            <canvas class="max-h-80 w-full" id="coordenacaoChart"></canvas>
           </div>
         </div>
         <div class="bg-white rounded-lg shadow-md p-6">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">Status dos Projetos</h3>
+          <div class="h-80 flex items-center justify-center">
+            <canvas class="w-full h-full" id="statusChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribuição de Status</h3>
           <div class="h-64 flex items-center justify-center">
-            <canvas class="max-h-48" id="statusChart"></canvas>
+            <canvas id="statusDistribChart"></canvas>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Consolidação RAG</h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="ragChart"></canvas>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Evolução Temporal</h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="timelineChart"></canvas>
           </div>
         </div>
       </div>
@@ -276,22 +322,22 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           <!-- CODES -->
-          <div class="bg-white rounded-lg shadow-md p-6">
+          <div data-card="codes:desenvolvimento"
+            class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+            onclick="filterProjects('codes','desenvolvimento')">
             <div class="flex items-center mb-4">
               <div class="p-2 rounded-lg bg-blue-100 text-blue-600 mr-3">💻</div>
               <h4 class="text-lg font-semibold text-gray-800">CODES</h4>
             </div>
             <div class="space-y-3">
-              <div
-                class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('codes','desenvolvimento')">
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <div>
                   <p class="font-medium text-gray-900">Em Desenvolvimento</p>
                   <p class="text-xs text-gray-600">Projetos ativos</p>
                 </div>
                 <span class="text-lg font-bold text-blue-600">0</span>
               </div>
-              <div
+              <div data-card="codes:sustentacao"
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                 onclick="filterProjects('codes','sustentacao')">
                 <div>
@@ -304,22 +350,22 @@
           </div>
 
           <!-- COSET -->
-          <div class="bg-white rounded-lg shadow-md p-6">
+          <div data-card="coset:infraestrutura"
+            class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+            onclick="filterProjects('coset','infraestrutura')">
             <div class="flex items-center mb-4">
               <div class="p-2 rounded-lg bg-purple-100 text-purple-600 mr-3">🏗️</div>
               <h4 class="text-lg font-semibold text-gray-800">COSET</h4>
             </div>
             <div class="space-y-3">
-              <div
-                class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('coset','infraestrutura')">
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <div>
                   <p class="font-medium text-gray-900">Infraestrutura</p>
                   <p class="text-xs text-gray-600">Sistemas estruturantes</p>
                 </div>
                 <span class="text-lg font-bold text-purple-600">0</span>
               </div>
-              <div
+              <div data-card="coset:integracao"
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                 onclick="filterProjects('coset','integracao')">
                 <div>
@@ -332,22 +378,22 @@
           </div>
 
           <!-- CGOD -->
-          <div class="bg-white rounded-lg shadow-md p-6">
+          <div data-card="cgod:analytics"
+            class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+            onclick="filterProjects('cgod','analytics')">
             <div class="flex items-center mb-4">
               <div class="p-2 rounded-lg bg-orange-100 text-orange-600 mr-3">📊</div>
               <h4 class="text-lg font-semibold text-gray-800">CGOD</h4>
             </div>
             <div class="space-y-3">
-              <div
-                class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('cgod','analytics')">
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <div>
                   <p class="font-medium text-gray-900">Analytics</p>
                   <p class="text-xs text-gray-600">Dashboards e relatórios</p>
                 </div>
                 <span class="text-lg font-bold text-orange-600">0</span>
               </div>
-              <div
+              <div data-card="cgod:datalake"
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                 onclick="filterProjects('cgod','datalake')">
                 <div>
@@ -362,7 +408,7 @@
         </div>
       </div>
 
-      <!-- Recent Projects Table -->
+      <!-- Projetos Recentes -->
       <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-semibold text-gray-800">Projetos Recentes</h3>
@@ -387,9 +433,9 @@
           </table>
         </div>
       </div>
-    </div>
+    </div><!-- /HOME -->
 
-    <!-- CODES Page -->
+    <!-- ========================== CODES ========================== -->
     <div class="page-content hidden" id="codesPage">
       <div class="mb-6">
         <div class="flex justify-between items-center">
@@ -399,13 +445,13 @@
           </div>
           <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
             onclick="openNewProject('CODES')">➕ Novo Projeto</button>
-
         </div>
       </div>
 
       <!-- KPIs CODES -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-4">
+        <div data-card="codes:ativos"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('codes','ativos')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-blue-100 text-blue-600">🚀</div>
@@ -415,7 +461,9 @@
             </div>
           </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+
+        <div data-card="codes:desenvolvimento"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('codes','desenvolvimento')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">💻</div>
@@ -425,7 +473,9 @@
             </div>
           </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+
+        <div data-card="codes:sustentacao"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('codes','sustentacao')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🔧</div>
@@ -435,7 +485,9 @@
             </div>
           </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+
+        <div data-card="codes:fora-prazo"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('codes','fora-prazo')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
@@ -447,7 +499,7 @@
         </div>
       </div>
 
-      <!-- Filters (placeholder visual) -->
+      <!-- Filtros + Export -->
       <div class="bg-white rounded-lg shadow-md p-4 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <select class="border border-gray-300 rounded-lg px-3 py-2" disabled>
@@ -461,13 +513,12 @@
         </div>
       </div>
 
-      <!-- Export Button -->
       <div class="flex justify-end items-center mb-6">
         <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm"
           onclick="exportData('pdf')">📄 Exportar PDF</button>
       </div>
 
-      <!-- Table View -->
+      <!-- Tabela CODES -->
       <div class="bg-white rounded-lg shadow-md" id="tableView">
         <div class="overflow-x-auto">
           <table class="min-w-full table-auto">
@@ -490,9 +541,9 @@
           </table>
         </div>
       </div>
-    </div>
+    </div><!-- /CODES -->
 
-    <!-- COSET Page -->
+    <!-- ========================== COSET ========================== -->
     <div class="page-content hidden" id="cosetPage">
       <div class="mb-6">
         <div class="flex justify-between items-center">
@@ -502,13 +553,13 @@
           </div>
           <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
             onclick="openNewProject('COSET')">➕ Novo Projeto</button>
-
         </div>
       </div>
 
       <!-- KPIs COSET -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-4">
+        <div data-card="coset:sistemas-integrados"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('coset','sistemas-integrados')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-blue-100 text-blue-600">🔗</div>
@@ -518,7 +569,8 @@
             </div>
           </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+        <div data-card="coset:modernizacao"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('coset','modernizacao')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">🔄</div>
@@ -528,7 +580,8 @@
             </div>
           </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+        <div data-card="coset:infraestrutura"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('coset','infraestrutura')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-purple-100 text-purple-600">🏗️</div>
@@ -538,7 +591,8 @@
             </div>
           </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+        <div data-card="coset:compliance"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('coset','compliance')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-orange-100 text-orange-600">✅</div>
@@ -570,9 +624,9 @@
           </table>
         </div>
       </div>
-    </div>
+    </div><!-- /COSET -->
 
-    <!-- CGOD Page -->
+    <!-- ========================== CGOD ========================== -->
     <div class="page-content hidden" id="cgodPage">
       <div class="mb-6">
         <div class="flex justify-between items-center">
@@ -582,13 +636,13 @@
           </div>
           <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
             onclick="openNewProject('CGOD')">➕ Novo Projeto</button>
-
         </div>
       </div>
 
       <!-- KPIs CGOD -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-4">
+        <div data-card="cgod:catalogos"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('cgod','catalogos')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-blue-100 text-blue-600">📚</div>
@@ -598,7 +652,8 @@
             </div>
           </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+        <div data-card="cgod:analytics"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('cgod','analytics')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">📊</div>
@@ -608,7 +663,8 @@
             </div>
           </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+        <div data-card="cgod:qualidade"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('cgod','qualidade')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-purple-100 text-purple-600">🎯</div>
@@ -618,7 +674,8 @@
             </div>
           </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+        <div data-card="cgod:governanca"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('cgod','governanca')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-orange-100 text-orange-600">🛡️</div>
@@ -650,11 +707,10 @@
           </table>
         </div>
       </div>
-    </div>
+    </div><!-- /CGOD -->
 
-    <!-- PDTI Page (sem alterações estruturais) -->
+    <!-- ========================== PDTI ========================== -->
     <div class="page-content hidden" id="pdtiPage">
-      <!-- ... seu conteúdo PDTI original permanece ... -->
       <div class="mb-6">
         <div class="flex justify-between items-center">
           <div>
@@ -669,7 +725,7 @@
           </div>
         </div>
       </div>
-      <!-- KPIs + Tabelas PDTI (mesmo HTML do seu arquivo) -->
+
       <div class="bg-white rounded-lg shadow-md">
         <div class="p-6 border-b border-gray-200">
           <h3 class="text-lg font-semibold text-gray-800">Ações do PDTI - Soluções Digitais</h3>
@@ -695,10 +751,11 @@
           </table>
         </div>
       </div>
-    </div>
+    </div><!-- /PDTI -->
+
   </main>
 
-  <!-- Modals (iguais aos seus) -->
+  <!-- ========================== MODAIS ========================== -->
   <!-- Project Modal -->
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="projectModal">
     <div class="flex items-center justify-center min-h-screen p-4">
@@ -750,7 +807,8 @@
                   <option value="Sustentação">Sustentação</option>
                 </select>
               </div>
-              <!-- Progresso (%) - aparece para TODAS as coordenações -->
+
+              <!-- Progresso (%) comum -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Progresso (%)</label>
                 <div class="space-y-2">
@@ -774,14 +832,12 @@
                 </div>
               </div>
 
-              <!-- Total de Sprints (CODES apenas) -->
+              <!-- CODES-only -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Total de Sprints</label>
                 <input id="projectTotalSprints" type="number" min="1"
                   class="w-full border border-gray-300 rounded-lg px-3 py-2" />
               </div>
-
-              <!-- Sprints Concluídas (CODES apenas) -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Sprints Concluídas</label>
                 <input id="projectSprintsConcluidas" type="number" min="0"
@@ -793,13 +849,11 @@
                 <input id="projectResponsavel" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2"
                   required>
               </div>
-
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Data de Início</label>
                 <input id="projectInicio" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2"
                   required>
               </div>
-
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fim Previsto</label>
                 <input id="projectFim" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
@@ -812,25 +866,24 @@
                 required></textarea>
             </div>
 
-            <!-- Bloco opcional (apenas CODES). Sem required e NÃO vai para a API -->
+            <!-- (Opcional) bloco visual CODES — mantido, mas ids duplicados evitados -->
             <fieldset id="codesOnlyBlock" class="hidden border border-gray-200 rounded-lg p-4">
               <legend class="px-2 text-sm text-gray-600">Campos CODES (somente visual por enquanto)</legend>
-
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Progresso (%)</label>
-                  <input id="projectProgresso" type="number" min="0" max="100"
-                    class="w-full border border-gray-300 rounded px-3 py-2" placeholder="0–100">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">% (leitura)</label>
+                  <input type="number" min="0" max="100" class="w-full border border-gray-300 rounded px-3 py-2"
+                    placeholder="0–100" disabled>
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Total de Sprints</label>
-                  <input id="projectTotalSprints" type="number" min="1"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="ex.: 10">
+                  <input type="number" min="1" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    placeholder="ex.: 10" disabled>
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Sprints Concluídas</label>
-                  <input id="projectSprintsConcluidas" type="number" min="0"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="ex.: 3">
+                  <input type="number" min="0" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    placeholder="ex.: 3" disabled>
                 </div>
               </div>
             </fieldset>
@@ -848,7 +901,7 @@
     </div>
   </div>
 
-  <!-- Project Detail Modal -->
+  <!-- Detalhe do Projeto -->
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="projectDetailModal">
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
@@ -864,7 +917,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-4">
             <div class="bg-gray-50 rounded-lg p-4">
               <h4 class="font-semibold text-gray-700 mb-2">Status RAG</h4>
               <div class="w-full h-8 rounded flex items-center justify-center text-white font-medium rag-verde"
@@ -940,7 +993,7 @@
     </div>
   </div>
 
-  <!-- PDTI Action Modal (igual ao seu) -->
+  <!-- PDTI Action Modal -->
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="pdtiActionModal">
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
@@ -950,7 +1003,6 @@
             <button class="text-gray-400 hover:text-gray-600" onclick="hideModal('pdtiActionModal')">✕</button>
           </div>
           <form class="space-y-4" id="pdtiActionForm">
-            <!-- campos iguais aos seus -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">ID da Ação</label>
               <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionId" type="text"
@@ -992,60 +1044,7 @@
     </div>
   </div>
 
-  <!-- Sprint Modal (igual ao seu) -->
-  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="sprintModal">
-    <div class="flex items-center justify-center min-h-screen p-4">
-      <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
-        <div class="p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Nova Sprint</h3>
-            <button class="text-gray-400 hover:text-gray-600" onclick="hideModal('sprintModal')">✕</button>
-          </div>
-          <form class="space-y-4" id="sprintForm">
-            <!-- seus campos -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Número da Sprint</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintNumero" type="number"
-                  required />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Capacidade</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintCapacidade" type="number"
-                  required />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Data de Início</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintInicio" type="date"
-                  required />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Data de Fim</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintFim" type="date" required />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Itens Planejados</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintPlanejado" type="number"
-                  required />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Itens Concluídos</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintConcluido" type="number"
-                  required />
-              </div>
-            </div>
-            <div class="flex justify-end space-x-3 pt-4">
-              <button type="button" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                onclick="hideModal('sprintModal')">Cancelar</button>
-              <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Salvar
-                Sprint</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Modal de Confirmação de Exclusão -->
+  <!-- CONFIRM DELETE -->
   <div id="confirmModal" class="fixed inset-0 z-[1000] hidden" role="dialog" aria-modal="true"
     aria-labelledby="confirmTitle">
     <div class="absolute inset-0 bg-black/50"></div>
@@ -1076,12 +1075,10 @@
     </div>
   </div>
 
-  <!-- ===== Footer ===== -->
+  <!-- FOOTER -->
   <footer class="mt-10 text-blue-100 bg-gradient-to-br from-blue-900 to-blue-950" role="contentinfo">
-    <!-- faixa principal -->
     <div class="container mx-auto px-4 py-10">
       <div class="md:flex md:divide-x md:divide-blue-800">
-        <!-- Brand / descrição -->
         <section class="md:w-5/12 md:pr-8 mb-8 md:mb-0">
           <div class="flex items-center gap-3 mb-3">
             <div class="h-9 w-9 rounded bg-blue-800/60 grid place-items-center text-xl">⚙️</div>
@@ -1095,34 +1092,32 @@
           </p>
         </section>
 
-        <!-- Navegação -->
         <nav class="md:w-3/12 md:px-8 mb-8 md:mb-0">
           <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Navegação</h5>
           <ul class="space-y-2 text-sm">
             <li><a href="#" onclick="showPage('home',  getNavButtonFor && getNavButtonFor('home'))"
-                class="group inline-flex items-center gap-2 hover:text-white">
-                <span class="opacity-60 group-hover:opacity-100">Visão Geral</span><span
+                class="group inline-flex items-center gap-2 hover:text-white"><span
+                  class="opacity-60 group-hover:opacity-100">Visão Geral</span><span
                   class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
             <li><a href="#" onclick="showPage('codes', getNavButtonFor && getNavButtonFor('codes'))"
-                class="group inline-flex items-center gap-2 hover:text-white">
-                <span class="opacity-60 group-hover:opacity-100">CODES</span><span
+                class="group inline-flex items-center gap-2 hover:text-white"><span
+                  class="opacity-60 group-hover:opacity-100">CODES</span><span
                   class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
             <li><a href="#" onclick="showPage('coset', getNavButtonFor && getNavButtonFor('coset'))"
-                class="group inline-flex items-center gap-2 hover:text-white">
-                <span class="opacity-60 group-hover:opacity-100">COSET</span><span
+                class="group inline-flex items-center gap-2 hover:text-white"><span
+                  class="opacity-60 group-hover:opacity-100">COSET</span><span
                   class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
             <li><a href="#" onclick="showPage('cgod',  getNavButtonFor && getNavButtonFor('cgod'))"
-                class="group inline-flex items-center gap-2 hover:text-white">
-                <span class="opacity-60 group-hover:opacity-100">CGOD</span><span
+                class="group inline-flex items-center gap-2 hover:text-white"><span
+                  class="opacity-60 group-hover:opacity-100">CGOD</span><span
                   class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
             <li><a href="#" onclick="showPage('pdti',  getNavButtonFor && getNavButtonFor('pdti'))"
-                class="group inline-flex items-center gap-2 hover:text-white">
-                <span class="opacity-60 group-hover:opacity-100">PDTI</span><span
+                class="group inline-flex items-center gap-2 hover:text-white"><span
+                  class="opacity-60 group-hover:opacity-100">PDTI</span><span
                   class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
           </ul>
         </nav>
 
-        <!-- Contato -->
         <section class="md:w-2/12 md:px-8 mb-8 md:mb-0">
           <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Contato</h5>
           <ul class="space-y-2 text-sm">
@@ -1131,7 +1126,6 @@
           </ul>
         </section>
 
-        <!-- Status do sistema -->
         <section class="md:w-2/12 md:pl-8">
           <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Status</h5>
           <p class="text-sm opacity-80">
@@ -1140,14 +1134,12 @@
           </p>
           <button type="button"
             class="mt-4 text-sm inline-flex items-center gap-2 px-3 py-2 rounded border border-blue-800/60 hover:border-blue-700 hover:bg-blue-900/30 transition"
-            onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" aria-label="Voltar ao topo">
-            ↑ Voltar ao topo
-          </button>
+            onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" aria-label="Voltar ao topo">↑ Voltar ao
+            topo</button>
         </section>
       </div>
     </div>
 
-    <!-- faixa inferior -->
     <div class="border-t border-blue-800/60">
       <div
         class="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between text-xs text-blue-300">
@@ -1161,11 +1153,28 @@
     </div>
   </footer>
 
+  <!-- NOTIFY MODAL -->
+  <div id="notifyModal" class="fixed inset-0 z-[999] hidden">
+    <div class="absolute inset-0 bg-black/50"></div>
+    <div class="relative mx-auto max-w-md mt-24 bg-white rounded-xl shadow-2xl overflow-hidden">
+      <div id="notifyBar" class="h-1 bg-blue-600"></div>
+      <div class="p-5">
+        <div class="flex items-start gap-3">
+          <div id="notifyIcon" class="text-2xl">ℹ️</div>
+          <div class="flex-1">
+            <h4 id="notifyTitle" class="text-lg font-semibold text-gray-900">Aviso</h4>
+            <p id="notifyMessage" class="text-sm text-gray-600 mt-1">...</p>
+          </div>
+          <button class="text-gray-400 hover:text-gray-600" onclick="window.hideNotify()">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-
-  <!-- Helpers mínimos (NÃO redefinem filtros nem KPIs) -->
+  <!-- HELPERS + NAV -->
   <script>
     const NAV_INDEX = { home: 1, codes: 2, coset: 3, cgod: 4, pdti: 5 };
+
     function getNavButtonFor(page) {
       const idx = NAV_INDEX[page] || 1;
       return document.querySelector(`nav .nav-btn:nth-child(${idx})`);
@@ -1186,8 +1195,9 @@
       }
     }
 
-    function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function hideModal(id) { const el = document.getElementById(id); if (el) el.classList.add('hidden'); }
+    function showModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); }
+    window.hideNotify = function () { const el = document.getElementById('notifyModal'); if (el) el.classList.add('hidden'); };
 
     function updateProgressDisplay() {
       const slider = document.getElementById('projectProgressoSlider');
@@ -1216,78 +1226,16 @@
     // Placeholders
     function sortTable() { alert('Ordenação será implementada.'); }
     function exportData(fmt) { alert('Exportação ' + fmt.toUpperCase() + ' será implementada.'); }
+    function exportPDTI(fmt) { alert('Exportação PDTI ' + fmt.toUpperCase() + ' será implementada.'); }
 
     document.addEventListener('DOMContentLoaded', () => {
-      // marca a home como ativa ao abrir
       const firstBtn = document.querySelector('nav .nav-btn:first-child');
       showPage('home', firstBtn);
     });
   </script>
 
-  <!-- Use o JS principal (com cache-busting) -->
-  <!-- Bloco mínimo de navegação/modais (garante NAV_INDEX global) -->
-  <script>
-    // Torna global (propriedade de window) e evita ReferenceError
-    window.NAV_INDEX = window.NAV_INDEX || { home: 1, codes: 2, coset: 3, cgod: 4, pdti: 5 };
-
-    window.getNavButtonFor = function (page) {
-      try {
-        const key = (page || '').toLowerCase();
-        const idx = (window.NAV_INDEX && window.NAV_INDEX[key]) || 1;
-        return document.querySelector(`nav .nav-btn:nth-child(${idx})`);
-      } catch (e) {
-        return null;
-      }
-    };
-
-    window.showPage = function (pageId, el) {
-      document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
-      const target = document.getElementById(pageId + 'Page');
-      if (target) target.classList.remove('hidden');
-
-      document.querySelectorAll('nav .nav-btn').forEach(btn => {
-        btn.classList.remove('border-blue-500', 'text-blue-600');
-        btn.classList.add('border-transparent', 'text-gray-500');
-      });
-      if (el) {
-        el.classList.remove('border-transparent', 'text-gray-500');
-        el.classList.add('border-blue-500', 'text-blue-600');
-      }
-    };
-
-    window.hideModal = function (id) { const el = document.getElementById(id); if (el) el.classList.add('hidden'); };
-    window.showModal = function (id) { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); };
-
-    // Evita erro se algo legado chamar createCharts(); o main.js cuida dos gráficos.
-    window.createCharts = function () { };
-
-    document.addEventListener('DOMContentLoaded', function () {
-      const firstBtn = document.querySelector('nav .nav-btn:first-child');
-      if (firstBtn) showPage('home', firstBtn);
-    });
-  </script>
-  <!-- Modal de Notificação -->
-  <div id="notifyModal" class="fixed inset-0 z-[999] hidden">
-    <div class="absolute inset-0 bg-black/50"></div>
-    <div class="relative mx-auto max-w-md mt-24 bg-white rounded-xl shadow-2xl overflow-hidden">
-      <div id="notifyBar" class="h-1 bg-blue-600"></div>
-      <div class="p-5">
-        <div class="flex items-start gap-3">
-          <div id="notifyIcon" class="text-2xl">ℹ️</div>
-          <div class="flex-1">
-            <h4 id="notifyTitle" class="text-lg font-semibold text-gray-900">Aviso</h4>
-            <p id="notifyMessage" class="text-sm text-gray-600 mt-1">...</p>
-          </div>
-          <button class="text-gray-400 hover:text-gray-600" onclick="window.hideNotify()">✕</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Lógica dinâmica -->
-  <script src="assets/js/main.js?v=7" defer></script>
-
-
+  <!-- Lógica dinâmica (main.js) -->
+  <script src="assets/js/main.js?v=8" defer></script>
 </body>
 
 </html>
