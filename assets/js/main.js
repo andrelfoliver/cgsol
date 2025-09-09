@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
   createCharts();
-  showPage('home'); // mostra a seção inicial
+  const defaultTab = document.querySelector('[onclick*="showPage(\'home\')"]');
+  if (defaultTab) showPage('home', defaultTab);
 });
 
 function createCharts() {
@@ -72,14 +73,18 @@ function createCharts() {
   }
 }
 
-function showPage(pageId) {
-  document.querySelectorAll('.page-content').forEach(section => {
-    section.classList.add('hidden');
+function showPage(pageId, btn) {
+  // Oculta todas as páginas
+  document.querySelectorAll(".page-content").forEach(p => p.classList.add("hidden"));
+  document.getElementById(`${pageId}Page`).classList.remove("hidden");
+
+  // Remove destaque de todas as abas
+  document.querySelectorAll(".nav-btn").forEach(b => {
+    b.classList.remove("border-b-blue-500", "text-blue-600");
+    b.classList.add("border-transparent", "text-gray-500");
   });
 
-  const targetSection = document.getElementById(pageId + 'Page');
-  if (targetSection) {
-    targetSection.classList.remove('hidden');
-  }
+  // Adiciona destaque na aba ativa
+  btn.classList.remove("border-transparent", "text-gray-500");
+  btn.classList.add("border-b-blue-500", "text-blue-600");
 }
-
