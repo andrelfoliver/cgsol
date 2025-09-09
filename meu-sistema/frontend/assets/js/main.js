@@ -257,6 +257,11 @@
     // CODES page
     setCardCount('codes', 'ativos', codes.filter(p => ['em andamento', 'sustentacao'].includes(norm(p.status))).length);
     setCardCount('codes', 'fora-prazo', codes.filter(p => p.status === 'Em Risco' || (p.rag || '').toLowerCase() === 'vermelho').length);
+    // CODES page – novos cards
+    setCardCount('codes', 'planejado', codes.filter(p => norm(p.status) === 'planejado').length);
+    setCardCount('codes', 'concluido', codes.filter(p => norm(p.status) === 'concluido').length);
+    setCardCount('codes', 'pausado', codes.filter(p => norm(p.status) === 'pausado').length);
+    setCardCount('codes', 'total', codes.length);
 
     // COSET page
     setCardCount('coset', 'sistemas-integrados', coset.filter(p => norm(p.tipo).includes('sistema integrado')).length);
@@ -296,7 +301,6 @@
 
 
   // ========= GRÁFICOS (Home) =========
-  // ========= Gráficos Home =========
   function drawCharts(list) {
     const codes = list.filter(p => p.coordenacao === 'CODES').length;
     const coset = list.filter(p => p.coordenacao === 'COSET').length;
@@ -536,6 +540,11 @@
       if (cat === 'desenvolvimento') filtered = filtered.filter(p => p.status === 'Em Andamento');
       if (cat === 'sustentacao') filtered = filtered.filter(p => (p.status || '').toLowerCase().includes('susten'));
       if (cat === 'fora-prazo') filtered = filtered.filter(p => (p.rag === 'Vermelho') || p.status === 'Em Risco');
+      if (cat === 'planejado') filtered = filtered.filter(p => p.status === 'Planejado');
+      if (cat === 'concluido') filtered = filtered.filter(p => p.status === 'Concluído');
+      if (cat === 'pausado') filtered = filtered.filter(p => p.status === 'Pausado');
+      if (cat === 'total') filtered = filtered; // mostra todos os projetos CODES
+
     }
     if (coord === 'COSET') {
       if (cat === 'infraestrutura') filtered = filtered.filter(p => p.tipo === 'Infraestrutura');
@@ -556,7 +565,6 @@
   }
 
   // ========= DETALHE =========
-  // ========= Detalhe =========
   function showProjectDetail(idOrName) {
     const p = findProjeto(idOrName);
     if (!p) return toast('Não encontrado', 'Projeto não encontrado', 'warn');

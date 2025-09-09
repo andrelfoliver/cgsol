@@ -458,6 +458,21 @@
 
       <!-- KPIs CODES -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-4">
+
+        <!-- Total de Projetos -->
+        <div data-card="codes:total"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('codes','total')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-gray-100 text-gray-600">📊</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Total de Projetos</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ativos -->
         <div data-card="codes:ativos"
           class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('codes','ativos')">
@@ -470,42 +485,88 @@
           </div>
         </div>
 
+        <!-- Desenvolvimento -->
         <div data-card="codes:desenvolvimento"
           class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('codes','desenvolvimento')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">💻</div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Desenvolvimento</p>
+              <p class="text-sm font-medium text-gray-600">Em Desenvolvimento</p>
               <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
         </div>
 
+        <!-- Sustentação -->
         <div data-card="codes:sustentacao"
           class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('codes','sustentacao')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🔧</div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Sustentação</p>
+              <p class="text-sm font-medium text-gray-600">Em Sustentação</p>
               <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
         </div>
 
+        <!-- Fora do Prazo -->
         <div data-card="codes:fora-prazo"
           class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="filterProjects('codes','fora-prazo')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Fora de Prazo</p>
+              <p class="text-sm font-medium text-gray-600">Fora do Prazo</p>
               <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
         </div>
+
+        <!-- Planejado -->
+        <div data-card="codes:planejado"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('codes','planejado')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-gray-100 text-gray-600">📅</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Planejado</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pausado -->
+        <div data-card="codes:pausado"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('codes','pausado')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600">⏸️</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Pausado</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Concluído -->
+        <div data-card="codes:concluido"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('codes','concluido')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">✅</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Concluído</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+
       </div>
+
+
+
 
       <!-- Filtros + Export -->
       <div class="bg-white rounded-lg shadow-md p-4 mb-6">
