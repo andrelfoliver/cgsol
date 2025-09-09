@@ -1,61 +1,25 @@
 /**
- * SigSOL main.js — foco em manter nomes de variáveis EXACTOS
- * (sem normalização) e atualizar contadores dos cards corretamente.
- *
- * Backend (API) retorna:
- *  - id, nome, tipo, coordenacao, status, descricao, inicio, fim
- * Campos extras (progresso, responsavel, rag, etc.) ficam no localStorage por id/nome.
+ * SigSOL main.js — versão limpa (sem localStorage)
+ * Todos os dados persistem no backend (Postgres).
  */
+
 (function () {
   'use strict';
 
-  const API = 'http://localhost:5000/api/projetos';
+  const API = 'http://localhost:5001/api/projetos';
 
-  // Campos que o backend realmente aceita (para POST/PUT)
-  const SUPPORTED_FIELDS = ['nome', 'tipo', 'coordenacao', 'status', 'descricao', 'inicio', 'fim'];
-
-  // Extras apenas no front
-  const EXTRA_FIELDS = [
-    'prioridade', 'progresso', 'totalSprints', 'sprintsConcluidas',
-    'responsavel', 'orcamento', 'equipe', 'rag', 'riscos'
-  ];
-
+  // Cache em memória
   let cacheProjetos = [];
-  let pendingExtras = null;
-  let pendingKeyName = null;
   let chartCoordenacao = null;
   let chartStatus = null;
-  // ===================================================================
-  // === GARANTE QUE TODOS OS BOTÕES TENHAM data-card ANTES DE USAR ====
-  // ===================================================================
-  window.ensureCardIndexing = function () {
-    const elems = document.querySelectorAll('[onclick^="filterProjects("]');
-    console.log('ensureCardIndexing: encontradas', elems.length, 'tags onclick=filterProjects');
-    elems.forEach(el => {
-      const raw = el.getAttribute('onclick') || '';
-      const m = raw.match(/filterProjects\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/i);
-      if (m) {
-        const coord = m[1].toLowerCase();
-        const cat = m[2].toLowerCase();
-        el.setAttribute('data-card', `${coord}:${cat}`);
-      }
-    });
-    console.log('ensureCardIndexing: data-card atribuídos a', document.querySelectorAll('[data-card]').length, 'elementos');
-  };
-
+  let chartCodes = null;
+  let chartCoset = null;
+  let chartCgod = null;
 
   // ========= boot =========
   onReady(async () => {
-    // formulários
     const form = byId('projectForm');
     if (form) {
-      // Remover required dos extras (backend não recebe)
-      EXTRA_FIELDS.forEach(k => {
-        const el = byId('project' + k.charAt(0).toUpperCase() + k.slice(1));
-        if (el) el.removeAttribute('required');
-      });
-
-      // Toggle sprints só para CODES
       const coordSel = byId('projectCoord');
       if (coordSel) {
         coordSel.addEventListener('change', () => toggleFormByCoord(coordSel.value));
@@ -65,7 +29,7 @@
       form.addEventListener('submit', handleCreateOrUpdate);
     }
 
-    // Expor ações no escopo global (HTML chama)
+    // Expor funções no escopo global (usadas no HTML)
     window.filterProjects = filterProjects;
     window.showProjectDetail = showProjectDetail;
     window.editProject = editProject;
@@ -73,8 +37,6 @@
     window.openNewProject = openNewProject;
 
     await loadProjetos();
-
-    // Garantir hora do rodapé
     updateLastUpdateTime();
   });
 
@@ -90,33 +52,12 @@
   function setValue(id, v) { const el = byId(id); if (el != null) el.value = (v ?? ''); }
   function getValue(id) { const el = byId(id); return el ? el.value : ''; }
   function js(v) { return JSON.stringify(v); }
-  function escapeHtml(s) { if (s == null) return s; return String(s).replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c])); }
-  function numOrNull(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
   async function safeJsonOrNull(res) { try { return await res.json(); } catch { return null; } }
-
-  // ========= extras (localStorage) =========
-  const lsKeyById = id => `sigsol:extras:${id}`;
-  const lsKeyByName = name => `sigsol:extrasByName:${(name || '').trim()}`;
-
-  function saveExtrasById(id, extras) { if (id == null) return; try { localStorage.setItem(lsKeyById(id), JSON.stringify(extras)); } catch { } }
-  function saveExtrasByName(name, extras) { if (!name) return; try { localStorage.setItem(lsKeyByName(name), JSON.stringify(extras)); } catch { } }
-
-  function safeParse(s) { try { return JSON.parse(s); } catch { return null; } }
-
-  function loadExtrasForProject(p) {
-    if (!p) return null;
-    const rawById = (p.id != null) ? localStorage.getItem(lsKeyById(p.id)) : null;
-    const rawByName = p.nome ? localStorage.getItem(lsKeyByName(p.nome)) : null;
-    const exId = rawById ? safeParse(rawById) : null;
-    const exNm = rawByName ? safeParse(rawByName) : null;
-
-    // migra por nome -> id quando possível
-    if (!exId && exNm && p.id != null) {
-      saveExtrasById(p.id, exNm);
-      try { localStorage.removeItem(lsKeyByName(p.nome)); } catch { }
-      return exNm;
-    }
-    return exId || exNm || null;
+  function escapeHtml(s) {
+    if (s == null) return s;
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[c]));
   }
 
   // ========= carregar projetos =========
@@ -127,28 +68,21 @@
       const projetos = await res.json();
       cacheProjetos = Array.isArray(projetos) ? projetos : [];
 
-      ensureCardIndexing();
-      // aplica extras pendentes (POST sem id)
-      if (pendingExtras && pendingKeyName) {
-        const p = cacheProjetos.find(px => (px && px.nome) === pendingKeyName);
-        if (p) saveExtrasForProject(p, pendingExtras);
-        pendingExtras = null;
-        pendingKeyName = null;
-      }
       renderRecentTable(cacheProjetos);
       renderAllCoordTables(cacheProjetos);
       updateKPIs(cacheProjetos);
       drawCharts(cacheProjetos);
+      drawCodesSprintsChart(cacheProjetos);
+      drawCosetTiposChart(cacheProjetos);
+      drawCgodQualidadeChart(cacheProjetos);
 
-      const now = new Date();
-      document.querySelectorAll('#lastUpdate').forEach(el => {
-        el.textContent = `Hoje, ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-      });
+      updateLastUpdateTime();
     } catch (err) {
       console.error(err);
       toast('Erro', 'Erro ao carregar projetos: ' + err.message, 'error');
     }
   }
+
 
   // ========= Tabelas =========
   function renderRecentTable(list) {
@@ -160,22 +94,31 @@
       return;
     }
     list.forEach(p => {
-      const ex = loadExtrasForProject(p) || {};
-      const idArg = js(p.id ?? p.nome);
+      const idArg = js(p.id);
       tbody.insertAdjacentHTML('beforeend', `
-        <tr>
-          <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div></td>
-          <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${escapeHtml(p.coordenacao) || '-'}</div></td>
-          <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span></td>
-          <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(ex.rag)}">${escapeHtml(ex.rag) || '—'}</span></td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(ex.responsavel) || '—'}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail(${idArg})">👁️ Ver</button>
-            <button class="text-green-600 hover:text-green-900 mr-3" onclick="editProject(${idArg})">✏️ Editar</button>
-            <button class="text-red-600 hover:text-red-900" onclick="deleteProject(${idArg})">🗑️ Excluir</button>
-          </td>
-        </tr>
-      `);
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">${escapeHtml(p.coordenacao) || '-'}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">
+                ${escapeHtml(p.status) || '-'}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail(${idArg})">👁️ Ver</button>
+              <button class="text-green-600 hover:text-green-900 mr-3" onclick="editProject(${idArg})">✏️ Editar</button>
+              <button class="text-red-600 hover:text-red-900" onclick="deleteProject(${idArg})">🗑️ Excluir</button>
+            </td>
+          </tr>
+        `);
     });
   }
 
@@ -196,112 +139,103 @@
     if (!rows.length) { tbody.innerHTML = emptyMsg; return; }
 
     rows.forEach(p => {
-      const ex = loadExtrasForProject(p) || {};
-      const idArg = js(p.id ?? p.nome);
-      const progresso = (ex.progresso != null) ? Number(ex.progresso) : null;
-      const sprints = (ex.sprintsConcluidas != null && ex.totalSprints != null) ? `${ex.sprintsConcluidas} de ${ex.totalSprints}` : '—';
+      const idArg = js(p.id);
+      const progresso = (p.progresso != null) ? Number(p.progresso) : null;
+      const sprints = (p.sprintsConcluidas != null && p.totalSprints != null)
+        ? `${p.sprintsConcluidas} de ${p.totalSprints}` : '—';
 
       if (tbodyId === 'codesTableBody') {
         tbody.insertAdjacentHTML('beforeend', `
-          <tr>
-            <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div></td>
-            <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span></td>
-            <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(ex.rag)}">${escapeHtml(ex.rag) || '—'}</span></td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                  <div class="h-2 rounded-full bg-blue-600" style="width:${progresso != null ? progresso : 0}%"></div>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div></td>
+              <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span></td>
+              <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span></td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="h-2 rounded-full bg-blue-600" style="width:${progresso != null ? progresso : 0}%"></div>
+                  </div>
+                  <span class="text-sm text-gray-900">${progresso != null ? progresso + '%' : '—'}</span>
                 </div>
-                <span class="text-sm text-gray-900">${progresso != null ? progresso + '%' : '—'}</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sprints}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(ex.responsavel) || '—'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
-              <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
-              <button onclick="deleteProject(${idArg})" class="text-red-600 hover:text-red-900">🗑️ Excluir</button>
-            </td>
-          </tr>
-        `);
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sprints}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
+                <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
+                <button onclick="deleteProject(${idArg})" class="text-red-600 hover:text-red-900">🗑️ Excluir</button>
+              </td>
+            </tr>
+          `);
       } else {
         // COSET / CGOD
         tbody.insertAdjacentHTML('beforeend', `
-          <tr>
-            <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div></td>
-            <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span></td>
-            <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(ex.rag)}">${escapeHtml(ex.rag) || '—'}</span></td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                  <div class="h-2 rounded-full bg-blue-600" style="width:${progresso != null ? progresso : 0}%"></div>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div></td>
+              <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span></td>
+              <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span></td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="h-2 rounded-full bg-blue-600" style="width:${progresso != null ? progresso : 0}%"></div>
+                  </div>
+                  <span class="text-sm text-gray-900">${progresso != null ? progresso + '%' : '—'}</span>
                 </div>
-                <span class="text-sm text-gray-900">${progresso != null ? progresso + '%' : '—'}</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(ex.responsavel) || '—'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
-              <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
-              <button onclick="deleteProject(${idArg})" class="text-red-600 hover:text-red-900">🗑️ Excluir</button>
-            </td>
-          </tr>
-        `);
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
+                <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
+                <button onclick="deleteProject(${idArg})" class="text-red-600 hover:text-red-900">🗑️ Excluir</button>
+              </td>
+            </tr>
+          `);
       }
     });
   }
 
   // ========= KPIs =========
   function updateKPIs(list) {
-    // helper: normaliza string (sem acentos) e em lowercase
     const norm = str => String(str || '')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase();
 
-    // separa listas por coordenação
     const codes = list.filter(p => norm(p.coordenacao) === 'codes');
     const coset = list.filter(p => norm(p.coordenacao) === 'coset');
     const cgod = list.filter(p => norm(p.coordenacao) === 'cgod');
 
-    // ==== KPIs adicionais (Visão Geral) ====
-    // nomes exclusivos p/ evitar conflito com variáveis já usadas acima
+    // Concluídos no mês
     const now = new Date();
     const mesAtual = now.getMonth();
     const anoAtual = now.getFullYear();
-
-    // Concluídos no mês
-    const kpiConcluidosMesVal = list.filter(p => {
+    const concluidosMes = list.filter(p => {
       if (p.status !== 'Concluído' || !p.fim) return false;
       const d = new Date(p.fim);
       return !isNaN(d) && d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
     }).length;
-    setText('kpiConcluidosMes', kpiConcluidosMesVal);
+    setText('kpiConcluidosMes', concluidosMes);
 
-    // Fora do prazo (geral) = fim < hoje e não concluído
-    const kpiForaPrazoVal = list.filter(p => {
+    // Fora do prazo
+    const foraPrazo = list.filter(p => {
       if (!p.fim || p.status === 'Concluído') return false;
       const d = new Date(p.fim);
       return !isNaN(d) && d < now;
     }).length;
-    setText('kpiForaPrazo', kpiForaPrazoVal);
+    setText('kpiForaPrazo', foraPrazo);
 
-    // Progresso médio (usa extras)
-    const progressoVals = list
-      .map(p => (loadExtrasForProject(p) || {}).progresso)
-      .filter(v => v != null);
-    const kpiProgressoMedioVal = progressoVals.length
+    // Progresso médio
+    const progressoVals = list.map(p => p.progresso).filter(v => v != null);
+    const progressoMedio = progressoVals.length
       ? Math.round(progressoVals.reduce((a, b) => a + b, 0) / progressoVals.length)
       : 0;
-    setText('kpiProgressoMedio', kpiProgressoMedioVal + '%');
+    setText('kpiProgressoMedio', progressoMedio + '%');
 
-    // Projetos ativos (geral)
-    const kpiAtivosVal = list.filter(p =>
+    // Projetos ativos
+    const ativos = list.filter(p =>
       p.status === 'Em Andamento' || p.status === 'Sustentação'
     ).length;
-    setText('kpiProjetosAtivos', kpiAtivosVal);
-
-
+    setText('kpiProjetosAtivos', ativos);
 
     // Totais Home
     setText('totalProjetos', list.length);
@@ -310,83 +244,32 @@
     setText('projetosCgod', cgod.length);
 
     // Home – Detalhamento CODES
-    const emAndamento = codes.filter(p => norm(p.status) === 'em andamento').length;
-    const emSustentacao = codes.filter(p => norm(p.status) === 'sustentacao').length;
-    console.log('CODES ⇒ andamento:', emAndamento, 'sustentacao:', emSustentacao);
-    setCardCount('codes', 'desenvolvimento', emAndamento);
-    setCardCount('codes', 'sustentacao', emSustentacao);
+    setCardCount('codes', 'desenvolvimento', codes.filter(p => norm(p.status) === 'em andamento').length);
+    setCardCount('codes', 'sustentacao', codes.filter(p => norm(p.status) === 'sustentacao').length);
 
     // Home – Detalhamento COSET
-    const infra = coset.filter(p => norm(p.tipo).includes('infraestrutura')).length;
-    const integra = coset.filter(p => norm(p.tipo).includes('integracao')).length;
-    console.log('COSET ⇒ infra:', infra, 'integra:', integra);
-    setCardCount('coset', 'infraestrutura', infra);
-    setCardCount('coset', 'integracao', integra);
+    setCardCount('coset', 'infraestrutura', coset.filter(p => norm(p.tipo).includes('infraestrutura')).length);
+    setCardCount('coset', 'integracao', coset.filter(p => norm(p.tipo).includes('integracao')).length);
 
     // Home – Detalhamento CGOD
-    const analytics = cgod.filter(p => /dashboard|bi/.test(norm(p.tipo))).length;
-    const datalake = cgod.filter(p => norm(p.tipo).includes('dados')).length;
-    console.log('CGOD ⇒ analytics:', analytics, 'datalake:', datalake);
-    setCardCount('cgod', 'analytics', analytics);
-    setCardCount('cgod', 'datalake', datalake);
+    setCardCount('cgod', 'analytics', cgod.filter(p => /dashboard|bi/.test(norm(p.tipo))).length);
+    setCardCount('cgod', 'datalake', cgod.filter(p => norm(p.tipo).includes('dados')).length);
 
-    // Páginas internas:
     // CODES page
-    const ativos = codes.filter(p => ['em andamento', 'sustentacao'].includes(norm(p.status))).length;
-    const foraPrazo = codes.filter(p => norm(p.status) === 'em risco' ||
-      ((loadExtrasForProject(p) || {}).rag || '').toLowerCase() === 'vermelho').length;
-    console.log('CODES page ⇒ ativos:', ativos, 'foraPrazo:', foraPrazo);
-    setCardCount('codes', 'ativos', ativos);
-    setCardCount('codes', 'fora-prazo', foraPrazo);
+    setCardCount('codes', 'ativos', codes.filter(p => ['em andamento', 'sustentacao'].includes(norm(p.status))).length);
+    setCardCount('codes', 'fora-prazo', codes.filter(p => p.status === 'Em Risco' || (p.rag || '').toLowerCase() === 'vermelho').length);
 
     // COSET page
-    setCardCount('coset', 'sistemas-integrados',
-      coset.filter(p => norm(p.tipo).includes('sistema integrado')).length);
-    setCardCount('coset', 'modernizacao',
-      coset.filter(p => norm(p.tipo).includes('modernizacao')).length);
-    setCardCount('coset', 'compliance',
-      coset.filter(p => norm(p.tipo).includes('compliance')).length);
+    setCardCount('coset', 'sistemas-integrados', coset.filter(p => norm(p.tipo).includes('sistema integrado')).length);
+    setCardCount('coset', 'modernizacao', coset.filter(p => norm(p.tipo).includes('modernizacao')).length);
+    setCardCount('coset', 'compliance', coset.filter(p => norm(p.tipo).includes('compliance')).length);
 
     // CGOD page
-    setCardCount('cgod', 'catalogos',
-      cgod.filter(p => /catalogo/.test(norm(p.nome)) || norm(p.tipo).includes('dados')).length);
-    setCardCount('cgod', 'qualidade',
-      cgod.filter(p => norm(p.tipo).includes('qualidade')).length);
-    setCardCount('cgod', 'governanca',
-      cgod.filter(p => norm(p.tipo).includes('governanca')).length);
+    setCardCount('cgod', 'catalogos', cgod.filter(p => /catalogo/.test(norm(p.nome)) || norm(p.tipo).includes('dados')).length);
+    setCardCount('cgod', 'qualidade', cgod.filter(p => norm(p.tipo).includes('qualidade')).length);
+    setCardCount('cgod', 'governanca', cgod.filter(p => norm(p.tipo).includes('governanca')).length);
   }
 
-
-
-  function findCardCountElement(coordKey, cat) {
-    const selectors = [
-      `[onclick="filterProjects('${coordKey}','${cat}')"]`,
-      `[onclick="filterProjects('${coordKey}', '${cat}')"]`,
-      `[onclick*="filterProjects('${coordKey}','${cat}')"]`,
-      `[onclick*="filterProjects('${coordKey}', '${cat}')"]`
-    ];
-    let container = null;
-    for (const sel of selectors) {
-      const el = document.querySelector(sel);
-      if (el) { container = el; break; }
-    }
-    if (!container) return null;
-
-    // Nas caixas de KPI (páginas), o número fica em <p class="text-2xl font-bold ...">
-    let countEl = container.querySelector('p.text-2xl.font-bold');
-    if (!countEl) {
-      // Nos cards "Detalhamento", o número é <span class="text-lg font-bold ...">
-      countEl = container.querySelector('span.text-lg.font-bold');
-    }
-    if (!countEl) {
-      // fallback: último <span> ou <p> com número
-      const cands = Array.from(container.querySelectorAll('span, p'));
-      countEl = cands.reverse().find(n => /\d+/.test(n.textContent || '')) || null;
-    }
-    return countEl;
-  }
-
-  // ========= Atualização dos cards (corrigido: atualiza TODOS os containers) =========
   function setCardCount(coordKey, cat, value) {
     const sel = `[data-card="${coordKey}:${cat}"]`;
     const containers = document.querySelectorAll(sel);
@@ -397,7 +280,6 @@
     }
 
     containers.forEach(container => {
-      // Prioriza KPIs (p.text-2xl), depois subcards (span.text-lg), depois fallback numérico
       let countEl =
         container.querySelector('p.text-2xl.font-bold') ||
         container.querySelector('p.text-2xl') ||
@@ -406,25 +288,16 @@
         container.querySelector('.count');
 
       if (!countEl) {
-        // fallback: pega o último <span> ou <p> que contenha número
         const cands = Array.from(container.querySelectorAll('span, p')).reverse();
         countEl = cands.find(n => /\d+/.test(n.textContent || ''));
       }
-
-      if (!countEl) {
-        console.warn('setCardCount: elemento de número não encontrado em', container);
-        return;
-      }
-
-      countEl.textContent = value;
+      if (countEl) countEl.textContent = value;
     });
   }
 
 
-
-
-
-  // ========= Gráficos =========
+  // ========= GRÁFICOS (Home) =========
+  // ========= Gráficos Home =========
   function drawCharts(list) {
     const codes = list.filter(p => p.coordenacao === 'CODES').length;
     const coset = list.filter(p => p.coordenacao === 'COSET').length;
@@ -439,9 +312,10 @@
       'Sustentação': st('Sustentação')
     };
 
-    if (chartCoordenacao) { chartCoordenacao.destroy(); chartCoordenacao = null; }
-    if (chartStatus) { chartStatus.destroy(); chartStatus = null; }
+    if (chartCoordenacao) chartCoordenacao.destroy();
+    if (chartStatus) chartStatus.destroy();
 
+    // Projetos por Coordenação
     const coordCanvas = byId('coordenacaoChart');
     if (coordCanvas && window.Chart) {
       chartCoordenacao = new Chart(coordCanvas.getContext('2d'), {
@@ -450,14 +324,13 @@
           labels: ['CODES', 'COSET', 'CGOD'],
           datasets: [{
             data: [codes, coset, cgod],
-            backgroundColor: ['#3b82f6', '#8b5cf6', '#f97316'],
-            borderWidth: 2, borderColor: '#ffffff'
+            backgroundColor: ['#3b82f6', '#8b5cf6', '#f97316']
           }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
+        }
       });
     }
-    // ===== Novo Gráfico: Distribuição por Status =====
+
+    // Distribuição por Status
     const distribCanvas = byId('statusDistribChart');
     if (distribCanvas && window.Chart) {
       new Chart(distribCanvas.getContext('2d'), {
@@ -475,11 +348,10 @@
       });
     }
 
-    // ===== Novo Gráfico: Consolidação RAG =====
+    // Consolidação RAG
     const ragCounts = { Verde: 0, Amarelo: 0, Vermelho: 0 };
     list.forEach(p => {
-      const ex = loadExtrasForProject(p) || {};
-      if (ex.rag && ragCounts[ex.rag] != null) ragCounts[ex.rag]++;
+      if (p.rag && ragCounts[p.rag] != null) ragCounts[p.rag]++;
     });
     const ragCanvas = byId('ragChart');
     if (ragCanvas && window.Chart) {
@@ -498,7 +370,7 @@
       });
     }
 
-    // ===== Novo Gráfico: Evolução Temporal =====
+    // Evolução Temporal
     const monthlyData = {};
     list.forEach(p => {
       if (p.inicio) {
@@ -531,34 +403,77 @@
       });
     }
 
+    // Status (barras)
     const statusCanvas = byId('statusChart');
     if (statusCanvas && window.Chart) {
       chartStatus = new Chart(statusCanvas.getContext('2d'), {
         type: 'bar',
         data: {
-          labels: ['Planejado', 'Em Andamento', 'Em Risco', 'Concluído', 'Sustentação'],
-          datasets: [{
-            label: 'Quantidade',
-            data: [statusData['Planejado'], statusData['Em Andamento'], statusData['Em Risco'], statusData['Concluído'], statusData['Sustentação']],
-            backgroundColor: ['#6b7280', '#16a34a', '#dc2626', '#2563eb', '#f59e0b'],
-            borderRadius: 4, borderSkipped: false
-          }]
+          labels: Object.keys(statusData),
+          datasets: [{ data: Object.values(statusData), backgroundColor: ['#6b7280', '#16a34a', '#dc2626', '#2563eb', '#f59e0b'] }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        options: { responsive: true, plugins: { legend: { display: false } } }
       });
     }
   }
 
-  // ========= Filtros (cards) =========
+  // ========= Gráficos por aba =========
+  function drawCodesSprintsChart(projects) {
+    const ctx = byId('codesSprintsChart');
+    if (!ctx) return;
+    const codes = projects.filter(p => p.coordenacao === 'CODES');
+    const labels = codes.map(p => p.nome);
+    const data = codes.map(p => p.sprintsConcluidas || 0);
+
+    if (chartCodes) chartCodes.destroy();
+    chartCodes = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Sprints Concluídas', data, backgroundColor: '#3b82f6' }] },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+  }
+
+  function drawCosetTiposChart(projects) {
+    const ctx = byId('cosetTiposChart');
+    if (!ctx) return;
+    const coset = projects.filter(p => p.coordenacao === 'COSET');
+    const tipos = [...new Set(coset.map(p => p.tipo))];
+    const counts = tipos.map(t => coset.filter(p => p.tipo === t).length);
+
+    if (chartCoset) chartCoset.destroy();
+    chartCoset = new Chart(ctx, {
+      type: 'pie',
+      data: { labels: tipos, datasets: [{ data: counts, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'] }] },
+      options: { responsive: true }
+    });
+  }
+
+  function drawCgodQualidadeChart(projects) {
+    const ctx = byId('cgodQualidadeChart');
+    if (!ctx) return;
+    const cgod = projects.filter(p => p.coordenacao === 'CGOD');
+    const labels = cgod.map(p => p.nome);
+    const data = cgod.map(p => p.qualidade || 0);
+
+    if (chartCgod) chartCgod.destroy();
+    chartCgod = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Qualidade (%)', data, borderColor: '#10b981', tension: 0.3 }] },
+      options: { responsive: true, scales: { y: { min: 0, max: 100 } } }
+    });
+  }
+
+  // ========= FILTROS =========
   function filterProjects(coordenacao, categoria) {
+    // Navega para a página correta (usa showPage do HTML)
     const go = () => {
-      const map = { CODES: 'codesPage', COSET: 'cosetPage', CGOD: 'cgodPage' };
-      const pageId = map[(coordenacao || '').toUpperCase()];
-      if (pageId && typeof window.showPage === 'function') {
+      const map = { CODES: 'codes', COSET: 'coset', CGOD: 'cgod' };
+      const key = map[(coordenacao || '').toUpperCase()];
+      if (key && typeof window.showPage === 'function') {
         const getter = window.getNavButtonFor;
         let btn = null;
-        if (typeof getter === 'function') btn = getter((coordenacao || '').toLowerCase());
-        window.showPage(pageId.replace('Page', ''), btn);
+        if (typeof getter === 'function') btn = getter(key);
+        window.showPage(key, btn);
       }
     };
     go();
@@ -571,10 +486,7 @@
       if (cat === 'ativos') filtered = filtered.filter(p => p.status === 'Em Andamento' || p.status === 'Sustentação');
       if (cat === 'desenvolvimento') filtered = filtered.filter(p => p.status === 'Em Andamento');
       if (cat === 'sustentacao') filtered = filtered.filter(p => (p.status || '').toLowerCase().includes('susten'));
-      if (cat === 'fora-prazo') filtered = filtered.filter(p => {
-        const ex = loadExtrasForProject(p) || {};
-        return ex.rag === 'Vermelho' || p.status === 'Em Risco';
-      });
+      if (cat === 'fora-prazo') filtered = filtered.filter(p => (p.rag === 'Vermelho') || p.status === 'Em Risco');
     }
     if (coord === 'COSET') {
       if (cat === 'infraestrutura') filtered = filtered.filter(p => p.tipo === 'Infraestrutura');
@@ -594,44 +506,43 @@
     renderCoordTable(coord, mapTbody[coord], filtered);
   }
 
+  // ========= DETALHE =========
   // ========= Detalhe =========
   function showProjectDetail(idOrName) {
     const p = findProjeto(idOrName);
     if (!p) return toast('Não encontrado', 'Projeto não encontrado', 'warn');
-
-    const ex = loadExtrasForProject(p) || {};
 
     setText('detailProjectName', p.nome || '—');
     setText('detailProjectType', `${p.tipo || '—'} • ${p.coordenacao || '—'}`);
 
     const ragEl = byId('detailRagStatus');
     if (ragEl) {
-      ragEl.textContent = ex.rag || '—';
-      ragEl.className = `w-full h-8 rounded flex items-center justify-center text-white font-medium ${ragClass(ex.rag)}`;
+      ragEl.textContent = p.rag || '—';
+      ragEl.className = `w-full h-8 rounded flex items-center justify-center text-white font-medium ${ragClass(p.rag)}`;
     }
-    setText('detailPrioridade', ex.prioridade || '—');
 
-    const prog = (ex.progresso != null) ? Number(ex.progresso) : null;
+    setText('detailPrioridade', p.prioridade || '—');
+    setText('detailSprints', (p.sprintsConcluidas != null && p.totalSprints != null) ? `${p.sprintsConcluidas} de ${p.totalSprints}` : '—');
+    setText('detailCoordenacao', p.coordenacao || '—');
+    setText('detailResponsavel', p.responsavel || '—');
+    setText('detailStatus', p.status || '—');
+    setText('detailInicio', formatDate(p.inicio));
+    setText('detailFim', formatDate(p.fim));
+    setText('detailDescricao', p.descricao || '—');
+    setText('detailOrcamento', formatCurrency(p.orcamento));
+    setText('detailRiscos', p.riscos || '—');
+
+    const prog = (p.progresso != null) ? Number(p.progresso) : null;
     const progBar = byId('detailProgress');
     const progTxt = byId('detailProgressText');
     if (progBar) progBar.style.width = (prog != null ? prog : 0) + '%';
     if (progTxt) progTxt.textContent = (prog != null ? prog + '%' : '—');
 
-    setText('detailSprints', (ex.sprintsConcluidas != null && ex.totalSprints != null) ? `${ex.sprintsConcluidas} de ${ex.totalSprints}` : '—');
-    setText('detailCoordenacao', p.coordenacao || '—');
-    setText('detailResponsavel', ex.responsavel || '—');
-    setText('detailStatus', p.status || '—');
-    setText('detailInicio', formatDate(p.inicio));
-    setText('detailFim', formatDate(p.fim));
-    setText('detailDescricao', p.descricao || '—');
-    setText('detailOrcamento', formatCurrency(ex.orcamento));
-    setText('detailRiscos', ex.riscos || '—');
-
     const equipeEl = byId('detailEquipe');
     if (equipeEl) {
       equipeEl.innerHTML = '';
-      if (ex.equipe) {
-        ex.equipe.split(',').map(s => s.trim()).forEach(m => {
+      if (p.equipe) {
+        p.equipe.split(',').map(s => s.trim()).forEach(m => {
           const div = document.createElement('div');
           div.className = 'flex items-center';
           div.innerHTML = `<span class="w-2 h-2 rounded-full mr-2"></span><span>${escapeHtml(m)}</span>`;
@@ -647,9 +558,7 @@
     const p = findProjeto(idOrName);
     if (!p) return toast('Não encontrado', 'Projeto não encontrado', 'warn');
 
-    const ex = loadExtrasForProject(p) || {};
     const form = byId('projectForm'); if (!form) return;
-
     form.dataset.id = p.id; // marca edição
 
     // Backend
@@ -662,18 +571,19 @@
     setValue('projectDescricao', p.descricao);
 
     // Extras
-    setValue('projectPrioridade', ex.prioridade);
-    setValue('projectProgresso', ex.progresso);
-    const slider = byId('projectProgressoSlider'); if (slider) slider.value = ex.progresso || 0;
+    setValue('projectPrioridade', p.prioridade);
+    setValue('projectProgresso', p.progresso);
+    const slider = byId('projectProgressoSlider'); if (slider) slider.value = p.progresso || 0;
     if (typeof window.updateProgressDisplay === 'function') window.updateProgressDisplay();
 
-    setValue('projectTotalSprints', ex.totalSprints);
-    setValue('projectSprintsConcluidas', ex.sprintsConcluidas);
-    setValue('projectResponsavel', ex.responsavel);
-    setValue('projectOrcamento', ex.orcamento);
-    setValue('projectEquipe', ex.equipe);
-    setValue('projectRag', ex.rag);
-    setValue('projectRisco', ex.riscos);
+    setValue('projectTotalSprints', p.totalSprints);
+    setValue('projectSprintsConcluidas', p.sprintsConcluidas);
+    setValue('projectResponsavel', p.responsavel);
+    setValue('projectOrcamento', p.orcamento);
+    setValue('projectEquipe', p.equipe);
+    setValue('projectRag', p.rag);
+    setValue('projectRisco', p.riscos);
+    setValue('projectQualidade', p.qualidade);
 
     toggleFormByCoord(p.coordenacao);
 
@@ -705,6 +615,7 @@
     toggleDiv('projectTotalSprints', showForCodes);
     toggleDiv('projectSprintsConcluidas', showForCodes);
   }
+
   function toggleDiv(inputId, show) {
     const el = byId(inputId);
     if (!el) return;
@@ -712,6 +623,7 @@
     if (wrapper) wrapper.style.display = show ? '' : 'none';
   }
 
+  // ========= Criar / Atualizar =========
   async function handleCreateOrUpdate(e) {
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -726,15 +638,7 @@
       status: getValue('projectStatus'),
       descricao: getValue('projectDescricao'),
       inicio: getValue('projectInicio'),
-      fim: getValue('projectFim')
-    };
-
-    // Validação mínima
-    if (!dados.nome || !dados.tipo || !dados.coordenacao || !dados.status || !dados.inicio || !dados.fim) {
-      return toast('Campos obrigatórios', 'Preencha nome, tipo, coordenação, status, início e fim.', 'warn');
-    }
-
-    const extras = {
+      fim: getValue('projectFim'),
       prioridade: getValue('projectPrioridade'),
       progresso: numOrNull(getValue('projectProgresso')),
       totalSprints: numOrNull(getValue('projectTotalSprints')),
@@ -743,34 +647,31 @@
       orcamento: numOrNull(getValue('projectOrcamento')),
       equipe: getValue('projectEquipe'),
       rag: getValue('projectRag'),
-      riscos: getValue('projectRisco')
+      riscos: getValue('projectRisco'),
+      qualidade: numOrNull(getValue('projectQualidade'))
     };
+
+    // Validação mínima
+    if (!dados.nome || !dados.tipo || !dados.coordenacao || !dados.status || !dados.inicio || !dados.fim) {
+      return toast('Campos obrigatórios', 'Preencha nome, tipo, coordenação, status, início e fim.', 'warn');
+    }
 
     const isEdit = Boolean(id);
     try {
       const url = isEdit ? `${API}/${id}` : API;
       const method = isEdit ? 'PUT' : 'POST';
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dados)
       });
+
       if (!res.ok) {
         const erro = await safeJsonOrNull(res);
         throw new Error((erro && (erro.erro || erro.message)) || `Erro ao ${isEdit ? 'atualizar' : 'salvar'} (${res.status})`);
       }
-      const saved = await safeJsonOrNull(res);
-
-      // guarda extras
-      if (isEdit) {
-        saveExtrasById(id, extras);
-        saveExtrasByName(dados.nome, extras);
-      } else {
-        if (saved && saved.id != null) {
-          saveExtrasById(saved.id, extras);
-        }
-        saveExtrasByName(dados.nome, extras);
-      }
+      await safeJsonOrNull(res);
 
       // UI
       delete form.dataset.id;
@@ -780,7 +681,6 @@
       const modal = byId('projectModal'); if (modal) modal.classList.add('hidden');
 
       await loadProjetos();
-
       toast('Sucesso', isEdit ? 'Projeto atualizado com sucesso!' : 'Projeto cadastrado com sucesso!', 'success');
     } catch (err) {
       console.error(err);
@@ -788,6 +688,9 @@
     }
   }
 
+
+  // ========= DELETE =========
+  // ========= Deletar =========
   async function deleteProject(idOrName) {
     const p = findProjeto(idOrName);
     if (!p || !p.id) return toast('Ação inválida', 'Não foi possível identificar o ID do projeto.', 'warn');
@@ -801,8 +704,6 @@
         const erro = await safeJsonOrNull(res);
         throw new Error((erro && erro.erro) || `Erro ao excluir (${res.status})`);
       }
-      try { localStorage.removeItem(lsKeyById(p.id)); } catch { }
-      try { if (p.nome) localStorage.removeItem(lsKeyByName(p.nome)); } catch { }
 
       toast('Sucesso', 'Projeto excluído com sucesso!', 'success');
       await loadProjetos();
@@ -817,6 +718,7 @@
     return cacheProjetos.find(p => String(p.id) === String(idOrName)) ||
       cacheProjetos.find(p => (p.nome || '') === idOrName);
   }
+
   function statusBadgeClass(status) {
     switch (status) {
       case 'Em Andamento': return 'bg-green-100 text-green-800';
@@ -827,24 +729,34 @@
       default: return 'bg-gray-100 text-gray-800';
     }
   }
+
   function ragClass(rag) {
     switch (rag) {
       case 'Verde': return 'rag-verde';
       case 'Amarelo': return 'rag-amarelo';
       case 'Vermelho': return 'rag-vermelho';
-      default: return 'rag-verde';
+      default: return 'bg-gray-300';
     }
   }
+
   function formatDate(s) {
     if (!s) return '—';
     const d = new Date(s);
     return isNaN(d) ? '—' : d.toLocaleDateString('pt-BR');
   }
+
   function formatCurrency(v) {
     if (v == null) return '—';
-    try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v); }
-    catch { return String(v); }
+    try {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    } catch { return String(v); }
   }
+
+  function numOrNull(v) {
+    const n = Number(v);
+    return isNaN(n) ? null : n;
+  }
+
   function updateLastUpdateTime() {
     const now = new Date();
     document.querySelectorAll('#lastUpdate').forEach(el => {
@@ -878,4 +790,4 @@
     setTimeout(() => { wrap.classList.add('hidden'); }, 3500);
   }
 
-})();
+})(); // 🔚 fim do IIFE
