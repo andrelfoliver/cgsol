@@ -420,17 +420,68 @@
   function drawCodesSprintsChart(projects) {
     const ctx = byId('codesSprintsChart');
     if (!ctx) return;
-    const codes = projects.filter(p => p.coordenacao === 'CODES');
-    const labels = codes.map(p => p.nome);
-    const data = codes.map(p => p.sprintsConcluidas || 0);
+
+    // só pega projetos CODES ainda não concluídos
+    const ativos = projects.filter(
+      p => p.coordenacao === 'CODES' &&
+        p.totalSprints &&
+        p.sprintsConcluidas != null &&
+        p.sprintsConcluidas < p.totalSprints
+    );
+
+    if (!ativos.length) {
+      if (chartCodes) chartCodes.destroy();
+      const c = ctx.getContext("2d");
+      c.clearRect(0, 0, ctx.width, ctx.height);
+      c.font = "16px Arial";
+      c.fillStyle = "#666";
+      c.textAlign = "center";
+      c.fillText("Nenhum projeto em andamento", ctx.width / 2, ctx.height / 2);
+      return;
+    }
+
+    const labels = ativos.map(p => p.nome);
+    const progresso = ativos.map(p =>
+      Math.round((p.sprintsConcluidas / p.totalSprints) * 100)
+    );
 
     if (chartCodes) chartCodes.destroy();
     chartCodes = new Chart(ctx, {
-      type: 'bar',
-      data: { labels, datasets: [{ label: 'Sprints Concluídas', data, backgroundColor: '#3b82f6' }] },
-      options: { responsive: true, plugins: { legend: { display: false } } }
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "% concluído",
+          data: progresso,
+          backgroundColor: "#3b82f6"
+        }]
+      },
+      options: {
+        indexAxis: "y", // barras horizontais
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                const proj = ativos[ctx.dataIndex];
+                return `${ctx.parsed.x}% (${proj.sprintsConcluidas}/${proj.totalSprints})`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            min: 0,
+            max: 100,
+            ticks: { callback: v => v + "%" },
+            title: { display: true, text: "% das Sprints concluídas" }
+          }
+        }
+      }
     });
   }
+
 
   function drawCosetTiposChart(projects) {
     const ctx = byId('cosetTiposChart');
