@@ -88,3 +88,18 @@ function showPage(pageId, btn) {
   btn.classList.remove("border-transparent", "text-gray-500");
   btn.classList.add("border-b-blue-500", "text-blue-600");
 }
+
+function filterProjects(coord, tipo) {
+  const allCards = document.querySelectorAll('.project-card');
+
+  allCards.forEach(card => {
+    const cardCoord = card.getAttribute('data-coordenacao');
+    const cardTipo = card.getAttribute('data-tipo');
+
+    if ((coord === 'all' || cardCoord === coord) && (tipo === 'all' || cardTipo === tipo)) {
+      card.classList.remove('hidden');
+    } else {
+      card.classList.add('hidden');
+    }
+  });
+}
