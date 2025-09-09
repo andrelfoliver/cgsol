@@ -74,7 +74,6 @@
       drawCharts(cacheProjetos);
       drawCodesSprintsChart(cacheProjetos);
       drawCosetTiposChart(cacheProjetos);
-      drawCgodQualidadeChart(cacheProjetos);
 
       updateLastUpdateTime();
     } catch (err) {
@@ -436,32 +435,31 @@
   function drawCosetTiposChart(projects) {
     const ctx = byId('cosetTiposChart');
     if (!ctx) return;
-    const coset = projects.filter(p => p.coordenacao === 'COSET');
-    const tipos = [...new Set(coset.map(p => p.tipo))];
-    const counts = tipos.map(t => coset.filter(p => p.tipo === t).length);
+
+    // Mapeia tipo normalizado -> {labelOriginal, count}
+    const acc = {};
+    projects.forEach(p => {
+      const original = (p.tipo || '').trim();
+      if (!original) return;
+      const norm = original
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // sem acentos
+        .toLowerCase();
+      if (!acc[norm]) acc[norm] = { label: original, count: 0 };
+      acc[norm].count++;
+    });
+
+    const labels = Object.values(acc).map(x => x.label);
+    const counts = Object.values(acc).map(x => x.count);
 
     if (chartCoset) chartCoset.destroy();
     chartCoset = new Chart(ctx, {
       type: 'pie',
-      data: { labels: tipos, datasets: [{ data: counts, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'] }] },
+      data: { labels, datasets: [{ data: counts, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ef4444'] }] },
       options: { responsive: true }
     });
   }
 
-  function drawCgodQualidadeChart(projects) {
-    const ctx = byId('cgodQualidadeChart');
-    if (!ctx) return;
-    const cgod = projects.filter(p => p.coordenacao === 'CGOD');
-    const labels = cgod.map(p => p.nome);
-    const data = cgod.map(p => p.qualidade || 0);
 
-    if (chartCgod) chartCgod.destroy();
-    chartCgod = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'Qualidade (%)', data, borderColor: '#10b981', tension: 0.3 }] },
-      options: { responsive: true, scales: { y: { min: 0, max: 100 } } }
-    });
-  }
 
   // ========= FILTROS =========
   function filterProjects(coordenacao, categoria) {
