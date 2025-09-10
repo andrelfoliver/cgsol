@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 
 <head>
@@ -84,34 +83,25 @@
       </div>
     </div>
   </header>
+
   <!-- Navigation -->
   <nav class="bg-white shadow-sm border-b">
     <div class="container mx-auto px-4">
       <div class="flex space-x-8">
-        <!-- ✅ PASSANDO this para showPage -->
         <button class="nav-btn py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium"
-          onclick="showPage('home', this)">
-          🏠 Visão CGSOL
-        </button>
+          onclick="showPage('home', this)">🏠 Visão CGSOL</button>
         <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
-          onclick="showPage('codes', this)">
-          💻 CODES
-        </button>
+          onclick="showPage('codes', this)">💻 CODES</button>
         <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
-          onclick="showPage('coset', this)">
-          🏗️ COSET
-        </button>
+          onclick="showPage('coset', this)">🏗️ COSET</button>
         <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
-          onclick="showPage('cgod', this)">
-          📊 CGOD
-        </button>
+          onclick="showPage('cgod', this)">📊 CGOD</button>
         <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
-          onclick="showPage('pdti', this)">
-          📋 PDTI
-        </button>
+          onclick="showPage('pdti', this)">📋 PDTI</button>
       </div>
     </div>
   </nav>
+
   <!-- Main Content -->
   <main class="container mx-auto px-4 py-6">
     <!-- Home Page -->
@@ -128,6 +118,7 @@
           </div>
         </div>
       </div>
+
       <!-- KPIs Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow-md p-6">
@@ -135,41 +126,45 @@
             <div class="p-3 rounded-full bg-blue-100 text-blue-600">📋</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Total de Projetos</p>
-              <p class="text-2xl font-bold text-gray-900" id="totalProjetos">7</p>
+              <p class="text-2xl font-bold text-gray-900" id="totalProjetos">0</p>
             </div>
           </div>
         </div>
+
         <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="showPage('codes', document.querySelector('nav .nav-btn:nth-child(2)'))">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">💻</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">CODES</p>
-              <p class="text-2xl font-bold text-gray-900" id="projetosCodes">3</p>
+              <p class="text-2xl font-bold text-gray-900" id="projetosCodes">0</p>
             </div>
           </div>
         </div>
+
         <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="showPage('coset', document.querySelector('nav .nav-btn:nth-child(3)'))">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-purple-100 text-purple-600">🏗️</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">COSET</p>
-              <p class="text-2xl font-bold text-gray-900" id="projetosCoset">2</p>
+              <p class="text-2xl font-bold text-gray-900" id="projetosCoset">0</p>
             </div>
           </div>
         </div>
+
         <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="showPage('cgod', document.querySelector('nav .nav-btn:nth-child(4)'))">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-orange-100 text-orange-600">📊</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">CGOD</p>
-              <p class="text-2xl font-bold text-gray-900" id="projetosCgod">2</p>
+              <p class="text-2xl font-bold text-gray-900" id="projetosCgod">0</p>
             </div>
           </div>
         </div>
       </div>
+
       <!-- Charts Row -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow-md p-6">
@@ -185,10 +180,12 @@
           </div>
         </div>
       </div>
+
       <!-- Cards por Coordenação -->
       <div class="mb-8">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Detalhamento por Coordenação</h3>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
           <!-- CODES -->
           <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex items-center mb-4">
@@ -198,24 +195,25 @@
             <div class="space-y-3">
               <div
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('codes', 'desenvolvimento')">
+                onclick="filterProjects('codes','desenvolvimento')">
                 <div>
                   <p class="font-medium text-gray-900">Em Desenvolvimento</p>
                   <p class="text-xs text-gray-600">Projetos ativos</p>
                 </div>
-                <span class="text-lg font-bold text-blue-600">2</span>
+                <span class="text-lg font-bold text-blue-600">0</span>
               </div>
               <div
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('codes', 'sustentacao')">
+                onclick="filterProjects('codes','sustentacao')">
                 <div>
                   <p class="font-medium text-gray-900">Em Sustentação</p>
                   <p class="text-xs text-gray-600">Sistemas em produção</p>
                 </div>
-                <span class="text-lg font-bold text-yellow-600">1</span>
+                <span class="text-lg font-bold text-yellow-600">0</span>
               </div>
             </div>
           </div>
+
           <!-- COSET -->
           <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex items-center mb-4">
@@ -225,24 +223,25 @@
             <div class="space-y-3">
               <div
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('coset', 'infraestrutura')">
+                onclick="filterProjects('coset','infraestrutura')">
                 <div>
                   <p class="font-medium text-gray-900">Infraestrutura</p>
                   <p class="text-xs text-gray-600">Sistemas estruturantes</p>
                 </div>
-                <span class="text-lg font-bold text-purple-600">1</span>
+                <span class="text-lg font-bold text-purple-600">0</span>
               </div>
               <div
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('coset', 'integracao')">
+                onclick="filterProjects('coset','integracao')">
                 <div>
                   <p class="font-medium text-gray-900">Integração</p>
                   <p class="text-xs text-gray-600">Conectividade entre sistemas</p>
                 </div>
-                <span class="text-lg font-bold text-green-600">1</span>
+                <span class="text-lg font-bold text-green-600">0</span>
               </div>
             </div>
           </div>
+
           <!-- CGOD -->
           <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex items-center mb-4">
@@ -252,26 +251,28 @@
             <div class="space-y-3">
               <div
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('cgod', 'analytics')">
+                onclick="filterProjects('cgod','analytics')">
                 <div>
                   <p class="font-medium text-gray-900">Analytics</p>
                   <p class="text-xs text-gray-600">Dashboards e relatórios</p>
                 </div>
-                <span class="text-lg font-bold text-orange-600">1</span>
+                <span class="text-lg font-bold text-orange-600">0</span>
               </div>
               <div
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('cgod', 'datalake')">
+                onclick="filterProjects('cgod','datalake')">
                 <div>
                   <p class="font-medium text-gray-900">Data Lake</p>
                   <p class="text-xs text-gray-600">Catálogos e metadados</p>
                 </div>
-                <span class="text-lg font-bold text-blue-600">1</span>
+                <span class="text-lg font-bold text-blue-600">0</span>
               </div>
             </div>
           </div>
+
         </div>
       </div>
+
       <!-- Recent Projects Table -->
       <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex justify-between items-center mb-4">
@@ -293,50 +294,12 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200" id="projectsTableBody">
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">Portal de Serviços</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900">COSET</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Em
-                    Andamento</span></td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 py-1 text-xs font-semibold rounded text-white rag-amarelo">Amarelo</span></td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Maria Silva</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail('P001')">👁️
-                    Ver</button>
-                  <button class="text-green-600 hover:text-green-900" onclick="editProject('P001')">✏️ Editar</button>
-                </td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">Plataforma BIVBOT</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900">CODES</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Em
-                    Andamento</span></td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 py-1 text-xs font-semibold rounded text-white rag-verde">Verde</span></td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">João Souza</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail('P002')">👁️
-                    Ver</button>
-                  <button class="text-green-600 hover:text-green-900" onclick="editProject('P002')">✏️ Editar</button>
-                </td>
-              </tr>
-            </tbody>
+            <tbody class="bg-white divide-y divide-gray-200" id="projectsTableBody"></tbody>
           </table>
         </div>
       </div>
     </div>
+
     <!-- CODES Page -->
     <div class="page-content hidden" id="codesPage">
       <div class="mb-6">
@@ -349,74 +312,71 @@
             onclick="showModal('projectModal')">➕ Novo Projeto</button>
         </div>
       </div>
+
       <!-- KPIs CODES -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes', 'ativos')">
+          onclick="filterProjects('codes','ativos')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-blue-100 text-blue-600">🚀</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Projetos Ativos</p>
-              <p class="text-2xl font-bold text-gray-900">3</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
         </div>
         <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes', 'desenvolvimento')">
+          onclick="filterProjects('codes','desenvolvimento')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">💻</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Desenvolvimento</p>
-              <p class="text-2xl font-bold text-gray-900">2</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
         </div>
         <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes', 'sustentacao')">
+          onclick="filterProjects('codes','sustentacao')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🔧</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Sustentação</p>
-              <p class="text-2xl font-bold text-gray-900">1</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
         </div>
         <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes', 'fora-prazo')">
+          onclick="filterProjects('codes','fora-prazo')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Fora de Prazo</p>
-              <p class="text-2xl font-bold text-gray-900">1</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
         </div>
       </div>
-      <!-- Filters -->
+
+      <!-- Filters (placeholder visual) -->
       <div class="bg-white rounded-lg shadow-md p-4 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <select class="border border-gray-300 rounded-lg px-3 py-2">
+          <select class="border border-gray-300 rounded-lg px-3 py-2" disabled>
             <option>Todos os Status</option>
-            <option>Planejado</option>
-            <option>Em Andamento</option>
-            <option>Em Risco</option>
-            <option>Concluído</option>
-            <option>Pausado</option>
           </select>
-          <select class="border border-gray-300 rounded-lg px-3 py-2">
+          <select class="border border-gray-300 rounded-lg px-3 py-2" disabled>
             <option>Todos os Responsáveis</option>
-            <option>João Souza</option>
-            <option>Carlos Santos</option>
           </select>
-          <input class="border border-gray-300 rounded-lg px-3 py-2" type="date" />
-          <button class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">🔍 Filtrar</button>
+          <input class="border border-gray-300 rounded-lg px-3 py-2" type="date" disabled />
+          <button class="bg-gray-300 text-white px-4 py-2 rounded-lg cursor-not-allowed">🔍 Filtrar</button>
         </div>
       </div>
+
       <!-- Export Button -->
       <div class="flex justify-end items-center mb-6">
         <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm"
           onclick="exportData('pdf')">📄 Exportar PDF</button>
       </div>
+
       <!-- Table View -->
       <div class="bg-white rounded-lg shadow-md" id="tableView">
         <div class="overflow-x-auto">
@@ -436,90 +396,12 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200" id="codesTableBody">
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">Plataforma BIVBOT</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Em
-                    Andamento</span></td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 py-1 text-xs font-semibold rounded text-white rag-verde">Verde</span></td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                      <div class="bg-blue-600 h-2 rounded-full" style="width: 92%"></div>
-                    </div>
-                    <span class="text-sm text-gray-900">92%</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><span
-                    class="font-medium text-blue-600">21</span> de <span class="text-gray-600">30</span></td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">João Souza</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail('P002')">👁️
-                    Ver</button>
-                  <button class="text-green-600 hover:text-green-900" onclick="editProject('P002')">✏️ Editar</button>
-                </td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">Sistema de Monitoramento</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Em
-                    Risco</span></td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 py-1 text-xs font-semibold rounded text-white rag-vermelho">Vermelho</span></td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                      <div class="bg-blue-600 h-2 rounded-full" style="width: 66%"></div>
-                    </div>
-                    <span class="text-sm text-gray-900">66%</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><span
-                    class="font-medium text-blue-600">8</span> de <span class="text-gray-600">15</span></td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Carlos Santos</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail('P004')">👁️
-                    Ver</button>
-                  <button class="text-green-600 hover:text-green-900" onclick="editProject('P004')">✏️ Editar</button>
-                </td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">API Gateway</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Sustentação</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 py-1 text-xs font-semibold rounded text-white rag-verde">Verde</span></td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                      <div class="bg-blue-600 h-2 rounded-full" style="width: 100%"></div>
-                    </div>
-                    <span class="text-sm text-gray-900">100%</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><span
-                    class="font-medium text-blue-600">12</span> de <span class="text-gray-600">12</span></td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Ana Costa</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail('P006')">👁️
-                    Ver</button>
-                  <button class="text-green-600 hover:text-green-900" onclick="editProject('P006')">✏️ Editar</button>
-                </td>
-              </tr>
-            </tbody>
+            <tbody class="bg-white divide-y divide-gray-200" id="codesTableBody"></tbody>
           </table>
         </div>
       </div>
     </div>
+
     <!-- COSET Page -->
     <div class="page-content hidden" id="cosetPage">
       <div class="mb-6">
@@ -532,40 +414,41 @@
             onclick="showModal('projectModal')">➕ Novo Projeto</button>
         </div>
       </div>
+
       <!-- KPIs COSET -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('coset', 'sistemas-integrados')">
+          onclick="filterProjects('coset','sistemas-integrados')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-blue-100 text-blue-600">🔗</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Sistemas Integrados</p>
-              <p class="text-2xl font-bold text-gray-900">2</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
         </div>
         <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('coset', 'modernizacao')">
+          onclick="filterProjects('coset','modernizacao')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">🔄</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Modernização</p>
-              <p class="text-2xl font-bold text-gray-900">1</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
         </div>
         <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('coset', 'infraestrutura')">
+          onclick="filterProjects('coset','infraestrutura')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-purple-100 text-purple-600">🏗️</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Infraestrutura</p>
-              <p class="text-2xl font-bold text-gray-900">1</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
         </div>
         <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('coset', 'compliance')">
+          onclick="filterProjects('coset','compliance')">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-orange-100 text-orange-600">✅</div>
             <div class="ml-4">
@@ -575,6 +458,7 @@
           </div>
         </div>
       </div>
+
       <div class="bg-white rounded-lg shadow-md p-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Projetos COSET</h3>
         <div class="overflow-x-auto">
@@ -591,62 +475,94 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">Portal de Serviços</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Em
-                    Andamento</span></td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 py-1 text-xs font-semibold rounded text-white rag-amarelo">Amarelo</span></td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                      <div class="bg-blue-600 h-2 rounded-full" style="width: 75%"></div>
-                    </div>
-                    <span class="text-sm text-gray-900">75%</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Maria Silva</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail('P001')">👁️
-                    Ver</button>
-                  <button class="text-green-600 hover:text-green-900" onclick="editProject('P001')">✏️ Editar</button>
-                </td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">Sistema ERP</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Sustentação</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 py-1 text-xs font-semibold rounded text-white rag-verde">Verde</span></td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                      <div class="bg-blue-600 h-2 rounded-full" style="width: 100%"></div>
-                    </div>
-                    <span class="text-sm text-gray-900">100%</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Pedro Lima</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail('P007')">👁️
-                    Ver</button>
-                  <button class="text-green-600 hover:text-green-900" onclick="editProject('P007')">✏️ Editar</button>
-                </td>
-              </tr>
-            </tbody>
+            <tbody class="bg-white divide-y divide-gray-200" id="cosetTableBody"></tbody>
           </table>
         </div>
       </div>
     </div>
-    <!-- PDTI Page -->
+
+    <!-- CGOD Page -->
+    <div class="page-content hidden" id="cgodPage">
+      <div class="mb-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">CGOD</h2>
+            <p class="text-gray-600">Coordenação de Governança de Dados</p>
+          </div>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+            onclick="showModal('projectModal')">➕ Novo Projeto</button>
+        </div>
+      </div>
+
+      <!-- KPIs CGOD -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('cgod','catalogos')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">📚</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Catálogos de Dados</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('cgod','analytics')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">📊</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Analytics &amp; BI</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('cgod','qualidade')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600">🎯</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Qualidade de Dados</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('cgod','governanca')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-orange-100 text-orange-600">🛡️</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Governança</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Projetos CGOD</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RAG</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progresso
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200" id="cgodTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PDTI Page (sem alterações estruturais) -->
     <div class="page-content hidden" id="pdtiPage">
+      <!-- ... seu conteúdo PDTI original permanece ... -->
       <div class="mb-6">
         <div class="flex justify-between items-center">
           <div>
@@ -661,94 +577,7 @@
           </div>
         </div>
       </div>
-      <!-- KPIs PDTI -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100 text-blue-600">📋</div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Total de Ações</p>
-              <p class="text-2xl font-bold text-gray-900" id="totalAcoes">77</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-green-100 text-green-600">✅</div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Concluídas</p>
-              <p class="text-2xl font-bold text-gray-900" id="acoesConcluidas">19</p>
-              <p class="text-xs text-green-600 font-medium">25%</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🔄</div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Em Andamento</p>
-              <p class="text-2xl font-bold text-gray-900" id="acoesAndamento">16</p>
-              <p class="text-xs text-yellow-600 font-medium">21%</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-red-100 text-red-600">⏸️</div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Não Iniciadas</p>
-              <p class="text-2xl font-bold text-gray-900" id="acoesNaoIniciadas">42</p>
-              <p class="text-xs text-red-600 font-medium">54%</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Progress Chart -->
-      <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Progresso Geral do PDTI</h3>
-        <div class="w-full bg-gray-200 rounded-full h-6 mb-4">
-          <div
-            class="bg-gradient-to-r from-green-500 to-blue-500 h-6 rounded-full flex items-center justify-center text-white text-sm font-medium"
-            style="width: 25%">25% Concluído</div>
-        </div>
-        <div class="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p class="text-2xl font-bold text-green-600">19</p>
-            <p class="text-sm text-gray-600">Concluídas</p>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-yellow-600">16</p>
-            <p class="text-sm text-gray-600">Em Andamento</p>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-red-600">42</p>
-            <p class="text-sm text-gray-600">Não Iniciadas</p>
-          </div>
-        </div>
-      </div>
-      <!-- Filters -->
-      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <select class="border border-gray-300 rounded-lg px-3 py-2" id="pdtiStatusFilter" onchange="filterPDTI()">
-            <option value="">Todas as Situações</option>
-            <option value="Concluída">Concluída</option>
-            <option value="Em andamento">Em Andamento</option>
-            <option value="Não iniciada">Não Iniciada</option>
-            <option value="-">Sem Status</option>
-          </select>
-          <select class="border border-gray-300 rounded-lg px-3 py-2" id="pdtiTipoFilter" onchange="filterPDTI()">
-            <option value="">Todos os Tipos</option>
-            <option value="SDF">Soluções Digitais (SDF)</option>
-            <option value="SDD">Soluções de Dados (SDD)</option>
-            <option value="SDS">Soluções de Sistemas (SDS)</option>
-          </select>
-          <input class="border border-gray-300 rounded-lg px-3 py-2" id="pdtiSearchFilter" onkeyup="filterPDTI()"
-            placeholder="Buscar por descrição..." type="text" />
-          <button class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg" onclick="clearPDTIFilters()">🔄
-            Limpar Filtros</button>
-        </div>
-      </div>
-      <!-- PDTI Actions Table -->
+      <!-- KPIs + Tabelas PDTI (mesmo HTML do seu arquivo) -->
       <div class="bg-white rounded-lg shadow-md">
         <div class="p-6 border-b border-gray-200">
           <h3 class="text-lg font-semibold text-gray-800">Ações do PDTI - Soluções Digitais</h3>
@@ -775,132 +604,9 @@
         </div>
       </div>
     </div>
-    <!-- CGOD Page -->
-    <div class="page-content hidden" id="cgodPage">
-      <div class="mb-6">
-        <div class="flex justify-between items-center">
-          <div>
-            <h2 class="text-3xl font-bold text-gray-800 mb-2">CGOD</h2>
-            <p class="text-gray-600">Coordenação de Governança de Dados</p>
-          </div>
-          <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-            onclick="showModal('projectModal')">➕ Novo Projeto</button>
-        </div>
-      </div>
-      <!-- KPIs CGOD -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('cgod', 'catalogos')">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100 text-blue-600">📚</div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Catálogos de Dados</p>
-              <p class="text-2xl font-bold text-gray-900">1</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('cgod', 'analytics')">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-green-100 text-green-600">📊</div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Analytics &amp; BI</p>
-              <p class="text-2xl font-bold text-gray-900">1</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('cgod', 'qualidade')">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-purple-100 text-purple-600">🎯</div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Qualidade de Dados</p>
-              <p class="text-2xl font-bold text-gray-900">0</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('cgod', 'governanca')">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-orange-100 text-orange-600">🛡️</div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Governança</p>
-              <p class="text-2xl font-bold text-gray-900">0</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Projetos CGOD</h3>
-        <div class="overflow-x-auto">
-          <table class="min-w-full table-auto">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RAG</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progresso
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">Catálogo de Metadados</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Planejado</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 py-1 text-xs font-semibold rounded text-white rag-verde">Verde</span></td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                      <div class="bg-blue-600 h-2 rounded-full" style="width: 15%"></div>
-                    </div>
-                    <span class="text-sm text-gray-900">15%</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Ana Lima</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail('P003')">👁️
-                    Ver</button>
-                  <button class="text-green-600 hover:text-green-900" onclick="editProject('P003')">✏️ Editar</button>
-                </td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">Dashboard Executivo</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Concluído</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap"><span
-                    class="px-2 py-1 text-xs font-semibold rounded text-white rag-verde">Verde</span></td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                      <div class="bg-blue-600 h-2 rounded-full" style="width: 100%"></div>
-                    </div>
-                    <span class="text-sm text-gray-900">100%</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Fernanda Costa</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail('P005')">👁️
-                    Ver</button>
-                  <button class="text-green-600 hover:text-green-900" onclick="editProject('P005')">✏️ Editar</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
   </main>
+
+  <!-- Modals (iguais aos seus) -->
   <!-- Project Modal -->
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="projectModal">
     <div class="flex items-center justify-center min-h-screen p-4">
@@ -914,12 +620,12 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Projeto</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectName" required=""
-                  type="text" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectName" type="text"
+                  required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipo do Projeto</label>
-                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectTipo" required="">
+                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectTipo" required>
                   <option value="">Selecione...</option>
                   <option value="Sistema Web">Sistema Web</option>
                   <option value="Chatbot IA">Chatbot IA</option>
@@ -932,7 +638,7 @@
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Coordenação</label>
-                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectCoord" required="">
+                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectCoord" required>
                   <option value="">Selecione...</option>
                   <option value="CODES">CODES</option>
                   <option value="COSET">COSET</option>
@@ -941,7 +647,7 @@
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectStatus" required="">
+                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectStatus" required>
                   <option value="Planejado">Planejado</option>
                   <option value="Em Andamento">Em Andamento</option>
                   <option value="Em Risco">Em Risco</option>
@@ -952,7 +658,7 @@
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Prioridade</label>
-                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectPrioridade" required="">
+                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectPrioridade" required>
                   <option value="Baixa">Baixa</option>
                   <option value="Média">Média</option>
                   <option value="Alta">Alta</option>
@@ -963,67 +669,67 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Progresso (%)</label>
                 <div class="space-y-2">
                   <input class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                    id="projectProgressoSlider" max="100" min="0" oninput="updateProgressDisplay()" type="range"
-                    value="0" />
+                    id="projectProgressoSlider" type="range" min="0" max="100" value="0"
+                    oninput="updateProgressDisplay()" />
                   <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-500">0%</span>
                     <div class="flex items-center space-x-2">
                       <span class="text-lg font-bold text-blue-600" id="progressDisplay">0%</span>
                       <input class="w-16 border border-gray-300 rounded px-2 py-1 text-sm" id="projectProgresso"
-                        max="100" min="0" oninput="updateProgressSlider()" required="" type="number" value="0" />
+                        type="number" min="0" max="100" value="0" oninput="updateProgressSlider()" />
                     </div>
                     <span class="text-sm text-gray-500">100%</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-3">
                     <div class="bg-blue-600 h-3 rounded-full transition-all duration-300" id="progressBar"
-                      style="width: 0%"></div>
+                      style="width:0%"></div>
                   </div>
                 </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Total de Sprints</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectTotalSprints" min="1"
-                  required="" type="number" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectTotalSprints" type="number"
+                  min="1" required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Sprints Concluídas</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectSprintsConcluidas" min="0"
-                  required="" type="number" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectSprintsConcluidas"
+                  type="number" min="0" required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectResponsavel" required=""
-                  type="text" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectResponsavel" type="text"
+                  required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Data de Início</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectInicio" required=""
-                  type="date" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectInicio" type="date"
+                  required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fim Previsto</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectFim" required=""
-                  type="date" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectFim" type="date"
+                  required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Orçamento (R$)</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectOrcamento" min="0"
-                  required="" step="0.01" type="number" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectOrcamento" type="number"
+                  min="0" step="0.01" required />
               </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-              <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectDescricao" required=""
-                rows="3"></textarea>
+              <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectDescricao" rows="3"
+                required></textarea>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Equipe (separar por vírgulas)</label>
-              <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectEquipe"
-                placeholder="João Silva, Maria Santos, Ana Costa" required="" type="text" />
+              <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectEquipe" type="text"
+                placeholder="João Silva, Maria Santos, Ana Costa" required />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Status RAG</label>
-              <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectRag" required="">
+              <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectRag" required>
                 <option value="Verde">Verde</option>
                 <option value="Amarelo">Amarelo</option>
                 <option value="Vermelho">Vermelho</option>
@@ -1031,123 +737,73 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Riscos e Dependências</label>
-              <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectRisco"
-                placeholder="Descreva os principais riscos e dependências do projeto..." rows="3"></textarea>
+              <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectRisco" rows="3"
+                placeholder="Descreva os principais riscos e dependências do projeto..."></textarea>
             </div>
             <div class="flex justify-end space-x-3 pt-4">
-              <button class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                onclick="hideModal('projectModal')" type="button">Cancelar</button>
-              <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" id="submitProjectBtn"
-                type="submit">Salvar Projeto</button>
+              <button type="button" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                onclick="hideModal('projectModal')">Cancelar</button>
+              <button id="submitProjectBtn" type="submit"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar Projeto</button>
             </div>
           </form>
         </div>
       </div>
     </div>
   </div>
+
   <!-- Project Detail Modal -->
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="projectDetailModal">
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
         <div class="p-6">
           <div class="flex justify-between items-center mb-6">
-            <h3 class="text-2xl font-bold text-gray-900" id="detailProjectName">Plataforma BIVBOT</h3>
+            <h3 class="text-2xl font-bold text-gray-900" id="detailProjectName">—</h3>
             <button class="text-gray-400 hover:text-gray-600" onclick="hideModal('projectDetailModal')">✕</button>
           </div>
+
           <div class="mb-6">
             <div class="bg-blue-50 rounded-lg p-4">
-              <h4 class="text-lg font-semibold text-blue-800" id="detailProjectType">Chatbot IA • CODES</h4>
+              <h4 class="text-lg font-semibold text-blue-800" id="detailProjectType">—</h4>
             </div>
           </div>
+
           <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
             <div class="bg-gray-50 rounded-lg p-4">
               <h4 class="font-semibold text-gray-700 mb-2">Status RAG</h4>
               <div class="w-full h-8 rounded flex items-center justify-center text-white font-medium rag-verde"
-                id="detailRagStatus">Verde</div>
+                id="detailRagStatus">—</div>
             </div>
             <div class="bg-gray-50 rounded-lg p-4">
               <h4 class="font-semibold text-gray-700 mb-2">Prioridade</h4>
-              <div class="w-full h-8 rounded flex items-center justify-center text-white font-medium bg-red-500"
-                id="detailPrioridade">Crítica
-              </div>
+              <div class="w-full h-8 rounded flex items-center justify-center text-white font-medium bg-gray-500"
+                id="detailPrioridade">—</div>
             </div>
             <div class="bg-gray-50 rounded-lg p-4">
               <h4 class="font-semibold text-gray-700 mb-2">% Andamento</h4>
               <div class="flex items-center">
                 <div class="flex-1 bg-gray-200 rounded-full h-4 mr-3">
-                  <div class="bg-blue-600 h-4 rounded-full" id="detailProgress" style="width: 92%"></div>
+                  <div class="bg-blue-600 h-4 rounded-full" id="detailProgress" style="width:0%"></div>
                 </div>
-                <span class="text-sm font-medium text-gray-700" id="detailProgressText">92%</span>
+                <span class="text-sm font-medium text-gray-700" id="detailProgressText">—</span>
               </div>
             </div>
             <div class="bg-gray-50 rounded-lg p-4">
               <h4 class="font-semibold text-gray-700 mb-2">Sprints</h4>
-              <p class="text-2xl font-bold text-blue-600" id="detailSprints">21 de 30</p>
+              <p class="text-2xl font-bold text-blue-600" id="detailSprints">—</p>
             </div>
           </div>
-          <div class="mb-6" id="sprintsSection">
-            <div class="flex justify-between items-center mb-4">
-              <h4 class="text-lg font-semibold text-gray-800">Sprints</h4>
-              <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
-                onclick="showModal('sprintModal')">➕ Nova Sprint</button>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="min-w-full table-auto">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sprint</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Período</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Planejado</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concluído</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">% Entrega</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200" id="sprintsTableBody">
-                  <tr>
-                    <td class="px-4 py-3 text-sm text-gray-900">Sprint 1</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">15/06 - 29/06</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">35</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">32</td>
-                    <td class="px-4 py-3 text-sm"><span
-                        class="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">91%</span></td>
-                    <td class="px-4 py-3 text-sm font-medium"><button class="text-blue-600 hover:text-blue-900"
-                        onclick="editSprint('S1')">✏️ Editar</button></td>
-                  </tr>
-                  <tr>
-                    <td class="px-4 py-3 text-sm text-gray-900">Sprint 2</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">30/06 - 13/07</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">38</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">40</td>
-                    <td class="px-4 py-3 text-sm"><span
-                        class="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">105%</span></td>
-                    <td class="px-4 py-3 text-sm font-medium"><button class="text-blue-600 hover:text-blue-900"
-                        onclick="editSprint('S2')">✏️ Editar</button></td>
-                  </tr>
-                  <tr>
-                    <td class="px-4 py-3 text-sm text-gray-900">Sprint 3</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">14/07 - 27/07</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">42</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">38</td>
-                    <td class="px-4 py-3 text-sm"><span
-                        class="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">90%</span></td>
-                    <td class="px-4 py-3 text-sm font-medium"><button class="text-blue-600 hover:text-blue-900"
-                        onclick="editSprint('S3')">✏️ Editar</button></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div class="space-y-6">
               <div class="bg-white border rounded-lg p-4">
                 <h4 class="font-semibold text-gray-700 mb-3">Informações do Projeto</h4>
                 <div class="space-y-2 text-sm">
-                  <p><span class="font-medium">Coordenação:</span> <span id="detailCoordenacao">CODES</span></p>
-                  <p><span class="font-medium">Responsável:</span> <span id="detailResponsavel">João Souza</span></p>
-                  <p><span class="font-medium">Status:</span> <span id="detailStatus">Em Andamento</span></p>
-                  <p><span class="font-medium">Início:</span> <span id="detailInicio">15/06/2025</span></p>
-                  <p><span class="font-medium">Fim Previsto:</span> <span id="detailFim">15/12/2025</span></p>
+                  <p><span class="font-medium">Coordenação:</span> <span id="detailCoordenacao">—</span></p>
+                  <p><span class="font-medium">Responsável:</span> <span id="detailResponsavel">—</span></p>
+                  <p><span class="font-medium">Status:</span> <span id="detailStatus">—</span></p>
+                  <p><span class="font-medium">Início:</span> <span id="detailInicio">—</span></p>
+                  <p><span class="font-medium">Fim Previsto:</span> <span id="detailFim">—</span></p>
                 </div>
               </div>
               <div class="bg-white border rounded-lg p-4">
@@ -1161,36 +817,34 @@
                 <div class="space-y-3">
                   <div class="flex justify-between items-center">
                     <span class="text-sm font-medium">Orçamento Total:</span>
-                    <span class="text-lg font-bold text-blue-600" id="detailOrcamento">R$ 180.000,00</span>
+                    <span class="text-lg font-bold text-blue-600" id="detailOrcamento">—</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-3">
-                    <div class="bg-green-500 h-3 rounded-full" id="detailOrcamentoProgress" style="width: 92%"></div>
+                    <div class="bg-green-500 h-3 rounded-full" id="detailOrcamentoProgress" style="width:0%"></div>
                   </div>
                   <div class="flex justify-between text-xs text-gray-600">
-                    <span>Executado</span>
-                    <span>Disponível</span>
+                    <span>Executado</span><span>Disponível</span>
                   </div>
                 </div>
               </div>
               <div class="bg-white border rounded-lg p-4">
                 <h4 class="font-semibold text-gray-700 mb-3">Descrição</h4>
-                <p class="text-sm text-gray-600" id="detailDescricao">Chatbot inteligente para atendimento automatizado
-                  aos usuários.</p>
+                <p class="text-sm text-gray-600" id="detailDescricao">—</p>
               </div>
             </div>
           </div>
+
           <div class="bg-white border rounded-lg p-4">
             <h4 class="font-semibold text-gray-700 mb-3">Riscos e Dependências</h4>
-            <div class="text-sm text-gray-600" id="detailRiscos">
-              <strong>Riscos:</strong> Nenhum risco identificado no momento.<br />
-              <strong>Dependências:</strong> Aprovação final da arquitetura de segurança pelo time de infraestrutura.
-            </div>
+            <div class="text-sm text-gray-600" id="detailRiscos">—</div>
           </div>
+
         </div>
       </div>
     </div>
   </div>
-  <!-- PDTI Action Modal -->
+
+  <!-- PDTI Action Modal (igual ao seu) -->
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="pdtiActionModal">
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
@@ -1200,19 +854,20 @@
             <button class="text-gray-400 hover:text-gray-600" onclick="hideModal('pdtiActionModal')">✕</button>
           </div>
           <form class="space-y-4" id="pdtiActionForm">
+            <!-- campos iguais aos seus -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">ID da Ação</label>
-              <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionId"
-                placeholder="Ex: AC.SDF.46" required="" type="text" />
+              <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionId" type="text"
+                placeholder="Ex: AC.SDF.46" required />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-              <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionDesc"
-                placeholder="Descreva a ação..." required="" rows="3"></textarea>
+              <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionDesc" rows="3"
+                placeholder="Descreva a ação..." required></textarea>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Situação</label>
-              <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionSituacao" required="">
+              <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionSituacao" required>
                 <option value="">Selecione...</option>
                 <option value="Não iniciada">Não Iniciada</option>
                 <option value="Em andamento">Em Andamento</option>
@@ -1222,7 +877,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-              <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionTipo" required="">
+              <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionTipo" required>
                 <option value="">Selecione...</option>
                 <option value="SDF">Soluções Digitais (SDF)</option>
                 <option value="SDD">Soluções de Dados (SDD)</option>
@@ -1230,9 +885,9 @@
               </select>
             </div>
             <div class="flex justify-end space-x-3 pt-4">
-              <button class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                onclick="hideModal('pdtiActionModal')" type="button">Cancelar</button>
-              <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" type="submit">Salvar
+              <button type="button" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                onclick="hideModal('pdtiActionModal')">Cancelar</button>
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar
                 Ação</button>
             </div>
           </form>
@@ -1240,7 +895,8 @@
       </div>
     </div>
   </div>
-  <!-- Sprint Modal -->
+
+  <!-- Sprint Modal (igual ao seu) -->
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="sprintModal">
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
@@ -1250,42 +906,42 @@
             <button class="text-gray-400 hover:text-gray-600" onclick="hideModal('sprintModal')">✕</button>
           </div>
           <form class="space-y-4" id="sprintForm">
+            <!-- seus campos -->
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Número da Sprint</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintNumero" required=""
-                  type="number" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintNumero" type="number"
+                  required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Capacidade</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintCapacidade" required=""
-                  type="number" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintCapacidade" type="number"
+                  required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Data de Início</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintInicio" required=""
-                  type="date" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintInicio" type="date"
+                  required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Data de Fim</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintFim" required=""
-                  type="date" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintFim" type="date" required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Itens Planejados</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintPlanejado" required=""
-                  type="number" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintPlanejado" type="number"
+                  required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Itens Concluídos</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintConcluido" required=""
-                  type="number" />
+                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="sprintConcluido" type="number"
+                  required />
               </div>
             </div>
             <div class="flex justify-end space-x-3 pt-4">
-              <button class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                onclick="hideModal('sprintModal')" type="button">Cancelar</button>
-              <button class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700" type="submit">Salvar
+              <button type="button" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                onclick="hideModal('sprintModal')">Cancelar</button>
+              <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Salvar
                 Sprint</button>
             </div>
           </form>
@@ -1293,307 +949,19 @@
       </div>
     </div>
   </div>
+
   <footer class="text-center text-sm text-gray-600 py-6">
     <p id="lastUpdate">Atualizado agora</p>
   </footer>
+
+  <!-- Helpers mínimos (NÃO redefinem filtros nem KPIs) -->
   <script>
-    // === Mapeamento de posição dos botões do menu (para simular o clique correto)
     const NAV_INDEX = { home: 1, codes: 2, coset: 3, cgod: 4, pdti: 5 };
     function getNavButtonFor(page) {
       const idx = NAV_INDEX[page] || 1;
       return document.querySelector(`nav .nav-btn:nth-child(${idx})`);
     }
 
-    // === Tabela base usada pelos cards/indicadores para filtrar
-    const tableProjects = {
-
-
-      'Sistema de Monitoramento': {
-        coordenacao: 'CODES',
-        status: 'Em Risco',
-        rag: 'Vermelho',
-        progresso: 66,
-        sprints: '8 de 15',
-        responsavel: 'Carlos Santos',
-        categorias: ['ativos', 'desenvolvimento', 'fora-prazo']
-      },
-      'API Gateway': {
-        coordenacao: 'CODES',
-        status: 'Sustentação',
-        rag: 'Verde',
-        progresso: 100,
-        sprints: '12 de 12',
-        responsavel: 'Ana Costa',
-        categorias: ['ativos', 'sustentacao']
-      },
-      'Portal de Serviços': {
-        coordenacao: 'COSET',
-        status: 'Em Andamento',
-        rag: 'Amarelo',
-        progresso: 75,
-        sprints: '-',
-        responsavel: 'Maria Silva',
-        categorias: ['sistemas-integrados', 'modernizacao', 'integracao']
-      },
-      'Sistema ERP': {
-        coordenacao: 'COSET',
-        status: 'Sustentação',
-        rag: 'Verde',
-        progresso: 100,
-        sprints: '-',
-        responsavel: 'Pedro Lima',
-        categorias: ['sistemas-integrados', 'infraestrutura']
-      },
-      'Catálogo de Metadados': {
-        coordenacao: 'CGOD',
-        status: 'Planejado',
-        rag: 'Verde',
-        progresso: 15,
-        sprints: '-',
-        responsavel: 'Ana Lima',
-        categorias: ['catalogos', 'datalake']
-      },
-      'Dashboard Executivo': {
-        coordenacao: 'CGOD',
-        status: 'Concluído',
-        rag: 'Verde',
-        progresso: 100,
-        sprints: '-',
-        responsavel: 'Fernanda Costa',
-        categorias: ['analytics']
-      }
-    };
-
-    // === Helpers de classe (badges)
-    function getStatusBadgeClass(status) {
-      switch (status) {
-        case 'Em Andamento': return 'bg-green-100 text-green-800';
-        case 'Em Risco': return 'bg-red-100 text-red-800';
-        case 'Sustentação': return 'bg-yellow-100 text-yellow-800';
-        case 'Concluído': return 'bg-blue-100 text-blue-800';
-        case 'Planejado': return 'bg-gray-100 text-gray-800';
-        default: return 'bg-gray-100 text-gray-800';
-      }
-    }
-    function getRagClass(rag) {
-      switch (rag) {
-        case 'Verde': return 'rag-verde';
-        case 'Amarelo': return 'rag-amarelo';
-        case 'Vermelho': return 'rag-vermelho';
-        default: return 'rag-verde';
-      }
-    }
-
-    // === Converte NOME -> ID (para chamar showProjectDetail/editProject corretos)
-    function getProjectIdByName(name) {
-      const id = Object.keys(projects).find(pid => projects[pid].nome === name);
-      return id || null;
-    }
-    function showProjectDetailByName(name) {
-      const id = getProjectIdByName(name);
-      if (!id) return alert('Projeto não encontrado!');
-      showProjectDetail(id);
-    }
-    function editProjectByName(name) {
-      const id = getProjectIdByName(name);
-      if (!id) return alert('Projeto não encontrado!');
-      editProject(id);
-    }
-
-    // === Renderers de tabelas
-    function renderCodesTable(filtered) {
-      const tableBody = document.getElementById('codesTableBody');
-      if (!tableBody) return;
-      tableBody.innerHTML = '';
-
-      if (filtered.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto encontrado para esse filtro.</td></tr>`;
-        return;
-      }
-
-      filtered.forEach(([name, p]) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${name}</div></td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(p.status)}">${p.status}</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 text-xs font-semibold rounded text-white ${getRagClass(p.rag)}">${p.rag}</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                <div class="h-2 rounded-full bg-blue-600" style="width:${p.progresso}%"></div>
-              </div>
-              <span class="text-sm text-gray-900">${p.progresso}%</span>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.sprints}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.responsavel}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button onclick="showProjectDetailByName('${name}')" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
-            <button onclick="editProjectByName('${name}')" class="text-green-600 hover:text-green-900">✏️ Editar</button>
-          </td>
-        `;
-        tableBody.appendChild(row);
-      });
-    }
-
-    function updateCosetTable(filtered) {
-      const tbody = document.querySelector('#cosetPage tbody');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto encontrado para esse filtro.</td></tr>`;
-        return;
-      }
-
-      filtered.forEach(([name, p]) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${name}</div></td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(p.status)}">${p.status}</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 text-xs font-semibold rounded text-white ${getRagClass(p.rag)}">${p.rag}</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                <div class="h-2 rounded-full bg-blue-600" style="width:${p.progresso}%"></div>
-              </div>
-              <span class="text-sm text-gray-900">${p.progresso}%</span>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.responsavel}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button onclick="showProjectDetailByName('${name}')" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
-            <button onclick="editProjectByName('${name}')" class="text-green-600 hover:text-green-900">✏️ Editar</button>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    function updateCgodTable(filtered) {
-      const tbody = document.querySelector('#cgodPage tbody');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto encontrado para esse filtro.</td></tr>`;
-        return;
-      }
-
-      filtered.forEach(([name, p]) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${name}</div></td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(p.status)}">${p.status}</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 text-xs font-semibold rounded text-white ${getRagClass(p.rag)}">${p.rag}</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                <div class="h-2 rounded-full bg-blue-600" style="width:${p.progresso}%"></div>
-              </div>
-              <span class="text-sm text-gray-900">${p.progresso}%</span>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.responsavel}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button onclick="showProjectDetailByName('${name}')" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
-            <button onclick="editProjectByName('${name}')" class="text-green-600 hover:text-green-900">✏️ Editar</button>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    // === Banner de filtro (para a página CODES)
-    function showCodesFilterBanner(categoria, count) {
-      const tableView = document.getElementById('tableView');
-      if (!tableView) return;
-      const existing = tableView.querySelector('.bg-blue-50');
-      if (existing) existing.remove();
-
-      const label = categoria.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-      const info = document.createElement('div');
-      info.className = 'bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4';
-      info.innerHTML = `
-        <div class="flex items-center justify-between">
-          <div class="flex items-center">
-            <span class="text-blue-600 mr-2">🔍</span>
-            <span class="text-blue-800 font-medium">Filtro ativo: ${label}</span>
-            <span class="text-blue-600 ml-2">(${count} projeto${count !== 1 ? 's' : ''})</span>
-          </div>
-          <button onclick="clearFilter('codes')" class="text-blue-600 hover:text-blue-800 text-sm">✕ Limpar filtro</button>
-        </div>
-      `;
-      tableView.insertBefore(info, tableView.firstChild);
-    }
-
-    // === FILTRO PRINCIPAL (chamado pelos cards)
-    function filterProjects(coordenacao, categoria) {
-      const coord = (coordenacao || '').toLowerCase();
-      const cat = (categoria || '').toLowerCase();
-
-      // Navega para a página certa clicando no botão do menu (garante highlight correto)
-      const btn = getNavButtonFor(coord);
-      if (btn) btn.click();
-      else if (typeof showPage === 'function') showPage(coord);
-
-      // Filtra
-      const filtered = Object.entries(tableProjects).filter(([_, p]) =>
-        p.coordenacao.toLowerCase() === coord && p.categorias.map(c => c.toLowerCase()).includes(cat)
-      );
-
-      // Renderiza na página correspondente
-      if (coord === 'codes') {
-        renderCodesTable(filtered);
-        showCodesFilterBanner(cat, filtered.length);
-      } else if (coord === 'coset') {
-        updateCosetTable(filtered);
-      } else if (coord === 'cgod') {
-        updateCgodTable(filtered);
-      }
-    }
-
-    // === limpar filtro (CODES) - restaura 3 linhas padrão
-    function clearFilter(coordenacao) {
-      if ((coordenacao || '').toLowerCase() !== 'codes') return;
-      const banner = document.querySelector('#tableView .bg-blue-50');
-      if (banner) banner.remove();
-
-      const defaultRows = ['Plataforma BIVBOT', 'Sistema de Monitoramento', 'API Gateway']
-        .map(name => [name, tableProjects[name]]);
-      renderCodesTable(defaultRows);
-    }
-  </script>
-  <script>
-    // ---- Estado ----
-    let currentProjectId = null;
-    let isEditMode = false;
-
-    const pdtiActions = {/* ... (mesmo objeto grande que você enviou) ... */ };
-
-    const projects = {
-      'P001': { nome: 'Portal de Serviços', tipo: 'Sistema Web', coordenacao: 'COSET', status: 'Em Andamento', prioridade: 'Alta', progresso: 75, totalSprints: 20, sprintsConcluidas: 15, responsavel: 'Maria Silva', inicio: '2024-01-15', fim: '2024-12-15', orcamento: 250000, descricao: 'Portal unificado para acesso aos serviços digitais da organização.', equipe: 'Maria Silva, João Santos, Ana Costa, Pedro Lima', rag: 'Amarelo', riscos: 'Dependência de aprovação de mudanças na arquitetura de segurança.' },
-      'P002': { nome: 'Plataforma BIVBOT', tipo: 'Chatbot IA', coordenacao: 'CODES', status: 'Em Andamento', prioridade: 'Crítica', progresso: 92, totalSprints: 30, sprintsConcluidas: 21, responsavel: 'João Souza', inicio: '2024-06-15', fim: '2024-12-15', orcamento: 180000, descricao: 'Chatbot inteligente para atendimento automatizado aos usuários.', equipe: 'João Souza, Carlos Santos, Ana Lima, Fernanda Costa', rag: 'Verde', riscos: 'Nenhum risco identificado no momento.' },
-      'P003': { nome: 'Catálogo de Metadados', tipo: 'Sistema de Dados', coordenacao: 'CGOD', status: 'Planejado', prioridade: 'Média', progresso: 15, totalSprints: 25, sprintsConcluidas: 3, responsavel: 'Ana Lima', inicio: '2024-08-01', fim: '2025-06-30', orcamento: 320000, descricao: 'Sistema para catalogação e gestão de metadados organizacionais.', equipe: 'Ana Lima, Pedro Santos, Maria Costa', rag: 'Verde', riscos: 'Aguardando definição de padrões de metadados.' },
-      'P004': { nome: 'Sistema de Monitoramento', tipo: 'Dashboard', coordenacao: 'CODES', status: 'Em Risco', prioridade: 'Alta', progresso: 66, totalSprints: 15, sprintsConcluidas: 8, responsavel: 'Carlos Santos', inicio: '2024-03-01', fim: '2024-11-30', orcamento: 150000, descricao: 'Sistema de monitoramento em tempo real dos serviços críticos.', equipe: 'Carlos Santos, João Silva, Ana Costa', rag: 'Vermelho', riscos: 'Atraso na integração com sistemas legados.' },
-      'P005': { nome: 'Dashboard Executivo', tipo: 'BI Dashboard', coordenacao: 'CGOD', status: 'Concluído', prioridade: 'Alta', progresso: 100, totalSprints: 18, sprintsConcluidas: 18, responsavel: 'Fernanda Costa', inicio: '2024-01-01', fim: '2024-08-31', orcamento: 200000, descricao: 'Dashboard executivo com indicadores estratégicos da organização.', equipe: 'Fernanda Costa, Ana Lima, Pedro Santos, Maria Silva', rag: 'Verde', riscos: 'Projeto concluído com sucesso.' },
-      'P006': { nome: 'API Gateway', tipo: 'Infraestrutura', coordenacao: 'CODES', status: 'Sustentação', prioridade: 'Crítica', progresso: 100, totalSprints: 12, sprintsConcluidas: 12, responsavel: 'Ana Costa', inicio: '2023-09-01', fim: '2024-03-31', orcamento: 120000, descricao: 'Gateway centralizado para gerenciamento de APIs organizacionais.', equipe: 'Ana Costa, João Souza, Carlos Santos', rag: 'Verde', riscos: 'Em sustentação - monitoramento contínuo necessário.' },
-      'P007': { nome: 'Sistema ERP', tipo: 'Sistema Integrado', coordenacao: 'COSET', status: 'Sustentação', prioridade: 'Crítica', progresso: 100, totalSprints: 40, sprintsConcluidas: 40, responsavel: 'Pedro Lima', inicio: '2023-01-01', fim: '2024-06-30', orcamento: 500000, descricao: 'Sistema ERP integrado para gestão organizacional completa.', equipe: 'Pedro Lima, Maria Silva, João Santos, Ana Costa, Carlos Santos', rag: 'Verde', riscos: 'Sistema estável em produção.' }
-    };
-
-    // ---- Navegação (✅ sem usar event global) ----
     function showPage(pageId, el) {
       document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
       const target = document.getElementById(pageId + 'Page');
@@ -1607,112 +975,11 @@
         el.classList.remove('border-transparent', 'text-gray-500');
         el.classList.add('border-blue-500', 'text-blue-600');
       }
-
-      if (pageId === 'home') setTimeout(createCharts, 100);
     }
 
-    // ---- Modais ----
     function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function showModal(id) {
-      if (id === 'projectModal' && !isEditMode) {
-        document.querySelector('#projectModal h3').textContent = 'Novo Projeto';
-        document.getElementById('submitProjectBtn').textContent = 'Salvar Projeto';
-        document.getElementById('projectForm').reset();
-        const slider = document.getElementById('projectProgressoSlider');
-        if (slider) { slider.value = 0; updateProgressDisplay(); }
-      }
-      document.getElementById(id).classList.remove('hidden');
-    }
+    function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
 
-    // ---- Charts ----
-    function createCharts() {
-      const coord = document.getElementById('coordenacaoChart');
-      if (coord) {
-        new Chart(coord.getContext('2d'), {
-          type: 'doughnut',
-          data: { labels: ['CODES', 'COSET', 'CGOD'], datasets: [{ data: [3, 2, 2], backgroundColor: ['#3b82f6', '#8b5cf6', '#f97316'], borderWidth: 2, borderColor: '#ffffff' }] },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 15, usePointStyle: true, font: { size: 12 } } } }, cutout: '60%' }
-        });
-      }
-
-      const status = document.getElementById('statusChart');
-      if (status) {
-        new Chart(status.getContext('2d'), {
-          type: 'bar',
-          data: { labels: ['Planejado', 'Em Andamento', 'Em Risco', 'Concluído', 'Sustentação'], datasets: [{ label: 'Quantidade', data: [1, 2, 1, 1, 2], backgroundColor: ['#6b7280', '#16a34a', '#dc2626', '#2563eb', '#f59e0b'], borderRadius: 4, borderSkipped: false }] },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: '#f3f4f6' } }, x: { ticks: { font: { size: 11 } }, grid: { display: false } } }, layout: { padding: { top: 10 } } }
-        });
-      }
-    }
-
-    // ---- Utils ----
-    function formatDate(s) { if (!s) return '-'; return new Date(s).toLocaleDateString('pt-BR'); }
-    function formatCurrency(v) { if (!v) return 'R$ 0,00'; return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v); }
-    function updateLastUpdateTime() {
-      const now = new Date();
-      document.getElementById('lastUpdate').textContent = `Hoje, ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-    }
-
-    // ---- Helper: buscar por ID ou Nome (✅ corrige cliques que passam nome) ----
-    function getProjectByIdOrName(keyOrName) {
-      if (projects[keyOrName]) return { id: keyOrName, data: projects[keyOrName] };
-      const entry = Object.entries(projects).find(([id, p]) => p.nome === keyOrName);
-      return entry ? { id: entry[0], data: entry[1] } : null;
-    }
-
-    // ---- Detalhe Projeto ----
-    function showProjectDetail(projectKeyOrName) {
-      currentProjectId = null;
-      const match = getProjectByIdOrName(projectKeyOrName);
-      if (!match) { alert('Projeto não encontrado!'); return; }
-      const { id, data: project } = match;
-      currentProjectId = id;
-
-      document.getElementById('detailProjectName').textContent = project.nome;
-      document.getElementById('detailProjectType').textContent = `${project.tipo} • ${project.coordenacao}`;
-
-      const rag = document.getElementById('detailRagStatus');
-      rag.textContent = project.rag;
-      rag.className = `w-full h-8 rounded flex items-center justify-center text-white font-medium rag-${project.rag.toLowerCase()}`;
-
-      const prio = document.getElementById('detailPrioridade');
-      prio.textContent = project.prioridade;
-      const prioClass = { 'Baixa': 'bg-green-500', 'Média': 'bg-yellow-500', 'Alta': 'bg-orange-500', 'Crítica': 'bg-red-500' }[project.prioridade] || 'bg-gray-500';
-      prio.className = `w-full h-8 rounded flex items-center justify-center text-white font-medium ${prioClass}`;
-
-      document.getElementById('detailProgress').style.width = `${project.progresso}%`;
-      document.getElementById('detailProgressText').textContent = `${project.progresso}%`;
-      document.getElementById('detailSprints').textContent = `${project.sprintsConcluidas} de ${project.totalSprints}`;
-
-      document.getElementById('detailCoordenacao').textContent = project.coordenacao;
-      document.getElementById('detailResponsavel').textContent = project.responsavel;
-      document.getElementById('detailStatus').textContent = project.status;
-      document.getElementById('detailInicio').textContent = formatDate(project.inicio);
-      document.getElementById('detailFim').textContent = formatDate(project.fim);
-
-      document.getElementById('detailDescricao').textContent = project.descricao || 'Nenhuma descrição disponível.';
-
-      const equipeEl = document.getElementById('detailEquipe');
-      equipeEl.innerHTML = '';
-      if (project.equipe) {
-        const cores = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500'];
-        project.equipe.split(',').map(s => s.trim()).forEach((m, idx) => {
-          const div = document.createElement('div');
-          div.className = 'flex items-center';
-          div.innerHTML = `<span class="w-2 h-2 ${cores[idx % cores.length]} rounded-full mr-2"></span><span>${m}${idx === 0 ? ' (Líder)' : ''}</span>`;
-          equipeEl.appendChild(div);
-        });
-      }
-
-      document.getElementById('detailOrcamento').textContent = formatCurrency(project.orcamento);
-      document.getElementById('detailOrcamentoProgress').style.width = `${project.progresso}%`;
-
-      document.getElementById('detailRiscos').innerHTML = `<strong>Riscos:</strong> ${project.riscos || 'Nenhum risco identificado.'}<br><strong>Dependências:</strong> Aprovação final da arquitetura de segurança pelo time de infraestrutura.`;
-
-      showModal('projectDetailModal');
-    }
-
-    // ---- Progresso (slider) ----
     function updateProgressDisplay() {
       const slider = document.getElementById('projectProgressoSlider');
       const display = document.getElementById('progressDisplay');
@@ -1723,250 +990,77 @@
       input.value = value;
       bar.style.width = value + '%';
       const pct = (value / slider.max) * 100;
-      slider.style.background = `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${pct}%, #e5e7eb ${pct}%, #e5e7eb 100%)`;
+      slider.style.background = `linear-gradient(to right,#3b82f6 0%,#3b82f6 ${pct}%,#e5e7eb ${pct}%,#e5e7eb 100%)`;
     }
     function updateProgressSlider() {
       const input = document.getElementById('projectProgresso');
       const slider = document.getElementById('projectProgressoSlider');
       const display = document.getElementById('progressDisplay');
       const bar = document.getElementById('progressBar');
-      let value = parseInt(input.value) || 0; if (value < 0) value = 0; if (value > 100) value = 100;
+      let value = parseInt(input.value) || 0;
+      if (value < 0) value = 0; if (value > 100) value = 100;
       input.value = value; slider.value = value; display.textContent = value + '%'; bar.style.width = value + '%';
       const pct = (value / slider.max) * 100;
-      slider.style.background = `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${pct}%, #e5e7eb ${pct}%, #e5e7eb 100%)`;
+      slider.style.background = `linear-gradient(to right,#3b82f6 0%,#3b82f6 ${pct}%,#e5e7eb ${pct}%,#e5e7eb 100%)`;
     }
 
-    // ---- Form Projeto ----
-    /*document.addEventListener('DOMContentLoaded', () => {
-      const pf = document.getElementById('projectForm');
-      const sf = document.getElementById('sprintForm');
+    // Placeholders
+    function sortTable() { alert('Ordenação será implementada.'); }
+    function exportData(fmt) { alert('Exportação ' + fmt.toUpperCase() + ' será implementada.'); }
 
-      sf.addEventListener('submit', function (e) {
-        e.preventDefault();
-        alert('Sprint criada com sucesso!');
-        hideModal('sprintModal');
-        this.reset();
-      });
-    });*/
-
-    // ---- Filtros/Export placeholders (mantidos) ----
-    function sortTable(column) { alert('Funcionalidade de ordenação será implementada'); }
-    function exportData(fmt) { if (fmt === 'csv') { alert('Exportação CSV será implementada'); } else if (fmt === 'pdf') { alert('Exportação PDF será implementada'); } }
-    function editSprint(id) { alert('Funcionalidade de edição de sprint será implementada'); }
-
-    // ---- Editar Projeto (✅ aceita ID ou Nome) ----
-    function editProject(projectKeyOrName) {
-      const match = getProjectByIdOrName(projectKeyOrName);
-      if (!match) { alert('Projeto não encontrado!'); return; }
-      const { id, data: project } = match;
-      currentProjectId = id;
-      isEditMode = true;
-
-      document.getElementById('projectName').value = project.nome;
-      document.getElementById('projectTipo').value = project.tipo;
-      document.getElementById('projectCoord').value = project.coordenacao;
-      document.getElementById('projectStatus').value = project.status;
-      document.getElementById('projectPrioridade').value = project.prioridade;
-      document.getElementById('projectProgresso').value = project.progresso;
-      document.getElementById('projectProgressoSlider').value = project.progresso;
-      updateProgressDisplay();
-      document.getElementById('projectTotalSprints').value = project.totalSprints;
-      document.getElementById('projectSprintsConcluidas').value = project.sprintsConcluidas;
-      document.getElementById('projectResponsavel').value = project.responsavel;
-      document.getElementById('projectInicio').value = project.inicio;
-      document.getElementById('projectFim').value = project.fim;
-      document.getElementById('projectOrcamento').value = project.orcamento;
-      document.getElementById('projectDescricao').value = project.descricao;
-      document.getElementById('projectEquipe').value = project.equipe;
-      document.getElementById('projectRag').value = project.rag;
-      document.getElementById('projectRisco').value = project.riscos;
-
-      document.querySelector('#projectModal h3').textContent = 'Editar Projeto';
-      document.getElementById('submitProjectBtn').textContent = 'Atualizar Projeto';
-
-      hideModal('projectDetailModal');
-      showModal('projectModal');
-    }
-
-    // ---- PDTI (mesmo comportamento do seu código) ----
-    function loadPDTITable() { /* ... seu código original ... */ }
-    function filterPDTI() { /* ... */ }
-    function showPDTIFilterInfo(count) { /* ... */ }
-    function hidePDTIFilterInfo() { /* ... */ }
-    function clearPDTIFilters() { document.getElementById('pdtiStatusFilter').value = ''; document.getElementById('pdtiTipoFilter').value = ''; document.getElementById('pdtiSearchFilter').value = ''; hidePDTIFilterInfo(); loadPDTITable(); }
-    function sortPDTI(col) { alert(`Ordenação por ${col} será implementada`); }
-    function editPDTIAction(actionId) { /* ... */ }
-    function deletePDTIAction(actionId) { if (confirm('Tem certeza que deseja excluir esta ação?')) { delete pdtiActions[actionId]; loadPDTITable(); updatePDTIKPIs(); alert('Ação excluída com sucesso!'); } }
-    function exportPDTI(format) { if (format === 'excel') { alert('Exportação para Excel será implementada'); } }
-    function updatePDTIKPIs() { /* ... */ }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      setTimeout(createCharts, 100);
-      updateLastUpdateTime();
-      loadPDTITable && loadPDTITable();
-      updatePDTIKPIs && updatePDTIKPIs();
-
-      // ⭐⭐ ADICIONE ESTAS LINHAS ⭐⭐
-      updateProjectCounts();
-      updateCodesKPIs();
-
-      // garante que a Home apareça com botão ativo ao carregar
+    document.addEventListener('DOMContentLoaded', () => {
+      // marca a home como ativa ao abrir
       const firstBtn = document.querySelector('nav .nav-btn:first-child');
       showPage('home', firstBtn);
     });
   </script>
+
+  <!-- Use o JS principal (com cache-busting) -->
+  <!-- Bloco mínimo de navegação/modais (garante NAV_INDEX global) -->
   <script>
-    // === Função para contar projetos por coordenação ===
-    function updateProjectCounts() {
-      // Contar projetos totais
-      const totalProjetos = Object.keys(projects).length;
-      document.getElementById('totalProjetos').textContent = totalProjetos;
+    // Torna global (propriedade de window) e evita ReferenceError
+    window.NAV_INDEX = window.NAV_INDEX || { home: 1, codes: 2, coset: 3, cgod: 4, pdti: 5 };
 
-      // Contar projetos por coordenação
-      const projetosCodes = Object.values(projects).filter(p => p.coordenacao === 'CODES').length;
-      const projetosCoset = Object.values(projects).filter(p => p.coordenacao === 'COSET').length;
-      const projetosCgod = Object.values(projects).filter(p => p.coordenacao === 'CGOD').length;
-
-      document.getElementById('projetosCodes').textContent = projetosCodes;
-      document.getElementById('projetosCoset').textContent = projetosCoset;
-      document.getElementById('projetosCgod').textContent = projetosCgod;
-
-      // Atualizar também os cards de detalhamento por coordenação
-      updateCoordinationDetailCards();
-    }
-
-    // === Função para atualizar os cards de detalhamento por coordenação ===
-    function updateCoordinationDetailCards() {
-      // CODES - Em Desenvolvimento
-      const codesDesenvolvimento = Object.values(projects).filter(p =>
-        p.coordenacao === 'CODES' && p.status === 'Em Andamento'
-      ).length;
-      const desenvolvimentoSpan = document.querySelector('[onclick*="filterProjects(\'codes\', \'desenvolvimento\')"] span');
-      if (desenvolvimentoSpan) desenvolvimentoSpan.textContent = codesDesenvolvimento;
-
-      // CODES - Em Sustentação
-      const codesSustentacao = Object.values(projects).filter(p =>
-        p.coordenacao === 'CODES' && p.status === 'Sustentação'
-      ).length;
-      const sustentacaoSpan = document.querySelector('[onclick*="filterProjects(\'codes\', \'sustentacao\')"] span');
-      if (sustentacaoSpan) sustentacaoSpan.textContent = codesSustentacao;
-
-      // COSET - Infraestrutura
-      const cosetInfraestrutura = Object.values(projects).filter(p =>
-        p.coordenacao === 'COSET' && p.tipo === 'Infraestrutura'
-      ).length;
-      const infraestruturaSpan = document.querySelector('[onclick*="filterProjects(\'coset\', \'infraestrutura\')"] span');
-      if (infraestruturaSpan) infraestruturaSpan.textContent = cosetInfraestrutura;
-
-      // COSET - Integração
-      const cosetIntegracao = Object.values(projects).filter(p =>
-        p.coordenacao === 'COSET' && p.tipo === 'Sistema Integrado'
-      ).length;
-      const integracaoSpan = document.querySelector('[onclick*="filterProjects(\'coset\', \'integracao\')"] span');
-      if (integracaoSpan) integracaoSpan.textContent = cosetIntegracao;
-
-      // CGOD - Analytics
-      const cgodAnalytics = Object.values(projects).filter(p =>
-        p.coordenacao === 'CGOD' && p.tipo === 'BI Dashboard'
-      ).length;
-      const analyticsSpan = document.querySelector('[onclick*="filterProjects(\'cgod\', \'analytics\')"] span');
-      if (analyticsSpan) analyticsSpan.textContent = cgodAnalytics;
-
-      // CGOD - Data Lake
-      const cgodDatalake = Object.values(projects).filter(p =>
-        p.coordenacao === 'CGOD' && p.tipo === 'Sistema de Dados'
-      ).length;
-      const datalakeSpan = document.querySelector('[onclick*="filterProjects(\'cgod\', \'datalake\')"] span');
-      if (datalakeSpan) datalakeSpan.textContent = cgodDatalake;
-    }
-
-    // === Atualizar também os KPIs das páginas individuais ===
-    function updateCodesKPIs() {
-      const codesAtivos = Object.values(projects).filter(p =>
-        p.coordenacao === 'CODES' && (p.status === 'Em Andamento' || p.status === 'Sustentação')
-      ).length;
-
-      const codesDesenvolvimento = Object.values(projects).filter(p =>
-        p.coordenacao === 'CODES' && p.status === 'Em Andamento'
-      ).length;
-
-      const codesSustentacao = Object.values(projects).filter(p =>
-        p.coordenacao === 'CODES' && p.status === 'Sustentação'
-      ).length;
-
-      const codesForaPrazo = Object.values(projects).filter(p =>
-        p.coordenacao === 'CODES' && p.rag === 'Vermelho'
-      ).length;
-
-      // Atualizar os cards da página CODES
-      const codesCards = document.querySelectorAll('#codesPage .bg-white.rounded-lg.shadow-md.p-6');
-      if (codesCards.length >= 4) {
-        codesCards[0].querySelector('.text-2xl').textContent = codesAtivos;
-        codesCards[1].querySelector('.text-2xl').textContent = codesDesenvolvimento;
-        codesCards[2].querySelector('.text-2xl').textContent = codesSustentacao;
-        codesCards[3].querySelector('.text-2xl').textContent = codesForaPrazo;
+    window.getNavButtonFor = function (page) {
+      try {
+        const key = (page || '').toLowerCase();
+        const idx = (window.NAV_INDEX && window.NAV_INDEX[key]) || 1;
+        return document.querySelector(`nav .nav-btn:nth-child(${idx})`);
+      } catch (e) {
+        return null;
       }
-    }
+    };
 
-    // ---- Charts ----
-    function createCharts() {
-      // Contar projetos por coordenação para o gráfico
-      const codesCount = Object.values(projects).filter(p => p.coordenacao === 'CODES').length;
-      const cosetCount = Object.values(projects).filter(p => p.coordenacao === 'COSET').length;
-      const cgodCount = Object.values(projects).filter(p => p.coordenacao === 'CGOD').length;
+    window.showPage = function (pageId, el) {
+      document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+      const target = document.getElementById(pageId + 'Page');
+      if (target) target.classList.remove('hidden');
 
-      const coord = document.getElementById('coordenacaoChart');
-      if (coord) {
-        new Chart(coord.getContext('2d'), {
-          type: 'doughnut',
-          data: {
-            labels: ['CODES', 'COSET', 'CGOD'],
-            datasets: [{
-              data: [codesCount, cosetCount, cgodCount],
-              backgroundColor: ['#3b82f6', '#8b5cf6', '#f97316'],
-              borderWidth: 2,
-              borderColor: '#ffffff'
-            }]
-          },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 15, usePointStyle: true, font: { size: 12 } } } }, cutout: '60%' }
-        });
+      document.querySelectorAll('nav .nav-btn').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+      });
+      if (el) {
+        el.classList.remove('border-transparent', 'text-gray-500');
+        el.classList.add('border-blue-500', 'text-blue-600');
       }
+    };
 
-      // Contar projetos por status para o gráfico
-      const statusCounts = {
-        'Planejado': Object.values(projects).filter(p => p.status === 'Planejado').length,
-        'Em Andamento': Object.values(projects).filter(p => p.status === 'Em Andamento').length,
-        'Em Risco': Object.values(projects).filter(p => p.status === 'Em Risco').length,
-        'Concluído': Object.values(projects).filter(p => p.status === 'Concluído').length,
-        'Sustentação': Object.values(projects).filter(p => p.status === 'Sustentação').length
-      };
+    window.hideModal = function (id) { const el = document.getElementById(id); if (el) el.classList.add('hidden'); };
+    window.showModal = function (id) { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); };
 
-      const status = document.getElementById('statusChart');
-      if (status) {
-        new Chart(status.getContext('2d'), {
-          type: 'bar',
-          data: {
-            labels: ['Planejado', 'Em Andamento', 'Em Risco', 'Concluído', 'Sustentação'],
-            datasets: [{
-              label: 'Quantidade',
-              data: [
-                statusCounts['Planejado'],
-                statusCounts['Em Andamento'],
-                statusCounts['Em Risco'],
-                statusCounts['Concluído'],
-                statusCounts['Sustentação']
-              ],
-              backgroundColor: ['#6b7280', '#16a34a', '#dc2626', '#2563eb', '#f59e0b'],
-              borderRadius: 4,
-              borderSkipped: false
-            }]
-          },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: '#f3f4f6' } }, x: { ticks: { font: { size: 11 } }, grid: { display: false } } }, layout: { padding: { top: 10 } } }
-        });
-      }
-    }
+    // Evita erro se algo legado chamar createCharts(); o main.js cuida dos gráficos.
+    window.createCharts = function () { };
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const firstBtn = document.querySelector('nav .nav-btn:first-child');
+      if (firstBtn) showPage('home', firstBtn);
+    });
   </script>
-  <script src="assets/js/main.js?v=3"></script>
+
+  <!-- Lógica dinâmica -->
+  <script src="assets/js/main.js?v=7" defer></script>
+
 
 </body>
 

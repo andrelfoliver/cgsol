@@ -1,149 +1,538 @@
-document.addEventListener('DOMContentLoaded', () => {
-  loadRecentProjects();
+/**
+ * main.js — versão conectada ao backend (sem mocks)
+ * - Lista projetos na Home e nas páginas CODES/COSET/CGOD
+ * - KPIs/Gráficos dinâmicos
+ * - Filtros dos cards funcionando (CODES/COSET/CGOD)
+ * - Criação/Edição via POST/PUT no backend
+ * - Exclusão via DELETE (botão 🗑️)
+ */
+(function () {
+  const API = 'http://localhost:5000/api/projetos';
 
-  const createForm = document.getElementById('projectForm');
-  if (createForm) createForm.addEventListener('submit', handleCreateOrUpdate);
-});
+  let cacheProjetos = [];
+  let chartCoordenacao = null;
+  let chartStatus = null;
 
-let cacheProjetos = [];
+  // ========= Boot =========
+  onReady(async () => {
+    const form = document.getElementById('projectForm');
+    if (form) form.addEventListener('submit', handleCreateOrUpdate);
 
-// ===== LISTAR NA TABELA "Projetos Recentes" =====
-async function loadRecentProjects() {
-  try {
-    const res = await fetch('http://localhost:5000/api/projetos');
-    if (!res.ok) throw new Error('Falha ao carregar projetos');
-    const projetos = await res.json();
-    cacheProjetos = projetos;
+    await loadProjetos();
 
-    const tbody = document.getElementById('projectsTableBody');
+    // expõe funções para os onclick do HTML
+    window.filterProjects = filterProjects;
+    window.showProjectDetail = showProjectDetail;
+    window.editProject = editProject;
+    window.handleCreateOrUpdate = handleCreateOrUpdate;
+    window.deleteProject = deleteProject;
+  });
+
+  function onReady(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else {
+      fn();
+    }
+  }
+
+  // ========= Carregamento =========
+  async function loadProjetos() {
+    try {
+      const res = await fetch(API);
+      if (!res.ok) throw new Error(`Falha ao carregar projetos (${res.status})`);
+      const projetos = await res.json();
+      cacheProjetos = Array.isArray(projetos) ? projetos : [];
+
+      renderRecentTable(cacheProjetos);
+      renderAllCoordTables(cacheProjetos);
+      updateKPIs(cacheProjetos);
+      drawCharts(cacheProjetos);
+      updateLastUpdateTime();
+    } catch (err) {
+      console.error(err);
+      toast('Erro ao carregar projetos: ' + err.message);
+    }
+  }
+
+  // ========= Tabela Recentes (Home) =========
+  function renderRecentTable(list) {
+    const tbody = byId('projectsTableBody');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
-    if (!projetos.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">
-        Nenhum projeto cadastrado.
-      </td></tr>`;
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto cadastrado.</td></tr>`;
       return;
     }
 
-    projetos.forEach(p => {
+    list.forEach(p => {
+      const idArg = js(p.id ?? p.nome); // seguro para onclick
       tbody.insertAdjacentHTML('beforeend', `
         <tr>
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm font-medium text-gray-900">${p.nome || '-'}</div>
+            <div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">${p.coordenacao || '-'}</div>
+            <div class="text-sm text-gray-900">${escapeHtml(p.coordenacao) || '-'}</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">
-              ${p.status || '-'}
+              ${escapeHtml(p.status) || '-'}
             </span>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">
-              ${p.rag || '—'}
+              ${escapeHtml(p.rag) || '—'}
             </span>
           </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.responsavel || '—'}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail('${p.id}')">👁️ Ver</button>
-            <button class="text-green-600 hover:text-green-900" onclick="editProject(${p.id})">✏️ Editar</button>
+            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail(${idArg})">👁️ Ver</button>
+            <button class="text-green-600 hover:text-green-900 mr-3" onclick="editProject(${idArg})">✏️ Editar</button>
+            <button class="text-red-600 hover:text-red-900" onclick="deleteProject(${idArg})">🗑️ Excluir</button>
           </td>
         </tr>
       `);
     });
-  } catch (err) {
-    alert('Erro ao carregar projetos: ' + err.message);
-    console.error(err);
   }
-}
 
-function statusBadgeClass(status) {
-  switch (status) {
-    case 'Em Andamento': return 'bg-green-100 text-green-800';
-    case 'Em Risco': return 'bg-red-100 text-red-800';
-    case 'Concluído': return 'bg-blue-100 text-blue-800';
-    case 'Sustentação': return 'bg-yellow-100 text-yellow-800';
-    case 'Planejado': return 'bg-gray-100 text-gray-800';
-    default: return 'bg-gray-100 text-gray-800';
+  // ========= Tabelas por coordenação =========
+  function renderAllCoordTables(list) {
+    renderCoordTable('CODES', 'codesTableBody', list);
+    renderCoordTable('COSET', 'cosetTableBody', list);
+    renderCoordTable('CGOD', 'cgodTableBody', list);
   }
-}
-function ragClass(rag) {
-  switch (rag) {
-    case 'Verde': return 'rag-verde';
-    case 'Amarelo': return 'rag-amarelo';
-    case 'Vermelho': return 'rag-vermelho';
-    default: return 'rag-verde';
-  }
-}
 
-// ===== ABRIR MODAL PARA EDITAR (usa o MESMO form do "Novo Projeto") =====
-function editProject(id) {
-  const p = cacheProjetos.find(x => String(x.id) === String(id));
-  if (!p) return alert('Projeto não encontrado');
+  function renderCoordTable(coord, tbodyId, list) {
+    const tbody = byId(tbodyId);
+    if (!tbody) return;
+    tbody.innerHTML = '';
 
-  const form = document.getElementById('projectForm');
-  form.dataset.id = p.id; // marca que é edição
+    const rows = list.filter(p => (p.coordenacao || '').toUpperCase() === coord);
+    const emptyMsg = `<tr><td colspan="${tbodyId === 'codesTableBody' ? 7 : 6}" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto encontrado.</td></tr>`;
+    if (!rows.length) { tbody.innerHTML = emptyMsg; return; }
 
-  document.getElementById('projectName').value = p.nome || '';
-  document.getElementById('projectTipo').value = p.tipo || '';
-  document.getElementById('projectCoord').value = p.coordenacao || '';
-  document.getElementById('projectStatus').value = p.status || '';
-  document.getElementById('projectDescricao').value = p.descricao || '';
-  document.getElementById('projectInicio').value = p.inicio || '';
-  document.getElementById('projectFim').value = p.fim || '';
+    rows.forEach(p => {
+      const progresso = (p.progresso != null) ? Number(p.progresso) : null;
+      const sprints = (p.sprints != null) ? String(p.sprints)
+        : (p.sprintsConcluidas != null && p.totalSprints != null ? `${p.sprintsConcluidas} de ${p.totalSprints}` : '—');
 
-  document.querySelector('#projectModal h3').textContent = 'Editar Projeto';
-  document.getElementById('submitProjectBtn').textContent = 'Atualizar Projeto';
-  document.getElementById('projectModal').classList.remove('hidden');
-}
+      const idArg = js(p.id ?? p.nome); // seguro para onclick
 
-// ===== CRIAR / ATUALIZAR (POST/PUT no mesmo handler) =====
-async function handleCreateOrUpdate(e) {
-  e.preventDefault();
-  // Se ainda houver algum outro listener no HTML, isto garante que só este rode:
-  e.stopImmediatePropagation();
-
-  const form = e.target;
-  const id = form.dataset.id; // se existir, é edição
-  const dados = {
-    nome: document.getElementById('projectName').value,
-    tipo: document.getElementById('projectTipo').value,
-    coordenacao: document.getElementById('projectCoord').value,
-    status: document.getElementById('projectStatus').value,
-    descricao: document.getElementById('projectDescricao').value,
-    inicio: document.getElementById('projectInicio').value,
-    fim: document.getElementById('projectFim').value
-  };
-
-  try {
-    const url = id
-      ? `http://localhost:5000/api/projetos/${id}`
-      : 'http://localhost:5000/api/projetos';
-    const method = id ? 'PUT' : 'POST';
-
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dados)
+      if (tbodyId === 'codesTableBody') {
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div></td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="h-2 rounded-full bg-blue-600" style="width:${progresso != null ? progresso : 0}%"></div>
+                </div>
+                <span class="text-sm text-gray-900">${progresso != null ? progresso + '%' : '—'}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sprints}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
+              <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
+              <button onclick="deleteProject(${idArg})" class="text-red-600 hover:text-red-900">🗑️ Excluir</button>
+            </td>
+          </tr>
+        `);
+      } else {
+        // COSET / CGOD
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div></td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="h-2 rounded-full bg-blue-600" style="width:${progresso != null ? progresso : 0}%"></div>
+                </div>
+                <span class="text-sm text-gray-900">${progresso != null ? progresso + '%' : '—'}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
+              <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
+              <button onclick="deleteProject(${idArg})" class="text-red-600 hover:text-red-900">🗑️ Excluir</button>
+            </td>
+          </tr>
+        `);
+      }
     });
+  }
 
-    if (!res.ok) {
-      const erro = await res.json().catch(() => ({}));
-      throw new Error(erro.erro || 'Erro ao salvar projeto');
+  // ========= KPIs / Contadores =========
+  function updateKPIs(list) {
+    const countBy = (prop, val) => list.filter(p => (p[prop] || '').toUpperCase() === String(val).toUpperCase()).length;
+
+    // totais
+    setText('totalProjetos', list.length);
+
+    // por coordenação (Home)
+    setText('projetosCodes', countBy('coordenacao', 'CODES'));
+    setText('projetosCoset', countBy('coordenacao', 'COSET'));
+    setText('projetosCgod', countBy('coordenacao', 'CGOD'));
+
+    // cards por coordenação (Home)
+    setCardCount("codes", "desenvolvimento", list.filter(p => p.coordenacao === 'CODES' && p.status === 'Em Andamento').length);
+    setCardCount("codes", "sustentacao", list.filter(p => p.coordenacao === 'CODES' && p.status === 'Sustentação').length);
+    setCardCount("coset", "infraestrutura", list.filter(p => p.coordenacao === 'COSET' && p.tipo === 'Infraestrutura').length);
+    setCardCount("coset", "integracao", list.filter(p => p.coordenacao === 'COSET' && (p.tipo === 'Sistema Integrado' || p.tipo === 'Integração')).length);
+    setCardCount("cgod", "analytics", list.filter(p => p.coordenacao === 'CGOD' && (p.tipo === 'BI Dashboard' || p.tipo === 'Dashboard')).length);
+    setCardCount("cgod", "datalake", list.filter(p => p.coordenacao === 'CGOD' && p.tipo === 'Sistema de Dados').length);
+  }
+
+  // ========= Gráficos =========
+  function drawCharts(list) {
+    const codes = list.filter(p => p.coordenacao === 'CODES').length;
+    const coset = list.filter(p => p.coordenacao === 'COSET').length;
+    const cgod = list.filter(p => p.coordenacao === 'CGOD').length;
+
+    const st = (s) => list.filter(p => p.status === s).length;
+    const statusData = {
+      'Planejado': st('Planejado'),
+      'Em Andamento': st('Em Andamento'),
+      'Em Risco': st('Em Risco'),
+      'Concluído': st('Concluído'),
+      'Sustentação': st('Sustentação')
+    };
+
+    if (chartCoordenacao) { chartCoordenacao.destroy(); chartCoordenacao = null; }
+    if (chartStatus) { chartStatus.destroy(); chartStatus = null; }
+
+    const coordCanvas = byId('coordenacaoChart');
+    if (coordCanvas && window.Chart) {
+      chartCoordenacao = new Chart(coordCanvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: ['CODES', 'COSET', 'CGOD'],
+          datasets: [{
+            data: [codes, coset, cgod],
+            backgroundColor: ['#3b82f6', '#8b5cf6', '#f97316'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } },
+          cutout: '60%'
+        }
+      });
     }
 
-    // sucesso
-    delete form.dataset.id;
-    document.querySelector('#projectModal h3').textContent = 'Novo Projeto';
-    document.getElementById('submitProjectBtn').textContent = 'Salvar Projeto';
-    form.reset();
-    document.getElementById('projectModal').classList.add('hidden');
-
-    await loadRecentProjects();
-    alert(id ? 'Projeto atualizado com sucesso!' : 'Projeto cadastrado com sucesso!');
-  } catch (err) {
-    alert('Erro ao salvar projeto: ' + err.message);
-    console.error(err);
+    const statusCanvas = byId('statusChart');
+    if (statusCanvas && window.Chart) {
+      chartStatus = new Chart(statusCanvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ['Planejado', 'Em Andamento', 'Em Risco', 'Concluído', 'Sustentação'],
+          datasets: [{
+            label: 'Quantidade',
+            data: [
+              statusData['Planejado'],
+              statusData['Em Andamento'],
+              statusData['Em Risco'],
+              statusData['Concluído'],
+              statusData['Sustentação']
+            ],
+            backgroundColor: ['#6b7280', '#16a34a', '#dc2626', '#2563eb', '#f59e0b'],
+            borderRadius: 4,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
   }
-}
+
+  // ========= Filtros (cards) =========
+  function filterProjects(coordenacao, categoria) {
+    const navBtnGetter = window.getNavButtonFor;
+    const showPageFn = window.showPage;
+    const pageKey = (coordenacao || '').toLowerCase();
+    if (typeof navBtnGetter === 'function') {
+      const btn = navBtnGetter(pageKey);
+      if (btn) btn.click();
+    } else if (typeof showPageFn === 'function') {
+      showPageFn(pageKey);
+    }
+
+    const coord = (coordenacao || '').toUpperCase();
+    const cat = (categoria || '').toLowerCase();
+
+    let filtered = cacheProjetos.filter(p => (p.coordenacao || '').toUpperCase() === coord);
+
+    if (coord === 'CODES') {
+      if (cat === 'ativos') filtered = filtered.filter(p => ['Em Andamento', 'Sustentação'].includes(p.status));
+      if (cat === 'desenvolvimento') filtered = filtered.filter(p => p.status === 'Em Andamento');
+      if (cat === 'sustentacao') filtered = filtered.filter(p => p.status === 'Sustentação');
+      if (cat === 'fora-prazo') filtered = filtered.filter(p => p.rag === 'Vermelho' || p.status === 'Em Risco');
+    }
+    if (coord === 'COSET') {
+      if (cat === 'infraestrutura') filtered = filtered.filter(p => p.tipo === 'Infraestrutura');
+      if (cat === 'integracao') filtered = filtered.filter(p => p.tipo === 'Sistema Integrado' || p.tipo === 'Integração');
+      if (cat === 'modernizacao') filtered = filtered; // ajuste conforme backend
+      if (cat === 'sistemas-integrados') filtered = filtered.filter(p => p.tipo === 'Sistema Integrado');
+    }
+    if (coord === 'CGOD') {
+      if (cat === 'analytics') filtered = filtered.filter(p => p.tipo === 'BI Dashboard' || p.tipo === 'Dashboard');
+      if (cat === 'catalogos') filtered = filtered.filter(p => p.tipo === 'Sistema de Dados' || /cat[aá]logo/i.test(p.nome || ''));
+      if (cat === 'datalake') filtered = filtered.filter(p => p.tipo === 'Sistema de Dados');
+    }
+
+    const map = { CODES: 'codesTableBody', COSET: 'cosetTableBody', CGOD: 'cgodTableBody' };
+    renderCoordTable(coord, map[coord], filtered);
+  }
+
+  // ========= Detalhe / Edição =========
+  function showProjectDetail(idOrName) {
+    const p = findProjeto(idOrName);
+    if (!p) return toast('Projeto não encontrado');
+
+    setText('detailProjectName', p.nome || '—');
+    setText('detailProjectType', `${p.tipo || '—'} • ${p.coordenacao || '—'}`);
+
+    const ragEl = byId('detailRagStatus');
+    if (ragEl) {
+      ragEl.textContent = p.rag || '—';
+      ragEl.className = `w-full h-8 rounded flex items-center justify-center text-white font-medium ${ragClass(p.rag)}`;
+    }
+    setText('detailPrioridade', p.prioridade || '—');
+
+    const prog = (p.progresso != null) ? Number(p.progresso) : null;
+    const progBar = byId('detailProgress');
+    const progTxt = byId('detailProgressText');
+    if (progBar) progBar.style.width = (prog != null ? prog : 0) + '%';
+    if (progTxt) progTxt.textContent = (prog != null ? prog + '%' : '—');
+
+    setText('detailSprints', (p.sprintsConcluidas != null && p.totalSprints != null) ? `${p.sprintsConcluidas} de ${p.totalSprints}` : '—');
+    setText('detailCoordenacao', p.coordenacao || '—');
+    setText('detailResponsavel', p.responsavel || '—');
+    setText('detailStatus', p.status || '—');
+    setText('detailInicio', formatDate(p.inicio));
+    setText('detailFim', formatDate(p.fim));
+    setText('detailDescricao', p.descricao || '—');
+    setText('detailOrcamento', formatCurrency(p.orcamento));
+
+    const equipeEl = byId('detailEquipe');
+    if (equipeEl) {
+      equipeEl.innerHTML = '';
+      if (p.equipe) {
+        p.equipe.split(',').map(s => s.trim()).forEach(m => {
+          const div = document.createElement('div');
+          div.className = 'flex items-center';
+          div.innerHTML = `<span class="w-2 h-2 rounded-full mr-2"></span><span>${escapeHtml(m)}</span>`;
+          equipeEl.appendChild(div);
+        });
+      }
+    }
+
+    window.showModal && window.showModal('projectDetailModal');
+  }
+
+  function editProject(idOrName) {
+    const p = findProjeto(idOrName);
+    if (!p) return toast('Projeto não encontrado');
+
+    const form = byId('projectForm');
+    if (!form) return;
+
+    form.dataset.id = p.id; // marca edição
+
+    setValue('projectName', p.nome);
+    setValue('projectTipo', p.tipo);
+    setValue('projectCoord', p.coordenacao);
+    setValue('projectStatus', p.status);
+    setValue('projectPrioridade', p.prioridade);
+    setValue('projectProgresso', p.progresso);
+    setValue('projectTotalSprints', p.totalSprints);
+    setValue('projectSprintsConcluidas', p.sprintsConcluidas);
+    setValue('projectResponsavel', p.responsavel);
+    setValue('projectInicio', p.inicio);
+    setValue('projectFim', p.fim);
+    setValue('projectOrcamento', p.orcamento);
+    setValue('projectDescricao', p.descricao);
+    setValue('projectEquipe', p.equipe);
+    setValue('projectRag', p.rag);
+    setValue('projectRisco', p.riscos);
+
+    const h = document.querySelector('#projectModal h3');
+    if (h) h.textContent = 'Editar Projeto';
+    const btn = byId('submitProjectBtn');
+    if (btn) btn.textContent = 'Atualizar Projeto';
+
+    const modal = byId('projectModal');
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  // ========= Create / Update =========
+  async function handleCreateOrUpdate(e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    const form = e.target;
+    const id = form.dataset.id;
+
+    const dados = {
+      nome: getValue('projectName'),
+      tipo: getValue('projectTipo'),
+      coordenacao: getValue('projectCoord'),
+      status: getValue('projectStatus'),
+      prioridade: getValue('projectPrioridade'),
+      progresso: numOrNull(getValue('projectProgresso')),
+      totalSprints: numOrNull(getValue('projectTotalSprints')),
+      sprintsConcluidas: numOrNull(getValue('projectSprintsConcluidas')),
+      responsavel: getValue('projectResponsavel'),
+      inicio: getValue('projectInicio'),
+      fim: getValue('projectFim'),
+      orcamento: numOrNull(getValue('projectOrcamento')),
+      descricao: getValue('projectDescricao'),
+      equipe: getValue('projectEquipe'),
+      rag: getValue('projectRag'),
+      riscos: getValue('projectRisco')
+    };
+
+    try {
+      const url = id ? `${API}/${id}` : API;
+      const method = id ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      });
+
+      if (!res.ok) {
+        const erro = await res.json().catch(() => ({}));
+        throw new Error(erro.erro || `Erro ao salvar projeto (${res.status})`);
+      }
+
+      // sucesso
+      delete form.dataset.id;
+      const h = document.querySelector('#projectModal h3');
+      if (h) h.textContent = 'Novo Projeto';
+      const btn = byId('submitProjectBtn');
+      if (btn) btn.textContent = 'Salvar Projeto';
+      form.reset();
+      const modal = byId('projectModal');
+      if (modal) modal.classList.add('hidden');
+
+      await loadProjetos();
+      toast(id ? 'Projeto atualizado com sucesso!' : 'Projeto cadastrado com sucesso!');
+    } catch (err) {
+      console.error(err);
+      toast('Erro ao salvar projeto: ' + err.message);
+    }
+  }
+
+  // ========= Excluir Projeto =========
+  async function deleteProject(idOrName) {
+    const p = findProjeto(idOrName);
+    if (!p || !p.id) {
+      return toast('Não foi possível identificar o ID do projeto para excluir.');
+    }
+
+    const ok = confirm(`Excluir o projeto "${p.nome}"? Esta ação não pode ser desfeita.`);
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`${API}/${p.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const erro = await res.json().catch(() => ({}));
+        throw new Error(erro.erro || `Erro ao excluir (${res.status})`);
+      }
+
+      toast('Projeto excluído com sucesso!');
+      await loadProjetos();
+    } catch (err) {
+      console.error(err);
+      toast('Erro ao excluir: ' + err.message);
+    }
+  }
+
+  // ========= Helpers =========
+  function byId(id) { return document.getElementById(id); }
+  function setText(id, v) { const el = byId(id); if (el) el.textContent = (v ?? '—'); }
+  function setValue(id, v) { const el = byId(id); if (el != null) el.value = (v ?? ''); }
+  function getValue(id) { const el = byId(id); return el ? el.value : ''; }
+  function numOrNull(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
+  function js(v) { return JSON.stringify(v); } // para usar em onclick com segurança
+
+  function findProjeto(idOrName) {
+    return cacheProjetos.find(p => String(p.id) === String(idOrName)) ||
+      cacheProjetos.find(p => (p.nome || '') === idOrName);
+  }
+
+  function statusBadgeClass(status) {
+    switch (status) {
+      case 'Em Andamento': return 'bg-green-100 text-green-800';
+      case 'Em Risco': return 'bg-red-100 text-red-800';
+      case 'Concluído': return 'bg-blue-100 text-blue-800';
+      case 'Sustentação': return 'bg-yellow-100 text-yellow-800';
+      case 'Planejado': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  }
+  function ragClass(rag) {
+    switch (rag) {
+      case 'Verde': return 'rag-verde';
+      case 'Amarelo': return 'rag-amarelo';
+      case 'Vermelho': return 'rag-vermelho';
+      default: return 'rag-verde';
+    }
+  }
+  function formatDate(s) {
+    if (!s) return '—';
+    const d = new Date(s);
+    return isNaN(d) ? '—' : d.toLocaleDateString('pt-BR');
+  }
+  function formatCurrency(v) {
+    if (v == null) return '—';
+    try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v); }
+    catch { return String(v); }
+  }
+  function updateLastUpdateTime() {
+    const now = new Date();
+    document.querySelectorAll('#lastUpdate').forEach(el => {
+      el.textContent = `Hoje, ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    });
+  }
+  function setCardCount(coordKey, cat, value) {
+    const container = document.querySelector(
+      `[onclick*="filterProjects('${coordKey}', '${cat}')"]`
+    );
+    if (!container) return;
+    const countEl = container.querySelector('.font-bold');
+    if (countEl) countEl.textContent = value;
+  }
+  function toast(msg) { alert(msg); }
+  function escapeHtml(s) {
+    if (s == null) return s;
+    return String(s).replace(/[&<>"']/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[ch]));
+  }
+})();
