@@ -1,50 +1,174 @@
 /**
- * main.js — versão conectada ao backend (sem mocks)
- * - Lista projetos na Home e nas páginas CODES/COSET/CGOD
- * - KPIs/Gráficos dinâmicos
- * - Filtros dos cards funcionando (CODES/COSET/CGOD)
- * - Criação/Edição via POST/PUT no backend (apenas campos suportados)
- * - Exclusão via DELETE (botão 🗑️)
- * - Atualiza TODOS os cards (Home + abas) após criar/editar/excluir
+ * SigSOL main.js — compatível com o backend atual
+ * Backend aceita APENAS estes campos:
+ *  - id, nome, tipo, coordenacao, status, descricao, inicio, fim
+ * Campos extras (prioridade, progresso, etc.) ficam no LocalStorage por ID/NOME.
  */
 (function () {
   const API = 'http://localhost:5000/api/projetos';
 
-  // Campos que o backend aceita (evita erros tipo "'prioridade' is an invalid keyword argument")
-  const BACKEND_FIELDS = ['nome', 'tipo', 'coordenacao', 'status', 'descricao', 'inicio', 'fim', 'responsavel'];
+  // Campos suportados pelo backend
+  const SUPPORTED_FIELDS = ['nome', 'tipo', 'coordenacao', 'status', 'descricao', 'inicio', 'fim'];
+
+  // Campos extras apenas no front
+  const EXTRA_FIELDS = [
+    'prioridade', 'progresso', 'totalSprints', 'sprintsConcluidas',
+    'responsavel', 'orcamento', 'equipe', 'rag', 'riscos'
+  ];
 
   let cacheProjetos = [];
   let chartCoordenacao = null;
   let chartStatus = null;
-  let kpiPatchedOnce = false;
 
-  function setFooterYear() {
-    const y = document.getElementById('footerYear');
-    if (y) y.textContent = new Date().getFullYear();
-  }
+  // Para POST que não retorna id
+  let pendingExtras = null;
+  let pendingKeyName = null;
 
   // ========= Boot =========
   onReady(async () => {
-    const form = document.getElementById('projectForm');
-    if (form) form.addEventListener('submit', handleCreateOrUpdate);
+    ensureCardIndexing();
 
+    const form = byId('projectForm');
+    if (form) {
+      relaxOptionalFields();
+      const coordSel = byId('projectCoord');
+      if (coordSel) {
+        coordSel.addEventListener('change', () => toggleFormByCoord(coordSel.value));
+        toggleFormByCoord(coordSel.value);
+      }
+      form.addEventListener('submit', handleCreateOrUpdate);
+    }
+
+    // torna globais helpers de modal de notificação
+    window.showNotify = showNotify;
+    window.hideNotify = hideNotify;
+
+    // carrega dados
     await loadProjetos();
-    setFooterYear();
 
-    // expõe funções para os onclick do HTML
+    // expõe funções para HTML
     window.filterProjects = filterProjects;
     window.showProjectDetail = showProjectDetail;
     window.editProject = editProject;
-    window.handleCreateOrUpdate = handleCreateOrUpdate;
     window.deleteProject = deleteProject;
+    window.openNewProject = openNewProject;
   });
 
   function onReady(fn) {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', fn, { once: true });
-    } else {
-      fn();
+    } else fn();
+  }
+
+  // ========= Helpers DOM/UTIL =========
+  function byId(id) { return document.getElementById(id); }
+  function setText(id, v) { const el = byId(id); if (el) el.textContent = (v ?? '—'); }
+  function setValue(id, v) { const el = byId(id); if (el != null) el.value = (v ?? ''); }
+  function getValue(id) { const el = byId(id); return el ? el.value : ''; }
+  function numOrNull(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
+  function js(v) { return JSON.stringify(v); }
+  function escapeHtml(s) { if (s == null) return s; return String(s).replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c])); }
+  function capitalize(s) { return String(s || '').replace(/^\w/, c => c.toUpperCase()); }
+  async function safeJsonOrNull(res) { try { return await res.json(); } catch { return null; } }
+
+  // ========= Modal de notificação =========
+  let notifyTimer = null;
+  function showNotify(title, message, type = 'info') {
+    const wrap = byId('notifyModal'); if (!wrap) return alert(message);
+    const bar = byId('notifyBar');
+    const icon = byId('notifyIcon');
+    const t = byId('notifyTitle');
+    const m = byId('notifyMessage');
+
+    const THEME = {
+      info: { bar: 'bg-blue-600', icon: 'ℹ️', title: title || 'Informação' },
+      success: { bar: 'bg-green-600', icon: '✅', title: title || 'Sucesso' },
+      warn: { bar: 'bg-yellow-500', icon: '⚠️', title: title || 'Atenção' },
+      error: { bar: 'bg-red-600', icon: '⛔', title: title || 'Erro' },
+    }[type] || { bar: 'bg-blue-600', icon: 'ℹ️', title: title || 'Aviso' };
+
+    // barra
+    bar.className = 'h-1 ' + THEME.bar;
+    // ícone
+    icon.textContent = THEME.icon;
+    // textos
+    t.textContent = THEME.title;
+    m.textContent = message || '';
+
+    wrap.classList.remove('hidden');
+
+    clearTimeout(notifyTimer);
+    notifyTimer = setTimeout(() => hideNotify(), 3500);
+  }
+  function hideNotify() {
+    const wrap = byId('notifyModal'); if (!wrap) return;
+    wrap.classList.add('hidden');
+  }
+
+  // ========= Formulário =========
+  function relaxOptionalFields() {
+    EXTRA_FIELDS.forEach(idSuffix => {
+      const el = byId('project' + capitalize(idSuffix));
+      if (el) el.removeAttribute('required');
+    });
+  }
+  function toggleFormByCoord(coord) {
+    // Sprints apenas para CODES
+    const showForCodes = coord === 'CODES';
+    toggleDiv('projectTotalSprints', showForCodes);
+    toggleDiv('projectSprintsConcluidas', showForCodes);
+  }
+  function toggleDiv(inputId, show) {
+    const el = byId(inputId);
+    if (!el) return;
+    const wrapper = el.closest('div');
+    if (wrapper) wrapper.style.display = show ? '' : 'none';
+  }
+
+  // ========= LocalStorage (extras por ID/NOME) =========
+  const lsKeyById = id => `sigsol:extras:${id}`;
+  const lsKeyByName = name => `sigsol:extrasByName:${(name || '').trim()}`;
+
+  function saveExtrasById(id, extras) { if (id == null) return; try { localStorage.setItem(lsKeyById(id), JSON.stringify(extras)); } catch { } }
+  function saveExtrasByName(name, extras) { if (!name) return; try { localStorage.setItem(lsKeyByName(name), JSON.stringify(extras)); } catch { } }
+
+  function saveExtrasForProject(project, extras) {
+    if (!project) return;
+    if (project.id != null) saveExtrasById(project.id, extras);
+    if (project.nome) saveExtrasByName(project.nome, extras); // mantém cópia por nome (fallback)
+  }
+
+  function loadExtrasForProject(project) {
+    if (!project) return null;
+    const byIdRaw = project.id != null ? localStorage.getItem(lsKeyById(project.id)) : null;
+    const byNameRaw = project.nome ? localStorage.getItem(lsKeyByName(project.nome)) : null;
+
+    const exId = byIdRaw ? safeParse(byIdRaw) : null;
+    const exName = byNameRaw ? safeParse(byNameRaw) : null;
+
+    // se achou por nome e temos id, migra para id
+    if (!exId && exName && project.id != null) {
+      saveExtrasById(project.id, exName);
+      // opcional: pode limpar por nome para evitar duplicidade
+      try { localStorage.removeItem(lsKeyByName(project.nome)); } catch { }
+      return exName;
     }
+    // se achou pelos dois, prioriza o ID
+    return exId || exName || null;
+  }
+  function safeParse(s) { try { return JSON.parse(s); } catch { return null; } }
+
+  // ========= Cards: indexa data-card =========
+  function ensureCardIndexing() {
+    document.querySelectorAll('[onclick^="filterProjects("]').forEach(el => {
+      const raw = el.getAttribute('onclick') || '';
+      const m = raw.match(/filterProjects\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)/i);
+      if (m) {
+        const coord = String(m[1] || '').toLowerCase();
+        const cat = String(m[2] || '').toLowerCase();
+        el.setAttribute('data-card', `${coord}:${cat}`);
+      }
+    });
   }
 
   // ========= Carregamento =========
@@ -55,8 +179,13 @@
       const projetos = await res.json();
       cacheProjetos = Array.isArray(projetos) ? projetos : [];
 
-      // garante que os cards possam ser encontrados (por onclick OU por rótulo)
-      patchKpiDataAttributes();
+      // aplica extras pendentes (POST sem id)
+      if (pendingExtras && pendingKeyName) {
+        const p = cacheProjetos.find(px => (px && px.nome) === pendingKeyName);
+        if (p) saveExtrasForProject(p, pendingExtras);
+        pendingExtras = null;
+        pendingKeyName = null;
+      }
 
       renderRecentTable(cacheProjetos);
       renderAllCoordTables(cacheProjetos);
@@ -65,42 +194,33 @@
       updateLastUpdateTime();
     } catch (err) {
       console.error(err);
-      toast('Erro ao carregar projetos: ' + err.message);
+      showNotify('Erro', 'Erro ao carregar projetos: ' + err.message, 'error');
     }
   }
 
-  // ========= Tabela Recentes (Home) =========
+  // ========= Tabelas =========
   function renderRecentTable(list) {
     const tbody = byId('projectsTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
-
     if (!list.length) {
       tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto cadastrado.</td></tr>`;
       return;
     }
-
     list.forEach(p => {
-      const idArg = js(p.id ?? p.nome); // seguro para onclick
+      const extras = loadExtrasForProject(p) || {};
+      const idArg = js(p.id ?? p.nome);
       tbody.insertAdjacentHTML('beforeend', `
         <tr>
+          <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div></td>
+          <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${escapeHtml(p.coordenacao) || '-'}</div></td>
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div>
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">${escapeHtml(p.coordenacao) || '-'}</div>
+            <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(extras.rag)}">${escapeHtml(extras.rag) || '—'}</span>
           </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">
-              ${escapeHtml(p.status) || '-'}
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">
-              ${escapeHtml(p.rag) || '—'}
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(extras.responsavel) || '—'}</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
             <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail(${idArg})">👁️ Ver</button>
             <button class="text-green-600 hover:text-green-900 mr-3" onclick="editProject(${idArg})">✏️ Editar</button>
@@ -111,7 +231,6 @@
     });
   }
 
-  // ========= Tabelas por coordenação =========
   function renderAllCoordTables(list) {
     renderCoordTable('CODES', 'codesTableBody', list);
     renderCoordTable('COSET', 'cosetTableBody', list);
@@ -128,11 +247,11 @@
     if (!rows.length) { tbody.innerHTML = emptyMsg; return; }
 
     rows.forEach(p => {
-      const progresso = (p.progresso != null) ? Number(p.progresso) : null;
-      const sprints = (p.sprints != null) ? String(p.sprints)
-        : (p.sprintsConcluidas != null && p.totalSprints != null ? `${p.sprintsConcluidas} de ${p.totalSprints}` : '—');
-
-      const idArg = js(p.id ?? p.nome); // seguro para onclick
+      const extras = loadExtrasForProject(p) || {};
+      const progresso = (extras.progresso != null) ? Number(extras.progresso) : null;
+      const sprints = (extras.sprints != null) ? String(extras.sprints)
+        : (extras.sprintsConcluidas != null && extras.totalSprints != null ? `${extras.sprintsConcluidas} de ${extras.totalSprints}` : '—');
+      const idArg = js(p.id ?? p.nome);
 
       if (tbodyId === 'codesTableBody') {
         tbody.insertAdjacentHTML('beforeend', `
@@ -142,7 +261,7 @@
               <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span>
+              <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(extras.rag)}">${escapeHtml(extras.rag) || '—'}</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
@@ -153,7 +272,7 @@
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sprints}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(extras.responsavel) || '—'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
               <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
               <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
@@ -170,7 +289,7 @@
               <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span>
+              <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(extras.rag)}">${escapeHtml(extras.rag) || '—'}</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
@@ -180,7 +299,7 @@
                 <span class="text-sm text-gray-900">${progresso != null ? progresso + '%' : '—'}</span>
               </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(extras.responsavel) || '—'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
               <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
               <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
@@ -192,70 +311,60 @@
     });
   }
 
-  // ========= KPIs / Contadores =========
-  function unaccent(s) {
-    return String(s || '')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .toUpperCase().trim();
-  }
-  function isEq(a, b) { return unaccent(a) === unaccent(b); }
-
-  function computeKpiMap(list) {
-    const c = (fn) => list.filter(fn).length;
-    const m = {};
-
-    // ---------- CODES ----------
-    m['codes:ativos'] = c(p => isEq(p.coordenacao, 'CODES') && (isEq(p.status, 'EM ANDAMENTO') || isEq(p.status, 'SUSTENTACAO')));
-    m['codes:desenvolvimento'] = c(p => isEq(p.coordenacao, 'CODES') && isEq(p.status, 'EM ANDAMENTO'));
-    m['codes:sustentacao'] = c(p => isEq(p.coordenacao, 'CODES') && isEq(p.status, 'SUSTENTACAO'));
-    // Se não houver RAG no backend, usamos só "Em Risco"
-    m['codes:fora-prazo'] = c(p => isEq(p.coordenacao, 'CODES') && (isEq(p.status, 'EM RISCO') || isEq(p.rag, 'VERMELHO')));
-
-    // ---------- COSET ----------
-    m['coset:infraestrutura'] = c(p => isEq(p.coordenacao, 'COSET') && isEq(p.tipo, 'INFRAESTRUTURA'));
-    m['coset:integracao'] = c(p => isEq(p.coordenacao, 'COSET') && (isEq(p.tipo, 'SISTEMA INTEGRADO') || isEq(p.tipo, 'INTEGRACAO')));
-    m['coset:modernizacao'] = c(p => isEq(p.coordenacao, 'COSET') && isEq(p.tipo, 'MODERNIZACAO'));
-    m['coset:sistemas-integrados'] = c(p => isEq(p.coordenacao, 'COSET') && isEq(p.tipo, 'SISTEMA INTEGRADO'));
-    m['coset:compliance'] = c(p => isEq(p.coordenacao, 'COSET') && isEq(p.tipo, 'COMPLIANCE'));
-
-    // ---------- CGOD ----------
-    m['cgod:analytics'] = c(p => isEq(p.coordenacao, 'CGOD') && (isEq(p.tipo, 'BI DASHBOARD') || isEq(p.tipo, 'DASHBOARD')));
-    m['cgod:datalake'] = c(p => isEq(p.coordenacao, 'CGOD') && isEq(p.tipo, 'SISTEMA DE DADOS'));
-    m['cgod:catalogos'] = c(p => isEq(p.coordenacao, 'CGOD') && (isEq(p.tipo, 'SISTEMA DE DADOS') || /CATALOGO/.test(unaccent(p.nome))));
-    m['cgod:qualidade'] = c(p => isEq(p.coordenacao, 'CGOD') && isEq(p.tipo, 'QUALIDADE DE DADOS'));
-    m['cgod:governanca'] = c(p => isEq(p.coordenacao, 'CGOD') && isEq(p.tipo, 'GOVERNANCA'));
-
-    return m;
-  }
-
-  function paintKpisFromMap(map) {
-    // Atualiza qualquer card que tenha data-kpi="coord:categoria"
-    document.querySelectorAll('[data-kpi]').forEach(card => {
-      const key = card.getAttribute('data-kpi');
-      if (!(key in map)) return;
-      const valueEl = card.querySelector('[data-kpi-value]') ||
-        card.querySelector('.font-bold, .count, .text-2xl');
-      if (valueEl) valueEl.textContent = map[key];
-    });
-  }
-
+  // ========= KPIs =========
   function updateKPIs(list) {
-    // Totais gerais (Home)
-    const byCoord = (coord) => list.filter(p => isEq(p.coordenacao, coord)).length;
+    const U = s => String(s || '').toUpperCase();
+    const is = (a, b) => U(a) === U(b);
+    const count = fn => list.filter(fn).length;
+
+    // Totais (Home)
     setText('totalProjetos', list.length);
-    setText('projetosCodes', byCoord('CODES'));
-    setText('projetosCoset', byCoord('COSET'));
-    setText('projetosCgod', byCoord('CGOD'));
+    setText('projetosCodes', count(p => is(p.coordenacao, 'CODES')));
+    setText('projetosCoset', count(p => is(p.coordenacao, 'COSET')));
+    setText('projetosCgod', count(p => is(p.coordenacao, 'CGOD')));
 
-    // Pinta todos os cards (Home + abas)
-    const kpis = computeKpiMap(list);
-    paintKpisFromMap(kpis);
+    // Home – Detalhamento
+    setCardCount('codes', 'desenvolvimento', count(p => is(p.coordenacao, 'CODES') && is(p.status, 'EM ANDAMENTO')));
+    setCardCount('codes', 'sustentacao', count(p => is(p.coordenacao, 'CODES') && is(p.status, 'SUSTENTAÇÃO')));
 
-    // Compat: ainda atualiza cards legados via setCardCount (caso não tenham data-kpi)
-    Object.entries(kpis).forEach(([key, val]) => {
-      const [coord, cat] = key.split(':');
-      setCardCount(coord, cat, val);
-    });
+    setCardCount('coset', 'infraestrutura', count(p => is(p.coordenacao, 'COSET') && is(p.tipo, 'INFRAESTRUTURA')));
+    setCardCount('coset', 'integracao', count(p => is(p.coordenacao, 'COSET') && (is(p.tipo, 'SISTEMA INTEGRADO') || is(p.tipo, 'INTEGRAÇÃO'))));
+
+    setCardCount('cgod', 'analytics', count(p => is(p.coordenacao, 'CGOD') && (is(p.tipo, 'BI DASHBOARD') || is(p.tipo, 'DASHBOARD'))));
+    setCardCount('cgod', 'datalake', count(p => is(p.coordenacao, 'CGOD') && is(p.tipo, 'SISTEMA DE DADOS')));
+
+    // Páginas
+    setCardCount('codes', 'ativos', count(p => is(p.coordenacao, 'CODES') && (is(p.status, 'EM ANDAMENTO') || is(p.status, 'SUSTENTAÇÃO'))));
+    setCardCount('codes', 'fora-prazo', count(p => is(p.coordenacao, 'CODES') && (is((loadExtrasForProject(p) || {}).rag, 'VERMELHO') || is(p.status, 'EM RISCO'))));
+
+    setCardCount('coset', 'sistemas-integrados', count(p => is(p.coordenacao, 'COSET') && is(p.tipo, 'SISTEMA INTEGRADO')));
+    setCardCount('coset', 'modernizacao', count(p => is(p.coordenacao, 'COSET') && is(p.tipo, 'MODERNIZAÇÃO')));
+    setCardCount('coset', 'compliance', count(p => is(p.coordenacao, 'COSET') && is(p.tipo, 'COMPLIANCE')));
+
+    setCardCount('cgod', 'catalogos', count(p => is(p.coordenacao, 'CGOD') && (is(p.tipo, 'SISTEMA DE DADOS') || /CAT[AÁ]LOGO/.test(U(p.nome)))));
+    setCardCount('cgod', 'qualidade', count(p => is(p.coordenacao, 'CGOD') && is(p.tipo, 'QUALIDADE DE DADOS')));
+    setCardCount('cgod', 'governanca', count(p => is(p.coordenacao, 'CGOD') && is(p.tipo, 'GOVERNANÇA')));
+  }
+
+  function setCardCount(coordKey, cat, value) {
+    let container = document.querySelector(`[data-card="${coordKey}:${cat}"]`);
+    if (!container) {
+      const selectors = [
+        `[onclick*="filterProjects('${coordKey}', '${cat}')"]`,
+        `[onclick*="filterProjects('${coordKey}','${cat}')"]`
+      ];
+      for (const sel of selectors) {
+        container = document.querySelector(sel);
+        if (container) break;
+      }
+      if (!container) {
+        const candidates = Array.from(document.querySelectorAll('[onclick^="filterProjects("]'));
+        container = candidates.find(el => (el.getAttribute('onclick') || '').replace(/\s+/g, '').includes(`filterProjects('${coordKey}','${cat}')`));
+      }
+    }
+    if (!container) return;
+    const countEl = container.querySelector('.font-bold, .count');
+    if (countEl) countEl.textContent = value;
   }
 
   // ========= Gráficos =========
@@ -264,7 +373,7 @@
     const coset = list.filter(p => p.coordenacao === 'COSET').length;
     const cgod = list.filter(p => p.coordenacao === 'CGOD').length;
 
-    const st = (s) => list.filter(p => p.status === s).length;
+    const st = s => list.filter(p => p.status === s).length;
     const statusData = {
       'Planejado': st('Planejado'),
       'Em Andamento': st('Em Andamento'),
@@ -298,8 +407,7 @@
             label: 'Quantidade',
             data: [statusData['Planejado'], statusData['Em Andamento'], statusData['Em Risco'], statusData['Concluído'], statusData['Sustentação']],
             backgroundColor: ['#6b7280', '#16a34a', '#dc2626', '#2563eb', '#f59e0b'],
-            borderRadius: 4,
-            borderSkipped: false
+            borderRadius: 4, borderSkipped: false
           }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
@@ -328,12 +436,12 @@
       if (cat === 'ativos') filtered = filtered.filter(p => ['Em Andamento', 'Sustentação'].includes(p.status));
       if (cat === 'desenvolvimento') filtered = filtered.filter(p => p.status === 'Em Andamento');
       if (cat === 'sustentacao') filtered = filtered.filter(p => p.status === 'Sustentação');
-      if (cat === 'fora-prazo') filtered = filtered.filter(p => p.rag === 'Vermelho' || p.status === 'Em Risco');
+      if (cat === 'fora-prazo') filtered = filtered.filter(p => (loadExtrasForProject(p) || {}).rag === 'Vermelho' || p.status === 'Em Risco');
     }
     if (coord === 'COSET') {
       if (cat === 'infraestrutura') filtered = filtered.filter(p => p.tipo === 'Infraestrutura');
       if (cat === 'integracao') filtered = filtered.filter(p => p.tipo === 'Sistema Integrado' || p.tipo === 'Integração');
-      if (cat === 'modernizacao') filtered = filtered; // ajuste conforme backend
+      if (cat === 'modernizacao') filtered = filtered;
       if (cat === 'sistemas-integrados') filtered = filtered.filter(p => p.tipo === 'Sistema Integrado');
     }
     if (coord === 'CGOD') {
@@ -346,41 +454,44 @@
     renderCoordTable(coord, map[coord], filtered);
   }
 
-  // ========= Detalhe / Edição =========
+  // ========= Detalhe =========
   function showProjectDetail(idOrName) {
     const p = findProjeto(idOrName);
-    if (!p) return toast('Projeto não encontrado');
+    if (!p) return showNotify('Não encontrado', 'Projeto não encontrado', 'warn');
+
+    const extras = loadExtrasForProject(p) || {};
 
     setText('detailProjectName', p.nome || '—');
     setText('detailProjectType', `${p.tipo || '—'} • ${p.coordenacao || '—'}`);
 
     const ragEl = byId('detailRagStatus');
     if (ragEl) {
-      ragEl.textContent = p.rag || '—';
-      ragEl.className = `w-full h-8 rounded flex items-center justify-center text-white font-medium ${ragClass(p.rag)}`;
+      ragEl.textContent = extras.rag || '—';
+      ragEl.className = `w-full h-8 rounded flex items-center justify-center text-white font-medium ${ragClass(extras.rag)}`;
     }
-    setText('detailPrioridade', p.prioridade || '—');
+    setText('detailPrioridade', extras.prioridade || '—');
 
-    const prog = (p.progresso != null) ? Number(p.progresso) : null;
+    const prog = (extras.progresso != null) ? Number(extras.progresso) : null;
     const progBar = byId('detailProgress');
     const progTxt = byId('detailProgressText');
     if (progBar) progBar.style.width = (prog != null ? prog : 0) + '%';
     if (progTxt) progTxt.textContent = (prog != null ? prog + '%' : '—');
 
-    setText('detailSprints', (p.sprintsConcluidas != null && p.totalSprints != null) ? `${p.sprintsConcluidas} de ${p.totalSprints}` : '—');
+    setText('detailSprints', (extras.sprintsConcluidas != null && extras.totalSprints != null) ? `${extras.sprintsConcluidas} de ${extras.totalSprints}` : '—');
     setText('detailCoordenacao', p.coordenacao || '—');
-    setText('detailResponsavel', p.responsavel || '—');
+    setText('detailResponsavel', extras.responsavel || '—');
     setText('detailStatus', p.status || '—');
     setText('detailInicio', formatDate(p.inicio));
     setText('detailFim', formatDate(p.fim));
     setText('detailDescricao', p.descricao || '—');
-    setText('detailOrcamento', formatCurrency(p.orcamento));
+    setText('detailOrcamento', formatCurrency(extras.orcamento));
+    setText('detailRiscos', extras.riscos || '—');
 
     const equipeEl = byId('detailEquipe');
     if (equipeEl) {
       equipeEl.innerHTML = '';
-      if (p.equipe) {
-        p.equipe.split(',').map(s => s.trim()).forEach(m => {
+      if (extras.equipe) {
+        extras.equipe.split(',').map(s => s.trim()).forEach(m => {
           const div = document.createElement('div');
           div.className = 'flex items-center';
           div.innerHTML = `<span class="w-2 h-2 rounded-full mr-2"></span><span>${escapeHtml(m)}</span>`;
@@ -394,67 +505,115 @@
 
   function editProject(idOrName) {
     const p = findProjeto(idOrName);
-    if (!p) return toast('Projeto não encontrado');
+    if (!p) return showNotify('Não encontrado', 'Projeto não encontrado', 'warn');
 
+    const extras = loadExtrasForProject(p) || {};
     const form = byId('projectForm');
     if (!form) return;
 
     form.dataset.id = p.id; // marca edição
 
+    // Backend
     setValue('projectName', p.nome);
     setValue('projectTipo', p.tipo);
     setValue('projectCoord', p.coordenacao);
     setValue('projectStatus', p.status);
-    setValue('projectPrioridade', p.prioridade);
-    setValue('projectProgresso', p.progresso);
-    setValue('projectTotalSprints', p.totalSprints);
-    setValue('projectSprintsConcluidas', p.sprintsConcluidas);
-    setValue('projectResponsavel', p.responsavel);
     setValue('projectInicio', p.inicio);
     setValue('projectFim', p.fim);
-    setValue('projectOrcamento', p.orcamento);
     setValue('projectDescricao', p.descricao);
-    setValue('projectEquipe', p.equipe);
-    setValue('projectRag', p.rag);
-    setValue('projectRisco', p.riscos);
 
-    const h = document.querySelector('#projectModal h3');
-    if (h) h.textContent = 'Editar Projeto';
-    const btn = byId('submitProjectBtn');
-    if (btn) btn.textContent = 'Atualizar Projeto';
+    // Extras
+    setValue('projectPrioridade', extras.prioridade);
+    setValue('projectProgresso', extras.progresso);
+    const slider = byId('projectProgressoSlider'); if (slider) slider.value = extras.progresso || 0;
+    if (typeof updateProgressDisplay === 'function') updateProgressDisplay();
+    const disp = byId('progressDisplay'); if (disp) disp.textContent = (extras.progresso || 0) + '%';
+    const bar = byId('progressBar'); if (bar) bar.style.width = (extras.progresso || 0) + '%';
 
-    const modal = byId('projectModal');
-    if (modal) modal.classList.remove('hidden');
+    setValue('projectTotalSprints', extras.totalSprints);
+    setValue('projectSprintsConcluidas', extras.sprintsConcluidas);
+    setValue('projectResponsavel', extras.responsavel);
+    setValue('projectOrcamento', extras.orcamento);
+    setValue('projectEquipe', extras.equipe);
+    setValue('projectRag', extras.rag);
+    setValue('projectRisco', extras.riscos);
+
+    toggleFormByCoord(p.coordenacao);
+
+    const h = document.querySelector('#projectModal h3'); if (h) h.textContent = 'Editar Projeto';
+    const btn = byId('submitProjectBtn'); if (btn) btn.textContent = 'Atualizar Projeto';
+    const modal = byId('projectModal'); if (modal) modal.classList.remove('hidden');
+  }
+
+  // ========= Novo Projeto por coordenação =========
+  function openNewProject(coord) {
+    const form = byId('projectForm');
+    if (!form) return;
+    form.reset();
+
+    const slider = byId('projectProgressoSlider'); if (slider) slider.value = 0;
+    const inputP = byId('projectProgresso'); if (inputP) inputP.value = 0;
+    if (typeof updateProgressDisplay === 'function') updateProgressDisplay();
+
+    delete form.dataset.id;
+
+    setValue('projectCoord', coord || '');
+    toggleFormByCoord(coord || '');
+
+    const h = document.querySelector('#projectModal h3'); if (h) h.textContent = `Novo Projeto${coord ? ' • ' + coord : ''}`;
+    const btn = byId('submitProjectBtn'); if (btn) btn.textContent = 'Salvar Projeto';
+    window.showModal && window.showModal('projectModal');
   }
 
   // ========= Create / Update =========
+  function getFormData() {
+    return {
+      nome: getValue('projectName'),
+      tipo: getValue('projectTipo'),
+      coordenacao: getValue('projectCoord'),
+      status: getValue('projectStatus'),
+      descricao: getValue('projectDescricao'),
+      inicio: getValue('projectInicio'),
+      fim: getValue('projectFim'),
+
+      // extras (não vão para o backend):
+      prioridade: getValue('projectPrioridade'),
+      progresso: numOrNull(getValue('projectProgresso')),
+      totalSprints: numOrNull(getValue('projectTotalSprints')),
+      sprintsConcluidas: numOrNull(getValue('projectSprintsConcluidas')),
+      responsavel: getValue('projectResponsavel'),
+      orcamento: numOrNull(getValue('projectOrcamento')),
+      equipe: getValue('projectEquipe'),
+      rag: getValue('projectRag'),
+      riscos: getValue('projectRisco')
+    };
+  }
+  function sanitizeForBackend(all) {
+    const payload = {};
+    SUPPORTED_FIELDS.forEach(k => payload[k] = all[k] ?? null);
+    return payload;
+  }
+
   async function handleCreateOrUpdate(e) {
     e.preventDefault();
     e.stopImmediatePropagation();
 
     const form = e.target;
-    const id = form.dataset.id;
+    const id = form.dataset.id; // se existe → edição (PUT)
 
-    // Monta o body apenas com os campos suportados pelo backend
-    const formToField = {
-      projectName: 'nome',
-      projectTipo: 'tipo',
-      projectCoord: 'coordenacao',
-      projectStatus: 'status',
-      projectDescricao: 'descricao',
-      projectInicio: 'inicio',
-      projectFim: 'fim',
-      projectResponsavel: 'responsavel'
-    };
-    const dados = {};
-    Object.entries(formToField).forEach(([inputId, apiField]) => {
-      const v = getValue(inputId);
-      if (BACKEND_FIELDS.includes(apiField)) dados[apiField] = v;
-    });
+    const all = getFormData();
+    const dados = sanitizeForBackend(all);
+
+    // Validação mínima
+    if (!dados.nome || !dados.tipo || !dados.coordenacao || !dados.status || !dados.inicio || !dados.fim) {
+      return showNotify('Campos obrigatórios', 'Preencha nome, tipo, coordenação, status, início e fim.', 'warn');
+    }
+
+    const isEdit = Boolean(id);
 
     try {
-      const url = id ? `${API}/${id}` : API;
-      const method = id ? 'PUT' : 'POST';
+      const url = isEdit ? `${API}/${id}` : API;
+      const method = isEdit ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -462,35 +621,48 @@
       });
 
       if (!res.ok) {
-        const erro = await res.json().catch(() => ({}));
-        throw new Error(erro.erro || `Erro ao salvar projeto (${res.status})`);
+        const erro = await safeJsonOrNull(res);
+        throw new Error((erro && erro.erro) || `Erro ao ${isEdit ? 'atualizar' : 'salvar'} (${res.status})`);
       }
 
-      // sucesso
+      const saved = await safeJsonOrNull(res); // pode ser null em 204
+
+      // Extras — sempre salvamos por ID (se houver) e por NOME (fallback)
+      const extras = {};
+      EXTRA_FIELDS.forEach(k => extras[k] = all[k] ?? null);
+
+      if (isEdit) {
+        saveExtrasById(id, extras);
+        saveExtrasByName(all.nome, extras);
+      } else if (saved && saved.id != null) {
+        saveExtrasById(saved.id, extras);
+        saveExtrasByName(all.nome, extras);
+      } else {
+        pendingExtras = extras;
+        pendingKeyName = all.nome;
+      }
+
+      // UI
       delete form.dataset.id;
-      const h = document.querySelector('#projectModal h3');
-      if (h) h.textContent = 'Novo Projeto';
-      const btn = byId('submitProjectBtn');
-      if (btn) btn.textContent = 'Salvar Projeto';
+      const h = document.querySelector('#projectModal h3'); if (h) h.textContent = 'Novo Projeto';
+      const btn = byId('submitProjectBtn'); if (btn) btn.textContent = 'Salvar Projeto';
       form.reset();
-      const modal = byId('projectModal');
-      if (modal) modal.classList.add('hidden');
+      const modal = byId('projectModal'); if (modal) modal.classList.add('hidden');
 
       await loadProjetos();
 
-      toast(id ? 'Projeto atualizado com sucesso!' : 'Projeto cadastrado com sucesso!');
+      // Mensagem: força “Atualizado” quando for PUT (independe do JSON retornado)
+      showNotify('Sucesso', isEdit ? 'Projeto atualizado com sucesso!' : 'Projeto cadastrado com sucesso!', 'success');
     } catch (err) {
       console.error(err);
-      toast('Erro ao salvar projeto: ' + err.message);
+      showNotify('Erro', err.message, 'error');
     }
   }
 
-  // ========= Excluir Projeto =========
+  // ========= Excluir =========
   async function deleteProject(idOrName) {
     const p = findProjeto(idOrName);
-    if (!p || !p.id) {
-      return toast('Não foi possível identificar o ID do projeto para excluir.');
-    }
+    if (!p || !p.id) return showNotify('Ação inválida', 'Não foi possível identificar o ID do projeto.', 'warn');
 
     const ok = confirm(`Excluir o projeto "${p.nome}"? Esta ação não pode ser desfeita.`);
     if (!ok) return;
@@ -498,30 +670,25 @@
     try {
       const res = await fetch(`${API}/${p.id}`, { method: 'DELETE' });
       if (!res.ok) {
-        const erro = await res.json().catch(() => ({}));
-        throw new Error(erro.erro || `Erro ao excluir (${res.status})`);
+        const erro = await safeJsonOrNull(res);
+        throw new Error((erro && erro.erro) || `Erro ao excluir (${res.status})`);
       }
+      try { localStorage.removeItem(lsKeyById(p.id)); } catch { }
+      try { if (p.nome) localStorage.removeItem(lsKeyByName(p.nome)); } catch { }
 
-      toast('Projeto excluído com sucesso!');
+      showNotify('Sucesso', 'Projeto excluído com sucesso!', 'success');
       await loadProjetos();
     } catch (err) {
       console.error(err);
-      toast('Erro ao excluir: ' + err.message);
+      showNotify('Erro', err.message, 'error');
     }
   }
 
-  // ========= Helpers =========
-  function byId(id) { return document.getElementById(id); }
-  function setText(id, v) { const el = byId(id); if (el) el.textContent = (v ?? '—'); }
-  function setValue(id, v) { const el = byId(id); if (el != null) el.value = (v ?? ''); }
-  function getValue(id) { const el = byId(id); return el ? el.value : ''; }
-  function js(v) { return JSON.stringify(v); } // para usar em onclick com segurança
-
+  // ========= Utils =========
   function findProjeto(idOrName) {
     return cacheProjetos.find(p => String(p.id) === String(idOrName)) ||
       cacheProjetos.find(p => (p.nome || '') === idOrName);
   }
-
   function statusBadgeClass(status) {
     switch (status) {
       case 'Em Andamento': return 'bg-green-100 text-green-800';
@@ -555,98 +722,7 @@
     document.querySelectorAll('#lastUpdate').forEach(el => {
       el.textContent = `Hoje, ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     });
+    const yEl = byId('footerYear'); if (yEl) yEl.textContent = String(now.getFullYear());
   }
 
-  // --- Patcher de KPIs: cria data-kpi automaticamente (Home + aba CODES) ---
-  function patchKpiDataAttributes() {
-    if (kpiPatchedOnce) return; // basta uma vez
-    kpiPatchedOnce = true;
-
-    // 1) Marcar cards que já têm onclick
-    const keys = [
-      ['codes', 'ativos'], ['codes', 'desenvolvimento'], ['codes', 'sustentacao'], ['codes', 'fora-prazo'],
-      ['coset', 'infraestrutura'], ['coset', 'integracao'], ['coset', 'modernizacao'], ['coset', 'sistemas-integrados'], ['coset', 'compliance'],
-      ['cgod', 'analytics'], ['cgod', 'datalake'], ['cgod', 'catalogos'], ['cgod', 'qualidade'], ['cgod', 'governanca']
-    ];
-    keys.forEach(([coord, cat]) => {
-      const selA = `[onclick*="filterProjects('${coord}', '${cat}')"]`;
-      const selB = `[onclick*="filterProjects('${coord}','${cat}')"]`;
-      const nodes = new Set([
-        ...document.querySelectorAll(selA),
-        ...document.querySelectorAll(selB)
-      ]);
-      nodes.forEach(card => {
-        card.setAttribute('data-kpi', `${coord}:${cat}`);
-        // tenta marcar o elemento do número
-        const val = card.querySelector('.font-bold, .count, .text-2xl');
-        if (val) val.setAttribute('data-kpi-value', '');
-      });
-    });
-
-    // 2) Fallback por rótulo (especialmente para a aba CODES)
-    const labelMap = {
-      'Projetos Ativos': 'codes:ativos',
-      'Desenvolvimento': 'codes:desenvolvimento',
-      'Sustentação': 'codes:sustentacao',
-      'Fora de Prazo': 'codes:fora-prazo'
-    };
-    const allElems = Array.from(document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6'));
-    Object.entries(labelMap).forEach(([label, key]) => {
-      // encontra elementos cujo texto "é" o rótulo do card
-      const labelNodes = allElems.filter(el => el.childElementCount === 0 && el.textContent.trim() === label);
-      labelNodes.forEach(lbl => {
-        const card = lbl.closest('.bg-white, .rounded-lg, .shadow, .shadow-md, .shadow-lg') || lbl.parentElement;
-        if (!card) return;
-        if (!card.hasAttribute('data-kpi')) card.setAttribute('data-kpi', key);
-        const val = card.querySelector('.font-bold, .count, .text-2xl');
-        if (val && !val.hasAttribute('data-kpi-value')) val.setAttribute('data-kpi-value', '');
-      });
-    });
-  }
-
-  // >>> Atualiza TODOS os cards correspondentes (Home + abas)
-  function setCardCount(coordKey, cat, value) {
-    // garantir que já marcamos os cards
-    patchKpiDataAttributes();
-
-    // 1) preferir cards com data-kpi
-    const dataCards = Array.from(document.querySelectorAll(`[data-kpi="${coordKey}:${cat}"]`));
-    if (dataCards.length) {
-      dataCards.forEach(card => {
-        const valueEl = card.querySelector('[data-kpi-value]') ||
-          card.querySelector('.font-bold, .count, .text-2xl');
-        if (valueEl) valueEl.textContent = value;
-      });
-      return;
-    }
-
-    // 2) fallback: localizar TODAS as ocorrências com onclick (com e sem espaços)
-    const selA = `[onclick*="filterProjects('${coordKey}', '${cat}')"]`;
-    const selB = `[onclick*="filterProjects('${coordKey}','${cat}')"]`;
-    let nodes = Array.from(document.querySelectorAll(selA));
-    const extra = Array.from(document.querySelectorAll(selB));
-    extra.forEach(n => { if (!nodes.includes(n)) nodes.push(n); });
-
-    if (!nodes.length) {
-      // 3) varredura completa do DOM como último recurso
-      const candidates = Array.from(document.querySelectorAll('[onclick^="filterProjects("]'));
-      nodes = candidates.filter(el => {
-        const raw = (el.getAttribute('onclick') || '').replace(/\s+/g, '');
-        return raw.includes(`filterProjects('${coordKey}','${cat}')`);
-      });
-    }
-
-    nodes.forEach(container => {
-      const countEl = container.querySelector('.font-bold, .count, .text-2xl');
-      if (countEl) countEl.textContent = value;
-    });
-  }
-
-  function toast(msg) { alert(msg); }
-  function escapeHtml(s) {
-    if (s == null) return s;
-    return String(s).replace(/[&<>"']/g, ch => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-    }[ch]));
-  }
 })();

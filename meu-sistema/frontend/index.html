@@ -398,7 +398,8 @@
             <p class="text-gray-600">Coordenação de Desenvolvimento e Arquitetura de Soluções</p>
           </div>
           <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-            onclick="showModal('projectModal')">➕ Novo Projeto</button>
+            onclick="openNewProject('CODES')">➕ Novo Projeto</button>
+
         </div>
       </div>
 
@@ -500,7 +501,8 @@
             <p class="text-gray-600">Coordenação de Sistemas Estruturantes</p>
           </div>
           <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-            onclick="showModal('projectModal')">➕ Novo Projeto</button>
+            onclick="openNewProject('COSET')">➕ Novo Projeto</button>
+
         </div>
       </div>
 
@@ -579,7 +581,8 @@
             <p class="text-gray-600">Coordenação de Governança de Dados</p>
           </div>
           <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-            onclick="showModal('projectModal')">➕ Novo Projeto</button>
+            onclick="openNewProject('CGOD')">➕ Novo Projeto</button>
+
         </div>
       </div>
 
@@ -709,12 +712,12 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Projeto</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectName" type="text"
-                  required />
+                <input id="projectName" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
               </div>
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipo do Projeto</label>
-                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectTipo" required>
+                <select id="projectTipo" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
                   <option value="">Selecione...</option>
                   <option value="Sistema Web">Sistema Web</option>
                   <option value="Chatbot IA">Chatbot IA</option>
@@ -725,18 +728,20 @@
                   <option value="Sistema Integrado">Sistema Integrado</option>
                 </select>
               </div>
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Coordenação</label>
-                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectCoord" required>
+                <select id="projectCoord" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
                   <option value="">Selecione...</option>
                   <option value="CODES">CODES</option>
                   <option value="COSET">COSET</option>
                   <option value="CGOD">CGOD</option>
                 </select>
               </div>
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectStatus" required>
+                <select id="projectStatus" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
                   <option value="Planejado">Planejado</option>
                   <option value="Em Andamento">Em Andamento</option>
                   <option value="Em Risco">Em Risco</option>
@@ -745,90 +750,91 @@
                   <option value="Sustentação">Sustentação</option>
                 </select>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Prioridade</label>
-                <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectPrioridade" required>
-                  <option value="Baixa">Baixa</option>
-                  <option value="Média">Média</option>
-                  <option value="Alta">Alta</option>
-                  <option value="Crítica">Crítica</option>
-                </select>
-              </div>
+              <!-- Progresso (%) - aparece para TODAS as coordenações -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Progresso (%)</label>
                 <div class="space-y-2">
-                  <input class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                    id="projectProgressoSlider" type="range" min="0" max="100" value="0"
+                  <input id="projectProgressoSlider" type="range" min="0" max="100" value="0"
+                    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                     oninput="updateProgressDisplay()" />
                   <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-500">0%</span>
                     <div class="flex items-center space-x-2">
-                      <span class="text-lg font-bold text-blue-600" id="progressDisplay">0%</span>
-                      <input class="w-16 border border-gray-300 rounded px-2 py-1 text-sm" id="projectProgresso"
-                        type="number" min="0" max="100" value="0" oninput="updateProgressSlider()" />
+                      <span id="progressDisplay" class="text-lg font-bold text-blue-600">0%</span>
+                      <input id="projectProgresso" type="number" min="0" max="100" value="0"
+                        class="w-16 border border-gray-300 rounded px-2 py-1 text-sm"
+                        oninput="updateProgressSlider()" />
                     </div>
                     <span class="text-sm text-gray-500">100%</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-3">
-                    <div class="bg-blue-600 h-3 rounded-full transition-all duration-300" id="progressBar"
+                    <div id="progressBar" class="bg-blue-600 h-3 rounded-full transition-all duration-300"
                       style="width:0%"></div>
                   </div>
                 </div>
               </div>
+
+              <!-- Total de Sprints (CODES apenas) -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Total de Sprints</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectTotalSprints" type="number"
-                  min="1" required />
+                <input id="projectTotalSprints" type="number" min="1"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2" />
               </div>
+
+              <!-- Sprints Concluídas (CODES apenas) -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Sprints Concluídas</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectSprintsConcluidas"
-                  type="number" min="0" required />
+                <input id="projectSprintsConcluidas" type="number" min="0"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2" />
               </div>
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectResponsavel" type="text"
-                  required />
+                <input id="projectResponsavel" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  required>
               </div>
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Data de Início</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectInicio" type="date"
-                  required />
+                <input id="projectInicio" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  required>
               </div>
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fim Previsto</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectFim" type="date"
-                  required />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Orçamento (R$)</label>
-                <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectOrcamento" type="number"
-                  min="0" step="0.01" required />
+                <input id="projectFim" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
               </div>
             </div>
+
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-              <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectDescricao" rows="3"
+              <textarea id="projectDescricao" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2"
                 required></textarea>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Equipe (separar por vírgulas)</label>
-              <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectEquipe" type="text"
-                placeholder="João Silva, Maria Santos, Ana Costa" required />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Status RAG</label>
-              <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectRag" required>
-                <option value="Verde">Verde</option>
-                <option value="Amarelo">Amarelo</option>
-                <option value="Vermelho">Vermelho</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Riscos e Dependências</label>
-              <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2" id="projectRisco" rows="3"
-                placeholder="Descreva os principais riscos e dependências do projeto..."></textarea>
-            </div>
+
+            <!-- Bloco opcional (apenas CODES). Sem required e NÃO vai para a API -->
+            <fieldset id="codesOnlyBlock" class="hidden border border-gray-200 rounded-lg p-4">
+              <legend class="px-2 text-sm text-gray-600">Campos CODES (somente visual por enquanto)</legend>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Progresso (%)</label>
+                  <input id="projectProgresso" type="number" min="0" max="100"
+                    class="w-full border border-gray-300 rounded px-3 py-2" placeholder="0–100">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Total de Sprints</label>
+                  <input id="projectTotalSprints" type="number" min="1"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="ex.: 10">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Sprints Concluídas</label>
+                  <input id="projectSprintsConcluidas" type="number" min="0"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="ex.: 3">
+                </div>
+              </div>
+            </fieldset>
+
             <div class="flex justify-end space-x-3 pt-4">
               <button type="button" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 onclick="hideModal('projectModal')">Cancelar</button>
@@ -836,6 +842,7 @@
                 class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar Projeto</button>
             </div>
           </form>
+
         </div>
       </div>
     </div>
@@ -1038,6 +1045,36 @@
       </div>
     </div>
   </div>
+  <!-- Modal de Confirmação de Exclusão -->
+  <div id="confirmModal" class="fixed inset-0 z-[1000] hidden" role="dialog" aria-modal="true"
+    aria-labelledby="confirmTitle">
+    <div class="absolute inset-0 bg-black/50"></div>
+    <div class="relative mx-auto max-w-md mt-24 bg-white rounded-xl shadow-2xl overflow-hidden">
+      <div class="h-1 bg-red-600"></div>
+      <div class="p-6">
+        <div class="flex items-start gap-3">
+          <div class="text-2xl">🗑️</div>
+          <div class="flex-1">
+            <h4 id="confirmTitle" class="text-lg font-semibold text-gray-900">Confirmar exclusão</h4>
+            <p class="text-sm text-gray-600 mt-1">
+              Tem certeza que deseja excluir o projeto
+              <span id="confirmProjectName" class="font-semibold text-gray-900">—</span>?
+              Esta ação não pode ser desfeita.
+            </p>
+          </div>
+          <button class="text-gray-400 hover:text-gray-600" onclick="window.cancelDelete()"
+            aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-3">
+          <button type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+            onclick="window.cancelDelete()">Cancelar</button>
+          <button type="button" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+            onclick="window.confirmDelete()">Excluir</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== Footer ===== -->
   <footer class="mt-10 text-blue-100 bg-gradient-to-br from-blue-900 to-blue-950" role="contentinfo">
@@ -1064,7 +1101,7 @@
           <ul class="space-y-2 text-sm">
             <li><a href="#" onclick="showPage('home',  getNavButtonFor && getNavButtonFor('home'))"
                 class="group inline-flex items-center gap-2 hover:text-white">
-                <span class="opacity-60 group-hover:opacity-100">Visão CGSOL</span><span
+                <span class="opacity-60 group-hover:opacity-100">Visão Geral</span><span
                   class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
             <li><a href="#" onclick="showPage('codes', getNavButtonFor && getNavButtonFor('codes'))"
                 class="group inline-flex items-center gap-2 hover:text-white">
@@ -1229,6 +1266,23 @@
       if (firstBtn) showPage('home', firstBtn);
     });
   </script>
+  <!-- Modal de Notificação -->
+  <div id="notifyModal" class="fixed inset-0 z-[999] hidden">
+    <div class="absolute inset-0 bg-black/50"></div>
+    <div class="relative mx-auto max-w-md mt-24 bg-white rounded-xl shadow-2xl overflow-hidden">
+      <div id="notifyBar" class="h-1 bg-blue-600"></div>
+      <div class="p-5">
+        <div class="flex items-start gap-3">
+          <div id="notifyIcon" class="text-2xl">ℹ️</div>
+          <div class="flex-1">
+            <h4 id="notifyTitle" class="text-lg font-semibold text-gray-900">Aviso</h4>
+            <p id="notifyMessage" class="text-sm text-gray-600 mt-1">...</p>
+          </div>
+          <button class="text-gray-400 hover:text-gray-600" onclick="window.hideNotify()">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Lógica dinâmica -->
   <script src="assets/js/main.js?v=7" defer></script>
