@@ -3,15 +3,20 @@
  * - Lista projetos na Home e nas páginas CODES/COSET/CGOD
  * - KPIs/Gráficos dinâmicos
  * - Filtros dos cards funcionando (CODES/COSET/CGOD)
- * - Criação/Edição via POST/PUT no backend
+ * - Criação/Edição via POST/PUT no backend (apenas campos suportados)
  * - Exclusão via DELETE (botão 🗑️)
+ * - Atualiza TODOS os cards (Home + abas) após criar/editar/excluir
  */
 (function () {
   const API = 'http://localhost:5000/api/projetos';
 
+  // Campos que o backend aceita (evita erros tipo "'prioridade' is an invalid keyword argument")
+  const BACKEND_FIELDS = ['nome', 'tipo', 'coordenacao', 'status', 'descricao', 'inicio', 'fim', 'responsavel'];
+
   let cacheProjetos = [];
   let chartCoordenacao = null;
   let chartStatus = null;
+  let kpiPatchedOnce = false;
 
   // ========= Boot =========
   onReady(async () => {
@@ -43,6 +48,9 @@
       if (!res.ok) throw new Error(`Falha ao carregar projetos (${res.status})`);
       const projetos = await res.json();
       cacheProjetos = Array.isArray(projetos) ? projetos : [];
+
+      // garante que os cards possam ser encontrados (por onclick OU por rótulo)
+      patchKpiDataAttributes();
 
       renderRecentTable(cacheProjetos);
       renderAllCoordTables(cacheProjetos);
@@ -179,24 +187,69 @@
   }
 
   // ========= KPIs / Contadores =========
+  function unaccent(s) {
+    return String(s || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase().trim();
+  }
+  function isEq(a, b) { return unaccent(a) === unaccent(b); }
+
+  function computeKpiMap(list) {
+    const c = (fn) => list.filter(fn).length;
+    const m = {};
+
+    // ---------- CODES ----------
+    m['codes:ativos'] = c(p => isEq(p.coordenacao, 'CODES') && (isEq(p.status, 'EM ANDAMENTO') || isEq(p.status, 'SUSTENTACAO')));
+    m['codes:desenvolvimento'] = c(p => isEq(p.coordenacao, 'CODES') && isEq(p.status, 'EM ANDAMENTO'));
+    m['codes:sustentacao'] = c(p => isEq(p.coordenacao, 'CODES') && isEq(p.status, 'SUSTENTACAO'));
+    // Se não houver RAG no backend, usamos só "Em Risco"
+    m['codes:fora-prazo'] = c(p => isEq(p.coordenacao, 'CODES') && (isEq(p.status, 'EM RISCO') || isEq(p.rag, 'VERMELHO')));
+
+    // ---------- COSET ----------
+    m['coset:infraestrutura'] = c(p => isEq(p.coordenacao, 'COSET') && isEq(p.tipo, 'INFRAESTRUTURA'));
+    m['coset:integracao'] = c(p => isEq(p.coordenacao, 'COSET') && (isEq(p.tipo, 'SISTEMA INTEGRADO') || isEq(p.tipo, 'INTEGRACAO')));
+    m['coset:modernizacao'] = c(p => isEq(p.coordenacao, 'COSET') && isEq(p.tipo, 'MODERNIZACAO'));
+    m['coset:sistemas-integrados'] = c(p => isEq(p.coordenacao, 'COSET') && isEq(p.tipo, 'SISTEMA INTEGRADO'));
+    m['coset:compliance'] = c(p => isEq(p.coordenacao, 'COSET') && isEq(p.tipo, 'COMPLIANCE'));
+
+    // ---------- CGOD ----------
+    m['cgod:analytics'] = c(p => isEq(p.coordenacao, 'CGOD') && (isEq(p.tipo, 'BI DASHBOARD') || isEq(p.tipo, 'DASHBOARD')));
+    m['cgod:datalake'] = c(p => isEq(p.coordenacao, 'CGOD') && isEq(p.tipo, 'SISTEMA DE DADOS'));
+    m['cgod:catalogos'] = c(p => isEq(p.coordenacao, 'CGOD') && (isEq(p.tipo, 'SISTEMA DE DADOS') || /CATALOGO/.test(unaccent(p.nome))));
+    m['cgod:qualidade'] = c(p => isEq(p.coordenacao, 'CGOD') && isEq(p.tipo, 'QUALIDADE DE DADOS'));
+    m['cgod:governanca'] = c(p => isEq(p.coordenacao, 'CGOD') && isEq(p.tipo, 'GOVERNANCA'));
+
+    return m;
+  }
+
+  function paintKpisFromMap(map) {
+    // Atualiza qualquer card que tenha data-kpi="coord:categoria"
+    document.querySelectorAll('[data-kpi]').forEach(card => {
+      const key = card.getAttribute('data-kpi');
+      if (!(key in map)) return;
+      const valueEl = card.querySelector('[data-kpi-value]') ||
+        card.querySelector('.font-bold, .count, .text-2xl');
+      if (valueEl) valueEl.textContent = map[key];
+    });
+  }
+
   function updateKPIs(list) {
-    const countBy = (prop, val) => list.filter(p => (p[prop] || '').toUpperCase() === String(val).toUpperCase()).length;
-
-    // totais
+    // Totais gerais (Home)
+    const byCoord = (coord) => list.filter(p => isEq(p.coordenacao, coord)).length;
     setText('totalProjetos', list.length);
+    setText('projetosCodes', byCoord('CODES'));
+    setText('projetosCoset', byCoord('COSET'));
+    setText('projetosCgod', byCoord('CGOD'));
 
-    // por coordenação (Home)
-    setText('projetosCodes', countBy('coordenacao', 'CODES'));
-    setText('projetosCoset', countBy('coordenacao', 'COSET'));
-    setText('projetosCgod', countBy('coordenacao', 'CGOD'));
+    // Pinta todos os cards (Home + abas)
+    const kpis = computeKpiMap(list);
+    paintKpisFromMap(kpis);
 
-    // cards por coordenação (Home)
-    setCardCount("codes", "desenvolvimento", list.filter(p => p.coordenacao === 'CODES' && p.status === 'Em Andamento').length);
-    setCardCount("codes", "sustentacao", list.filter(p => p.coordenacao === 'CODES' && p.status === 'Sustentação').length);
-    setCardCount("coset", "infraestrutura", list.filter(p => p.coordenacao === 'COSET' && p.tipo === 'Infraestrutura').length);
-    setCardCount("coset", "integracao", list.filter(p => p.coordenacao === 'COSET' && (p.tipo === 'Sistema Integrado' || p.tipo === 'Integração')).length);
-    setCardCount("cgod", "analytics", list.filter(p => p.coordenacao === 'CGOD' && (p.tipo === 'BI Dashboard' || p.tipo === 'Dashboard')).length);
-    setCardCount("cgod", "datalake", list.filter(p => p.coordenacao === 'CGOD' && p.tipo === 'Sistema de Dados').length);
+    // Compat: ainda atualiza cards legados via setCardCount (caso não tenham data-kpi)
+    Object.entries(kpis).forEach(([key, val]) => {
+      const [coord, cat] = key.split(':');
+      setCardCount(coord, cat, val);
+    });
   }
 
   // ========= Gráficos =========
@@ -223,19 +276,9 @@
         type: 'doughnut',
         data: {
           labels: ['CODES', 'COSET', 'CGOD'],
-          datasets: [{
-            data: [codes, coset, cgod],
-            backgroundColor: ['#3b82f6', '#8b5cf6', '#f97316'],
-            borderWidth: 2,
-            borderColor: '#ffffff'
-          }]
+          datasets: [{ data: [codes, coset, cgod], backgroundColor: ['#3b82f6', '#8b5cf6', '#f97316'], borderWidth: 2, borderColor: '#ffffff' }]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } },
-          cutout: '60%'
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
       });
     }
 
@@ -247,24 +290,13 @@
           labels: ['Planejado', 'Em Andamento', 'Em Risco', 'Concluído', 'Sustentação'],
           datasets: [{
             label: 'Quantidade',
-            data: [
-              statusData['Planejado'],
-              statusData['Em Andamento'],
-              statusData['Em Risco'],
-              statusData['Concluído'],
-              statusData['Sustentação']
-            ],
+            data: [statusData['Planejado'], statusData['Em Andamento'], statusData['Em Risco'], statusData['Concluído'], statusData['Sustentação']],
             backgroundColor: ['#6b7280', '#16a34a', '#dc2626', '#2563eb', '#f59e0b'],
             borderRadius: 4,
             borderSkipped: false
           }]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } }
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
       });
     }
   }
@@ -397,24 +429,22 @@
     const form = e.target;
     const id = form.dataset.id;
 
-    const dados = {
-      nome: getValue('projectName'),
-      tipo: getValue('projectTipo'),
-      coordenacao: getValue('projectCoord'),
-      status: getValue('projectStatus'),
-      prioridade: getValue('projectPrioridade'),
-      progresso: numOrNull(getValue('projectProgresso')),
-      totalSprints: numOrNull(getValue('projectTotalSprints')),
-      sprintsConcluidas: numOrNull(getValue('projectSprintsConcluidas')),
-      responsavel: getValue('projectResponsavel'),
-      inicio: getValue('projectInicio'),
-      fim: getValue('projectFim'),
-      orcamento: numOrNull(getValue('projectOrcamento')),
-      descricao: getValue('projectDescricao'),
-      equipe: getValue('projectEquipe'),
-      rag: getValue('projectRag'),
-      riscos: getValue('projectRisco')
+    // Monta o body apenas com os campos suportados pelo backend
+    const formToField = {
+      projectName: 'nome',
+      projectTipo: 'tipo',
+      projectCoord: 'coordenacao',
+      projectStatus: 'status',
+      projectDescricao: 'descricao',
+      projectInicio: 'inicio',
+      projectFim: 'fim',
+      projectResponsavel: 'responsavel'
     };
+    const dados = {};
+    Object.entries(formToField).forEach(([inputId, apiField]) => {
+      const v = getValue(inputId);
+      if (BACKEND_FIELDS.includes(apiField)) dados[apiField] = v;
+    });
 
     try {
       const url = id ? `${API}/${id}` : API;
@@ -478,7 +508,6 @@
   function setText(id, v) { const el = byId(id); if (el) el.textContent = (v ?? '—'); }
   function setValue(id, v) { const el = byId(id); if (el != null) el.value = (v ?? ''); }
   function getValue(id) { const el = byId(id); return el ? el.value : ''; }
-  function numOrNull(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
   function js(v) { return JSON.stringify(v); } // para usar em onclick com segurança
 
   function findProjeto(idOrName) {
@@ -520,14 +549,92 @@
       el.textContent = `Hoje, ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     });
   }
-  function setCardCount(coordKey, cat, value) {
-    const container = document.querySelector(
-      `[onclick*="filterProjects('${coordKey}', '${cat}')"]`
-    );
-    if (!container) return;
-    const countEl = container.querySelector('.font-bold');
-    if (countEl) countEl.textContent = value;
+
+  // --- Patcher de KPIs: cria data-kpi automaticamente (Home + aba CODES) ---
+  function patchKpiDataAttributes() {
+    if (kpiPatchedOnce) return; // basta uma vez
+    kpiPatchedOnce = true;
+
+    // 1) Marcar cards que já têm onclick
+    const keys = [
+      ['codes', 'ativos'], ['codes', 'desenvolvimento'], ['codes', 'sustentacao'], ['codes', 'fora-prazo'],
+      ['coset', 'infraestrutura'], ['coset', 'integracao'], ['coset', 'modernizacao'], ['coset', 'sistemas-integrados'], ['coset', 'compliance'],
+      ['cgod', 'analytics'], ['cgod', 'datalake'], ['cgod', 'catalogos'], ['cgod', 'qualidade'], ['cgod', 'governanca']
+    ];
+    keys.forEach(([coord, cat]) => {
+      const selA = `[onclick*="filterProjects('${coord}', '${cat}')"]`;
+      const selB = `[onclick*="filterProjects('${coord}','${cat}')"]`;
+      const nodes = new Set([
+        ...document.querySelectorAll(selA),
+        ...document.querySelectorAll(selB)
+      ]);
+      nodes.forEach(card => {
+        card.setAttribute('data-kpi', `${coord}:${cat}`);
+        // tenta marcar o elemento do número
+        const val = card.querySelector('.font-bold, .count, .text-2xl');
+        if (val) val.setAttribute('data-kpi-value', '');
+      });
+    });
+
+    // 2) Fallback por rótulo (especialmente para a aba CODES)
+    const labelMap = {
+      'Projetos Ativos': 'codes:ativos',
+      'Desenvolvimento': 'codes:desenvolvimento',
+      'Sustentação': 'codes:sustentacao',
+      'Fora de Prazo': 'codes:fora-prazo'
+    };
+    const allElems = Array.from(document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6'));
+    Object.entries(labelMap).forEach(([label, key]) => {
+      // encontra elementos cujo texto "é" o rótulo do card
+      const labelNodes = allElems.filter(el => el.childElementCount === 0 && el.textContent.trim() === label);
+      labelNodes.forEach(lbl => {
+        const card = lbl.closest('.bg-white, .rounded-lg, .shadow, .shadow-md, .shadow-lg') || lbl.parentElement;
+        if (!card) return;
+        if (!card.hasAttribute('data-kpi')) card.setAttribute('data-kpi', key);
+        const val = card.querySelector('.font-bold, .count, .text-2xl');
+        if (val && !val.hasAttribute('data-kpi-value')) val.setAttribute('data-kpi-value', '');
+      });
+    });
   }
+
+  // >>> Atualiza TODOS os cards correspondentes (Home + abas)
+  function setCardCount(coordKey, cat, value) {
+    // garantir que já marcamos os cards
+    patchKpiDataAttributes();
+
+    // 1) preferir cards com data-kpi
+    const dataCards = Array.from(document.querySelectorAll(`[data-kpi="${coordKey}:${cat}"]`));
+    if (dataCards.length) {
+      dataCards.forEach(card => {
+        const valueEl = card.querySelector('[data-kpi-value]') ||
+          card.querySelector('.font-bold, .count, .text-2xl');
+        if (valueEl) valueEl.textContent = value;
+      });
+      return;
+    }
+
+    // 2) fallback: localizar TODAS as ocorrências com onclick (com e sem espaços)
+    const selA = `[onclick*="filterProjects('${coordKey}', '${cat}')"]`;
+    const selB = `[onclick*="filterProjects('${coordKey}','${cat}')"]`;
+    let nodes = Array.from(document.querySelectorAll(selA));
+    const extra = Array.from(document.querySelectorAll(selB));
+    extra.forEach(n => { if (!nodes.includes(n)) nodes.push(n); });
+
+    if (!nodes.length) {
+      // 3) varredura completa do DOM como último recurso
+      const candidates = Array.from(document.querySelectorAll('[onclick^="filterProjects("]'));
+      nodes = candidates.filter(el => {
+        const raw = (el.getAttribute('onclick') || '').replace(/\s+/g, '');
+        return raw.includes(`filterProjects('${coordKey}','${cat}')`);
+      });
+    }
+
+    nodes.forEach(container => {
+      const countEl = container.querySelector('.font-bold, .count, .text-2xl');
+      if (countEl) countEl.textContent = value;
+    });
+  }
+
   function toast(msg) { alert(msg); }
   function escapeHtml(s) {
     if (s == null) return s;
