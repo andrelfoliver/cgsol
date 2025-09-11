@@ -60,29 +60,57 @@
       border: 2px solid #ffffff;
       box-shadow: 0 2px 4px rgba(0, 0, 0, .2);
     }
+
+
+
+
+    #userRole:focus {
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, .25);
+      border-color: rgba(255, 255, 255, .35);
+    }
   </style>
 </head>
 
 <body class="bg-gray-50 min-h-screen">
-  <!-- Header -->
-  <header class="bg-blue-900 text-white shadow-lg">
-    <div class="container mx-auto px-4 py-4">
-      <div class="flex justify-between items-center">
-        <div>
-          <h1 class="text-2xl font-bold">CGSOL</h1>
-          <p class="text-blue-200 text-sm">Coordenação Geral de Soluções</p>
+  <!-- Header integrado (logo + título + controles) -->
+  <header class="bg-blue-900 text-white shadow">
+    <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+      <!-- Bloco esquerdo: logo + divider + título -->
+      <div class="flex items-center gap-3 min-w-0">
+        <!-- Logo: controlamos a altura pra não dominar o header -->
+        <img src="assets/img/mte-logo-azul-transp.png" alt="Governo Federal — Ministério do Trabalho e Emprego"
+          class="h-16 w-auto block select-none" loading="eager" decoding="sync"
+          style="image-rendering:-webkit-optimize-contrast" />
+
+        <!-- Divisor sutil -->
+        <span class="h-6 w-px bg-white/20 mx-1"></span>
+
+        <!-- Título do sistema -->
+        <div class="truncate">
+          <div class="text-lg font-semibold leading-none">CGSOL</div>
+          <div class="text-[11px] text-blue-200 leading-tight -mt-0.5">
+            Coordenação Geral de Soluções
+          </div>
         </div>
-        <div class="flex items-center space-x-4">
-          <select class="bg-blue-800 text-white px-3 py-2 rounded border border-blue-700" id="userRole">
-            <option value="coordenacao">Coordenação Geral</option>
-            <option value="gestor">Gestor de Subcoordenação</option>
-            <option value="stakeholder">Stakeholder Leitura</option>
-          </select>
-          <span class="text-blue-200">👤 Admin</span>
+      </div>
+
+      <!-- Bloco direito: perfil/role -->
+      <div class="flex items-center gap-3">
+        <select id="userRole"
+          class="bg-blue-800/70 hover:bg-blue-800 focus:bg-blue-800 text-white text-sm px-3 py-1.5 rounded border border-white/20 outline-none">
+          <option value="coordenacao">Coordenação Geral</option>
+          <option value="gestor">Gestor de Subcoordenação</option>
+          <option value="stakeholder">Stakeholder Leitura</option>
+        </select>
+
+        <div class="flex items-center gap-2 text-blue-100">
+          <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-800/60">👤</span>
+          <span class="hidden sm:inline">Admin</span>
         </div>
       </div>
     </div>
   </header>
+
 
   <!-- Navigation -->
   <nav class="bg-white shadow-sm border-b">
