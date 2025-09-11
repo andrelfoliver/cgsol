@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1" name="viewport" />
-  <title>CGSOL - Sistema de Monitoramento</title>
+  <title>SigSOL - Sistema de Gestão e Monitoramento da CGSOL</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -68,67 +68,128 @@
       box-shadow: 0 0 0 2px rgba(255, 255, 255, .25);
       border-color: rgba(255, 255, 255, .35);
     }
+
+    /* ===== Header refinements ===== */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* select do perfil */
+    .header-select {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+      padding: .5rem .75rem;
+      border-radius: .5rem;
+      font-size: .875rem;
+      outline: 0;
+    }
+
+    .header-select:focus {
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, .35);
+      border-color: #93c5fd;
+    }
+
+    /* botões da nav: alinhamento perfeito entre emoji + texto */
+    .nav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .75rem 1rem;
+      font-weight: 600;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: color .15s ease, border-color .15s ease;
+    }
+
+    .nav-tab .icon {
+      display: inline-flex;
+      line-height: 1;
+    }
+
+    .nav-tab:hover {
+      color: #111827;
+    }
+
+    .nav-tab.active {
+      color: #2563eb;
+      border-bottom-color: #2563eb;
+    }
+
+    /* densidade/espacamento */
+    .app-header .container>.grid {
+      row-gap: .25rem;
+    }
+
+    .brand-area .logo-img {
+      max-width: 220px;
+    }
+
+    /* evita linha azul “solta” entre header e conteúdo */
+    .app-header+* {
+      border-top-color: transparent;
+    }
   </style>
 </head>
 
 <body class="bg-gray-50 min-h-screen">
-  <!-- Header integrado (logo + título + controles) -->
+
+  <!-- ====== TOP BRAND BAR (fino) ====== -->
+  <div class="bg-[#0b1e3b] text-white text-xs">
+    <div class="container mx-auto px-4 h-8 flex items-center justify-between">
+      <span class="tracking-wide font-medium">MINISTÉRIO DO TRABALHO E EMPREGO</span>
+      <span class="opacity-80">SigSOL · Sistema de Gestão e Monitoramento</span>
+    </div>
+  </div>
+
+  <!-- ====== CABEÇALHO PRINCIPAL ====== -->
   <header class="bg-blue-900 text-white shadow">
-    <div class="container mx-auto px-4 h-16 flex items-center justify-between">
-      <!-- Bloco esquerdo: logo + divider + título -->
-      <div class="flex items-center gap-3 min-w-0">
-        <!-- Logo: controlamos a altura pra não dominar o header -->
-        <img src="assets/img/mte-logo-azul-transp.png" alt="Governo Federal — Ministério do Trabalho e Emprego"
-          class="h-16 w-auto block select-none" loading="eager" decoding="sync"
-          style="image-rendering:-webkit-optimize-contrast" />
-
-        <!-- Divisor sutil -->
-        <span class="h-6 w-px bg-white/20 mx-1"></span>
-
-        <!-- Título do sistema -->
-        <div class="truncate">
-          <div class="text-lg font-semibold leading-none">CGSOL</div>
-          <div class="text-[11px] text-blue-200 leading-tight -mt-0.5">
-            Coordenação Geral de Soluções
-          </div>
-        </div>
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+      <!-- Marca do sistema -->
+      <div class="flex items-baseline space-x-3">
+        <span class="text-2xl font-extrabold tracking-tight">CGSOL - Coordenação Geral de Soluções</span>
       </div>
 
-      <!-- Bloco direito: perfil/role -->
-      <div class="flex items-center gap-3">
-        <select id="userRole"
-          class="bg-blue-800/70 hover:bg-blue-800 focus:bg-blue-800 text-white text-sm px-3 py-1.5 rounded border border-white/20 outline-none">
-          <option value="coordenacao">Coordenação Geral</option>
-          <option value="gestor">Gestor de Subcoordenação</option>
-          <option value="stakeholder">Stakeholder Leitura</option>
-        </select>
-
-        <div class="flex items-center gap-2 text-blue-100">
-          <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-800/60">👤</span>
-          <span class="hidden sm:inline">Admin</span>
-        </div>
+      <!-- Usuário + Logo à direita -->
+      <div class="flex items-center space-x-4">
+        <span class="text-blue-200 hidden md:inline">👤 Admin</span>
+        <!-- coloque aqui seu arquivo SVG/PNG da marca do governo -->
+        <img src="assets/img/mte-logo-azul-transp.png" alt="Governo Federal"
+          class="h-9 md:h-14 w-auto object-contain" />
       </div>
     </div>
+
+    <!-- ====== ABA/TABS (mantém sua lógica .nav-btn e showPage) ====== -->
+    <nav class="bg-white border-t border-blue-800/20">
+      <div class="container mx-auto px-4">
+        <div class="flex space-x-8">
+          <button class="nav-btn py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium"
+            onclick="showPage('home', this)">🏠 Visão Geral</button>
+
+          <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
+            onclick="showPage('codes', this)">💻 CODES</button>
+
+          <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
+            onclick="showPage('coset', this)">🏗️ COSET</button>
+
+          <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
+            onclick="showPage('cgod', this)">📊 CGOD</button>
+
+          <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
+            onclick="showPage('pdti', this)">📋 PDTI</button>
+        </div>
+      </div>
+    </nav>
   </header>
 
 
-  <!-- Navigation -->
-  <nav class="bg-white shadow-sm border-b">
-    <div class="container mx-auto px-4">
-      <div class="flex space-x-8">
-        <button class="nav-btn py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium"
-          onclick="showPage('home', this)">🏠 Visão CGSOL</button>
-        <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
-          onclick="showPage('codes', this)">💻 CODES</button>
-        <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
-          onclick="showPage('coset', this)">🏗️ COSET</button>
-        <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
-          onclick="showPage('cgod', this)">📊 CGOD</button>
-        <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
-          onclick="showPage('pdti', this)">📋 PDTI</button>
-      </div>
-    </div>
-  </nav>
+
 
   <!-- Main Content -->
   <main class="container mx-auto px-4 py-6">
@@ -979,67 +1040,90 @@
   </div>
 
   <!-- ===== Footer ===== -->
-  <footer class="bg-white border-t mt-10" role="contentinfo">
-    <div class="container mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-4 gap-8">
-      <!-- Sobre -->
-      <div>
-        <h4 class="text-sm font-semibold text-gray-900 mb-3">CGSOL</h4>
-        <p class="text-sm text-gray-600">
-          Coordenação Geral de Soluções — MTE. Painel de acompanhamento de projetos e indicadores.
-        </p>
-      </div>
+  <footer class="mt-10 text-blue-100 bg-gradient-to-br from-blue-900 to-blue-950" role="contentinfo">
+    <!-- faixa principal -->
+    <div class="container mx-auto px-4 py-10">
+      <div class="md:flex md:divide-x md:divide-blue-800">
+        <!-- Brand / descrição -->
+        <section class="md:w-5/12 md:pr-8 mb-8 md:mb-0">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="h-9 w-9 rounded bg-blue-800/60 grid place-items-center text-xl">⚙️</div>
+            <div>
+              <h4 class="text-sm tracking-widest font-semibold text-blue-200">CGSOL • MTE</h4>
+              <p class="text-xl font-bold leading-tight text-white">Coordenação Geral de Soluções</p>
+            </div>
+          </div>
+          <p class="text-sm text-blue-200/90 leading-relaxed">
+            Painel unificado de projetos e indicadores das coordenações CODES, COSET e CGOD.
+          </p>
+        </section>
 
-      <!-- Contato -->
-      <div>
-        <h4 class="text-sm font-semibold text-gray-900 mb-3">Contato</h4>
-        <ul class="space-y-2 text-sm text-gray-600">
-          <li>E-mail: <a href="mailto:contato@mte.gov.br" class="text-blue-600 hover:underline">cgsol@mte.gov.br</a>
-          </li>
-          <li>Atendimento: seg–sex, 9h–18h</li>
-        </ul>
-      </div>
+        <!-- Navegação -->
+        <nav class="md:w-3/12 md:px-8 mb-8 md:mb-0">
+          <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Navegação</h5>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#" onclick="showPage('home',  getNavButtonFor && getNavButtonFor('home'))"
+                class="group inline-flex items-center gap-2 hover:text-white">
+                <span class="opacity-60 group-hover:opacity-100">Visão CGSOL</span><span
+                  class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
+            <li><a href="#" onclick="showPage('codes', getNavButtonFor && getNavButtonFor('codes'))"
+                class="group inline-flex items-center gap-2 hover:text-white">
+                <span class="opacity-60 group-hover:opacity-100">CODES</span><span
+                  class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
+            <li><a href="#" onclick="showPage('coset', getNavButtonFor && getNavButtonFor('coset'))"
+                class="group inline-flex items-center gap-2 hover:text-white">
+                <span class="opacity-60 group-hover:opacity-100">COSET</span><span
+                  class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
+            <li><a href="#" onclick="showPage('cgod',  getNavButtonFor && getNavButtonFor('cgod'))"
+                class="group inline-flex items-center gap-2 hover:text-white">
+                <span class="opacity-60 group-hover:opacity-100">CGOD</span><span
+                  class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
+            <li><a href="#" onclick="showPage('pdti',  getNavButtonFor && getNavButtonFor('pdti'))"
+                class="group inline-flex items-center gap-2 hover:text-white">
+                <span class="opacity-60 group-hover:opacity-100">PDTI</span><span
+                  class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
+          </ul>
+        </nav>
 
-      <!-- Atalhos -->
-      <div>
-        <h4 class="text-sm font-semibold text-gray-900 mb-3">Atalhos</h4>
-        <ul class="space-y-2 text-sm">
-          <li><a href="#" onclick="showPage('home', getNavButtonFor && getNavButtonFor('home'))"
-              class="text-gray-600 hover:text-gray-900">Visão CGSOL</a></li>
-          <li><a href="#" onclick="showPage('codes', getNavButtonFor && getNavButtonFor('codes'))"
-              class="text-gray-600 hover:text-gray-900">CODES</a></li>
-          <li><a href="#" onclick="showPage('coset', getNavButtonFor && getNavButtonFor('coset'))"
-              class="text-gray-600 hover:text-gray-900">COSET</a></li>
-          <li><a href="#" onclick="showPage('cgod',  getNavButtonFor && getNavButtonFor('cgod'))"
-              class="text-gray-600 hover:text-gray-900">CGOD</a></li>
-          <li><a href="#" onclick="showPage('pdti',  getNavButtonFor && getNavButtonFor('pdti'))"
-              class="text-gray-600 hover:text-gray-900">PDTI</a></li>
-        </ul>
-      </div>
+        <!-- Contato -->
+        <section class="md:w-2/12 md:px-8 mb-8 md:mb-0">
+          <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Contato</h5>
+          <ul class="space-y-2 text-sm">
+            <li class="opacity-80">contato@mte.gov.br</li>
+            <li class="opacity-80">Seg–Sex • 9h–18h</li>
+          </ul>
+        </section>
 
-      <!-- Status -->
-      <div>
-        <h4 class="text-sm font-semibold text-gray-900 mb-3">Status</h4>
-        <p class="text-sm text-gray-600">
-          Última atualização: <span id="lastUpdate" class="font-medium text-gray-800">—</span>
-        </p>
-        <button type="button" class="mt-3 inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
-          onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" aria-label="Voltar ao topo">↑ Voltar ao
-          topo</button>
+        <!-- Status do sistema -->
+        <section class="md:w-2/12 md:pl-8">
+          <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Status</h5>
+          <p class="text-sm opacity-80">
+            Última atualização:<br>
+            <span id="lastUpdate" class="font-semibold text-white">—</span>
+          </p>
+          <button type="button"
+            class="mt-4 text-sm inline-flex items-center gap-2 px-3 py-2 rounded border border-blue-800/60 hover:border-blue-700 hover:bg-blue-900/30 transition"
+            onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" aria-label="Voltar ao topo">
+            ↑ Voltar ao topo
+          </button>
+        </section>
       </div>
     </div>
 
-    <div class="border-t">
+    <!-- faixa inferior -->
+    <div class="border-t border-blue-800/60">
       <div
-        class="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between text-xs text-gray-500">
-        <p>© <span id="footerYear"></span> Ministério do Trabalho e Emprego — CGSOL.</p>
-        <nav class="mt-2 md:mt-0 flex items-center gap-4">
-          <a href="#" class="hover:text-gray-700">Acessibilidade</a>
-          <a href="#" class="hover:text-gray-700">Privacidade</a>
-          <a href="#" class="hover:text-gray-700">LGPD</a>
-        </nav>
+        class="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between text-xs text-blue-300">
+        <p>© <span id="footerYear"></span> Ministério do Trabalho e Emprego — CGSOL</p>
+        <ul class="flex items-center gap-4 mt-2 md:mt-0">
+          <li><a href="#" class="hover:text-white">Acessibilidade</a></li>
+          <li><a href="#" class="hover:text-white">Privacidade</a></li>
+          <li><a href="#" class="hover:text-white">LGPD</a></li>
+        </ul>
       </div>
     </div>
   </footer>
+
 
 
   <!-- Helpers mínimos (NÃO redefinem filtros nem KPIs) -->

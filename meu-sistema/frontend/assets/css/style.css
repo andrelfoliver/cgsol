@@ -30,11 +30,13 @@ footer {
   cursor: pointer;
   font-weight: 500;
   color: #6b7280;
-  border-radius: 0; /* remove arredondamento */
+  border-radius: 0;
+  /* remove arredondamento */
 }
 
 .nav-btn:hover {
-  border-bottom-color: #3b82f6; /* apenas borda inferior azul */
+  border-bottom-color: #3b82f6;
+  /* apenas borda inferior azul */
   color: #3b82f6;
 }
 

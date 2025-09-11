@@ -18,12 +18,18 @@
   let chartStatus = null;
   let kpiPatchedOnce = false;
 
+  function setFooterYear() {
+    const y = document.getElementById('footerYear');
+    if (y) y.textContent = new Date().getFullYear();
+  }
+
   // ========= Boot =========
   onReady(async () => {
     const form = document.getElementById('projectForm');
     if (form) form.addEventListener('submit', handleCreateOrUpdate);
 
     await loadProjetos();
+    setFooterYear();
 
     // expõe funções para os onclick do HTML
     window.filterProjects = filterProjects;
@@ -471,6 +477,7 @@
       if (modal) modal.classList.add('hidden');
 
       await loadProjetos();
+
       toast(id ? 'Projeto atualizado com sucesso!' : 'Projeto cadastrado com sucesso!');
     } catch (err) {
       console.error(err);
