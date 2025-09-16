@@ -1,13 +1,14 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import date
-from database import db, Projeto
+from database import db, Projeto, Andamento
 
-app = Flask(__name__)
+
+app = Flask(__name__, static_url_path="/api")
 CORS(app)
 
 # ====== CONFIG ======
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:5432/projetos_db'  # <— use localhost se a API roda fora do Docker
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@db:5432/projetos_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = True  # loga INSERT/UPDATE/SELECT
 db.init_app(app)
@@ -21,6 +22,53 @@ def _parse_date(s):
         return None
 
 # ====== ROTAS ======
+# Editar andamento
+@app.route('/api/andamentos/<int:andamento_id>', methods=['PUT'])
+def editar_andamento(andamento_id):
+    data = request.get_json() or {}
+    andamento = Andamento.query.get_or_404(andamento_id)
+
+    try:
+        if 'descricao' in data:
+            andamento.descricao = data['descricao']
+
+        db.session.commit()
+        return jsonify(andamento.to_dict()), 200
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception("Erro ao atualizar andamento")
+        return jsonify({'erro': str(e)}), 400
+
+
+# Excluir andamento
+@app.route('/api/andamentos/<int:andamento_id>', methods=['DELETE'])
+def deletar_andamento(andamento_id):
+    andamento = Andamento.query.get_or_404(andamento_id)
+    try:
+        db.session.delete(andamento)
+        db.session.commit()
+        return jsonify({'mensagem': 'Andamento excluído com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception("Erro ao deletar andamento")
+        return jsonify({'erro': str(e)}), 400
+
+
+# Listar histórico de um projeto
+@app.route('/api/projetos/<int:id>/andamentos', methods=['GET'])
+def listar_andamentos(id):
+    ands = Andamento.query.filter_by(projeto_id=id).order_by(Andamento.data.desc()).all()
+    return jsonify([a.to_dict() for a in ands]), 200
+
+# Adicionar novo andamento
+@app.route('/api/projetos/<int:id>/andamentos', methods=['POST'])
+def criar_andamento(id):
+    data = request.get_json() or {}
+    novo = Andamento(projeto_id=id, descricao=data.get('descricao'))
+    db.session.add(novo)
+    db.session.commit()
+    return jsonify(novo.to_dict()), 201
+
 @app.route('/api/projetos', methods=['GET'])
 def listar_projetos():
     itens = Projeto.query.order_by(Projeto.id.desc()).all()

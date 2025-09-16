@@ -46,3 +46,19 @@ class Projeto(db.Model):
             'riscos': self.riscos,
             'qualidade': self.qualidade
         }
+class Andamento(db.Model):
+    __tablename__ = 'andamentos'
+    id = db.Column(db.Integer, primary_key=True)
+    projeto_id = db.Column(db.Integer, db.ForeignKey('projetos.id', ondelete='CASCADE'))
+    data = db.Column(db.DateTime, default=db.func.now())
+    descricao = db.Column(db.Text, nullable=False)
+
+    projeto = db.relationship('Projeto', backref=db.backref('andamentos', cascade='all, delete-orphan'))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'projeto_id': self.projeto_id,
+            'data': self.data.isoformat() if self.data else None,
+            'descricao': self.descricao
+        }
