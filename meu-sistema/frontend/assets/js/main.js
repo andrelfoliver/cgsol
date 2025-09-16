@@ -7,6 +7,7 @@
   'use strict';
 
   const API = 'http://localhost:5001/api/projetos';
+  const API_ROOT = 'http://localhost:5001/api';
 
   // Cache em memória
   let cacheProjetos = [];
@@ -15,6 +16,30 @@
   let chartCodes = null;
   let chartCoset = null;
   let chartCgod = null;
+  let confirmCallback = null;
+  let cancelCallback = null;
+
+  window.showConfirm = function (msg, onConfirm, onCancel) {
+    const modal = document.getElementById('confirmModal');
+    const msgEl = document.getElementById('confirmMessage');
+    if (msgEl) msgEl.textContent = msg || 'Tem certeza?';
+    modal.classList.remove('hidden');
+    confirmCallback = onConfirm;
+    cancelCallback = onCancel;
+  };
+
+
+  window.confirmDelete = function () {
+    const modal = document.getElementById('confirmModal');
+    modal.classList.add('hidden');
+    if (typeof confirmCallback === 'function') confirmCallback();
+  };
+
+  window.cancelDelete = function () {
+    const modal = document.getElementById('confirmModal');
+    modal.classList.add('hidden');
+    if (typeof cancelCallback === 'function') cancelCallback();
+  };
 
   // ========= boot =========
   onReady(async () => {
@@ -35,6 +60,8 @@
     window.editProject = editProject;
     window.deleteProject = deleteProject;
     window.openNewProject = openNewProject;
+
+
 
     await loadProjetos();
     updateLastUpdateTime();
@@ -60,7 +87,43 @@
     }[c]));
   }
 
-  // ========= carregar projetos =========
+
+  function formatDateTimeRaw(raw) {
+    if (!raw) return '—';
+    // pega só YYYY-MM-DD HH:mm:ss
+    const m = String(raw).match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2}:\d{2})/);
+    if (m) return `${m[1]} ${m[2]}`;
+    return raw;
+  }
+
+  function formatToBrasilia(raw) {
+    if (!raw) return '—';
+    const d = new Date(raw);
+    if (isNaN(d)) return '—';
+
+    // Força ajuste de -3h (UTC → Brasília)
+    d.setHours(d.getHours() - 3);
+
+    return d.toLocaleString('pt-BR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  }
+
+
+  // 👇 ADICIONE ISSO
+  window.addAndamento = addAndamento;
+  window.confirmEditAndamento = confirmEditAndamento;
+  window.deleteAndamento = deleteAndamento;
+  window.startEditAndamento = startEditAndamento;
+  window.loadAndamentos = loadAndamentos;
+
+
   async function loadProjetos() {
     try {
       const res = await fetch(API);
@@ -72,7 +135,7 @@
       renderAllCoordTables(cacheProjetos);
       updateKPIs(cacheProjetos);
       drawCharts(cacheProjetos);
-      drawCodesSprintsChart(cacheProjetos);
+      //drawCodesSprintsChart(cacheProjetos);
       drawCosetTiposChart(cacheProjetos);
 
       updateLastUpdateTime();
@@ -81,7 +144,117 @@
       toast('Erro', 'Erro ao carregar projetos: ' + err.message, 'error');
     }
   }
+  function startEditAndamento(andamentoId, projetoId, descricaoRaw) {
+    const item = document.getElementById(`andamento-${andamentoId}`);
+    if (!item) return;
 
+    // Reescapa para uso seguro dentro do atributo value
+    const descricaoEsc = escapeHtml(descricaoRaw ?? '');
+
+    item.innerHTML = `
+      <input id="edit-input-${andamentoId}" type="text" class="border p-1 flex-1 rounded" value="${descricaoEsc}">
+      <div class="flex gap-2 ml-2">
+        <button class="px-2 py-1 text-xs bg-green-600 text-white rounded"
+                onclick="confirmEditAndamento(${andamentoId}, ${projetoId}, document.getElementById('edit-input-${andamentoId}').value)">💾 Salvar</button>
+        <button class="px-2 py-1 text-xs bg-gray-500 text-white rounded"
+                onclick="loadAndamentos(${projetoId})">❌ Cancelar</button>
+      </div>
+    `;
+  }
+
+
+
+  // Exibir andamentos no modal
+  function renderAndamentos(projetoId, andamentos) {
+    const container = document.getElementById("detailAndamentos");
+    container.innerHTML = "";
+
+    if (andamentos.length === 0) {
+      container.innerHTML = "<p>Nenhum andamento registrado.</p>";
+      return;
+    }
+
+    andamentos.forEach(a => {
+      const item = document.createElement("div");
+      item.className = "flex justify-between items-center p-2 border rounded bg-gray-50";
+      item.id = `andamento-${a.id}`;
+
+      item.innerHTML = `
+<span class="desc">${formatToBrasilia(a.data)} — ${escapeHtml(a.descricao)}</span>
+      <div class="flex gap-2">
+        <button class="px-2 py-1 text-xs bg-yellow-500 text-white rounded"
+                data-id="${a.id}"
+                data-projeto="${projetoId}"
+                data-desc="${escapeHtml(a.descricao)}"
+                onclick="startEditAndamento(this.dataset.id, this.dataset.projeto, this.dataset.desc)">✏️ Editar</button>
+        <button class="px-2 py-1 text-xs bg-red-600 text-white rounded"
+                onclick="deleteAndamento(${a.id}, ${projetoId})">🗑️ Excluir</button>
+      </div>
+    `;
+      container.appendChild(item);
+    });
+  }
+
+
+
+  // Adicionar andamento (já existente, mas adaptado p/ recarregar lista)
+  async function addAndamento(projetoId) {
+    const pid = projetoId || window.currentProjectId;
+    if (!pid) { toast('Erro', 'Projeto não identificado.', 'error'); return; }
+    const input = document.getElementById("newAndamento");
+    const descricao = input.value.trim();
+    if (!descricao) return;
+
+    const resp = await fetch(`${API_ROOT}/projetos/${pid}/andamentos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ descricao })
+    });
+    if (!resp.ok) {
+      const j = await safeJsonOrNull(resp);
+      return toast('Erro', (j && (j.erro || j.message)) || `Falha ao criar andamento (${resp.status})`, 'error');
+    }
+    input.value = "";
+    loadAndamentos(pid);
+  }
+
+  // Editar andamento
+  async function confirmEditAndamento(andamentoId, projetoId, novaDescricao) {
+    if (!novaDescricao.trim()) return;
+    const resp = await fetch(`${API_ROOT}/andamentos/${andamentoId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ descricao: novaDescricao })
+    });
+    if (!resp.ok) {
+      const j = await safeJsonOrNull(resp);
+      return toast('Erro', (j && (j.erro || j.message)) || `Falha ao editar (${resp.status})`, 'error');
+    }
+    loadAndamentos(projetoId);
+  }
+
+
+  async function deleteAndamento(andamentoId, projetoId) {
+    showConfirm("Tem certeza que deseja excluir este andamento?", async () => {
+      await fetch(`${API_ROOT}/andamentos/${andamentoId}`, { method: "DELETE" });
+      loadAndamentos(projetoId);
+    });
+  }
+
+
+
+  // Carregar lista de andamentos
+  async function loadAndamentos(projetoId) {
+    try {
+      const res = await fetch(`http://localhost:5001/api/projetos/${projetoId}/andamentos`);
+      if (!res.ok) throw new Error("Erro ao buscar andamentos");
+
+      const data = await res.json();
+      renderAndamentos(projetoId, data);
+    } catch (err) {
+      console.error("Erro ao carregar andamentos", err);
+    }
+  }
 
   // ========= Tabelas =========
   function renderRecentTable(list) {
@@ -425,9 +598,10 @@
     const ctx = byId('codesSprintsChart');
     if (!ctx) return;
 
-    // só pega projetos CODES ainda não concluídos
+    // dentro de drawCodesSprintsChart(projects)
     const ativos = projects.filter(
       p => p.coordenacao === 'CODES' &&
+        p.status === 'Em Andamento' &&
         p.totalSprints &&
         p.sprintsConcluidas != null &&
         p.sprintsConcluidas < p.totalSprints
@@ -561,13 +735,32 @@
     }
 
     const mapTbody = { CODES: 'codesTableBody', COSET: 'cosetTableBody', CGOD: 'cgodTableBody' };
+    // controla visibilidade do gráfico de sprints (CODES -> Em Desenvolvimento)
+    const sprintsWrapper = document.getElementById('codesSprintsWrapper');
+    if (sprintsWrapper) {
+      if (coord === 'CODES' && cat === 'desenvolvimento') {
+        sprintsWrapper.classList.remove('hidden');
+        drawCodesSprintsChart(filtered); // redesenha com os projetos filtrados
+      } else {
+        sprintsWrapper.classList.add('hidden');
+        if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
+      }
+    }
+
+
     renderCoordTable(coord, mapTbody[coord], filtered);
+
   }
+
 
   // ========= DETALHE =========
   function showProjectDetail(idOrName) {
     const p = findProjeto(idOrName);
     if (!p) return toast('Não encontrado', 'Projeto não encontrado', 'warn');
+
+    // guarda o ID do projeto atual
+    window.currentProjectId = p.id;
+    loadAndamentos(p.id);
 
     setText('detailProjectName', p.nome || '—');
     setText('detailProjectType', `${p.tipo || '—'} • ${p.coordenacao || '—'}`);
@@ -579,12 +772,18 @@
     }
 
     setText('detailPrioridade', p.prioridade || '—');
-    setText('detailSprints', (p.sprintsConcluidas != null && p.totalSprints != null) ? `${p.sprintsConcluidas} de ${p.totalSprints}` : '—');
+    setText('detailSprints',
+      (p.sprintsConcluidas != null && p.totalSprints != null)
+        ? `${p.sprintsConcluidas} de ${p.totalSprints}` : '—'
+    );
     setText('detailCoordenacao', p.coordenacao || '—');
     setText('detailResponsavel', p.responsavel || '—');
     setText('detailStatus', p.status || '—');
-    setText('detailInicio', formatDate(p.inicio));
-    setText('detailFim', formatDate(p.fim));
+
+    // ✅ Ajustado para horário de Brasília
+    setText('detailInicio', formatToBrasilia(p.inicio));
+    setText('detailFim', formatToBrasilia(p.fim));
+
     setText('detailDescricao', p.descricao || '—');
     setText('detailOrcamento', formatCurrency(p.orcamento));
     setText('detailRiscos', p.riscos || '—');
@@ -608,8 +807,13 @@
       }
     }
 
+    // carrega os andamentos do projeto
+    loadAndamentos(p.id);
+
     window.showModal && window.showModal('projectDetailModal');
   }
+
+
 
   function editProject(idOrName) {
     const p = findProjeto(idOrName);
@@ -744,31 +948,34 @@
       toast('Erro', err.message, 'error');
     }
   }
-
-
-  // ========= DELETE =========
-  // ========= Deletar =========
+  // Excluir projeto
   async function deleteProject(idOrName) {
     const p = findProjeto(idOrName);
-    if (!p || !p.id) return toast('Ação inválida', 'Não foi possível identificar o ID do projeto.', 'warn');
-
-    const ok = confirm(`Excluir o projeto "${p.nome}"? Esta ação não pode ser desfeita.`);
-    if (!ok) return;
-
-    try {
-      const res = await fetch(`${API}/${p.id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const erro = await safeJsonOrNull(res);
-        throw new Error((erro && erro.erro) || `Erro ao excluir (${res.status})`);
-      }
-
-      toast('Sucesso', 'Projeto excluído com sucesso!', 'success');
-      await loadProjetos();
-    } catch (err) {
-      console.error(err);
-      toast('Erro', err.message, 'error');
+    if (!p || !p.id) {
+      return toast('Ação inválida', 'Não foi possível identificar o ID do projeto.', 'warn');
     }
+
+    showConfirm(
+      `Tem certeza que deseja excluir o projeto "${p.nome}"? Esta ação não pode ser desfeita.`,
+      async () => {
+        try {
+          const res = await fetch(`${API}/${p.id}`, { method: 'DELETE' });
+          if (!res.ok) {
+            const erro = await safeJsonOrNull(res);
+            throw new Error((erro && erro.erro) || `Erro ao excluir (${res.status})`);
+          }
+
+          toast('Sucesso', 'Projeto excluído com sucesso!', 'success');
+          await loadProjetos();
+        } catch (err) {
+          console.error(err);
+          toast('Erro', err.message, 'error');
+        }
+      }
+    );
   }
+
+
 
   // ========= Utils =========
   function findProjeto(idOrName) {
@@ -799,8 +1006,21 @@
   function formatDate(s) {
     if (!s) return '—';
     const d = new Date(s);
-    return isNaN(d) ? '—' : d.toLocaleDateString('pt-BR');
+    return isNaN(d)
+      ? '—'
+      : d.toLocaleString('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
   }
+
+
 
   function formatCurrency(v) {
     if (v == null) return '—';
@@ -813,14 +1033,20 @@
     const n = Number(v);
     return isNaN(n) ? null : n;
   }
-
   function updateLastUpdateTime() {
     const now = new Date();
     document.querySelectorAll('#lastUpdate').forEach(el => {
-      el.textContent = `Hoje, ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      el.textContent = `Hoje, ${now.toLocaleTimeString('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })}`;
     });
-    const yEl = byId('footerYear'); if (yEl) yEl.textContent = String(now.getFullYear());
+    const yEl = byId('footerYear');
+    if (yEl) yEl.textContent = String(now.getFullYear());
   }
+
 
   // ========= Notificação simples =========
   function toast(title, message, type) {

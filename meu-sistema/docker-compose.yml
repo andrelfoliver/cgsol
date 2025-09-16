@@ -20,7 +20,7 @@ services:
       DB_HOST: db
       DB_PORT: 5432
     ports:
-      - "5000:5000"
+      - "5001:5001"
 
   pgadmin:
     image: dpage/pgadmin4
