@@ -24,6 +24,8 @@ class Projeto(db.Model):
     rag = db.Column(db.String(20))
     riscos = db.Column(db.Text)
     qualidade = db.Column(db.Integer)
+    internalizacao = db.Column(db.Boolean, default=False)
+
 
     def to_dict(self):
         return {
@@ -44,7 +46,9 @@ class Projeto(db.Model):
             'equipe': self.equipe,
             'rag': self.rag,
             'riscos': self.riscos,
-            'qualidade': self.qualidade
+            'qualidade': self.qualidade,
+            'internalizacao': self.internalizacao,
+
         }
 class Andamento(db.Model):
     __tablename__ = 'andamentos'

@@ -7,6 +7,8 @@
   <title>SigSOL - Sistema de Gestão e Monitoramento da CGSOL</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
   <style>
     .rag-verde {
       background-color: #16a34a
@@ -335,7 +337,7 @@
             <div class="space-y-3">
               <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <div>
-                  <p class="font-medium text-gray-900">Em Desenvolvimento</p>
+                  <p class="font-medium text-gray-900">Na Fábrica</p>
                   <p class="text-xs text-gray-600">Projetos ativos</p>
                 </div>
                 <span class="text-lg font-bold text-blue-600">0</span>
@@ -488,7 +490,7 @@
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">💻</div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Em Desenvolvimento</p>
+              <p class="text-sm font-medium text-gray-600">Na Fábrica</p>
               <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
@@ -566,14 +568,24 @@
 
 
 
-      <!-- Gráfico CODES (aparece só em Em Desenvolvimento) -->
-      <div id="codesSprintsWrapper" class="bg-white rounded-lg shadow-md p-6 mb-8 hidden">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Sprints Concluídas por Projeto</h3>
-        <div class="h-80 flex items-center justify-center">
-          <canvas id="codesSprintsChart"></canvas>
+      <!-- Gráficos CODES -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Gráfico Na Fábrica -->
+        <div id="codesSprintsWrapper" class="bg-white rounded-lg shadow-md p-6 hidden">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Sprints Concluídas por Projeto</h3>
+          <div class="h-80 flex items-center justify-center">
+            <canvas id="codesSprintsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico Internalização -->
+        <div id="codesInternWrapper" class="bg-white rounded-lg shadow-md p-6 hidden">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Prazo Previsto — Internalização</h3>
+          <div class="h-80 flex items-center justify-center">
+            <canvas id="codesInternChart"></canvas>
+          </div>
         </div>
       </div>
-
 
 
       <!-- Tabela CODES -->
@@ -584,7 +596,7 @@
               <tr>
                 <th
                   class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onclick="sortTable('nome')">Projetooo ↕️</th>
+                  onclick="sortTable('nome')">Projeto ↕️</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Farol de
                   entrega</th>
@@ -926,6 +938,12 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Sprints Concluídas</label>
                 <input id="projectSprintsConcluidas" type="number" min="0"
                   class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+              </div>
+              <div class="flex items-center space-x-2">
+                <input id="projectInternalizacao" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                <label for="projectInternalizacao" class="text-sm text-gray-700">
+                  Este projeto é de Internalização
+                </label>
               </div>
 
               <div>
@@ -1371,7 +1389,7 @@
   </script>
 
   <!-- Lógica dinâmica (main.js) -->
-  <script src="assets/js/main.js?v=8" defer></script>
+  <script src="assets/js/main.js?v=9" defer></script>
 </body>
 
 </html>

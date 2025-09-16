@@ -39,6 +39,16 @@ def editar_andamento(andamento_id):
         app.logger.exception("Erro ao atualizar andamento")
         return jsonify({'erro': str(e)}), 400
 
+def _parse_bool(v):
+    if isinstance(v, bool):
+        return v
+    if v is None:
+        return False
+    if isinstance(v, (int, float)):
+        return bool(v)
+    s = str(v).strip().lower()
+    return s in ('1', 'true', 't', 'yes', 'y', 'on', 'sim')
+
 
 # Excluir andamento
 @app.route('/api/andamentos/<int:andamento_id>', methods=['DELETE'])
@@ -87,6 +97,8 @@ def criar_projeto():
         'descricao':   data.get('descricao'),
         'inicio':      _parse_date(data.get('inicio')),
         'fim':         _parse_date(data.get('fim')),
+        'internalizacao': _parse_bool(data.get('internalizacao', False)),
+
 
         # extras
         'prioridade':        data.get('prioridade'),
@@ -125,6 +137,9 @@ def editar_projeto(id):
         ]:
             if field in data:
                 setattr(p, field, data[field])
+
+        if 'internalizacao' in data:
+            p.internalizacao = _parse_bool(data['internalizacao'])
 
         if 'inicio' in data: p.inicio = _parse_date(data['inicio'])
         if 'fim' in data:    p.fim    = _parse_date(data['fim'])

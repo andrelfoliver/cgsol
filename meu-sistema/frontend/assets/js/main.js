@@ -13,6 +13,7 @@
   let cacheProjetos = [];
   let chartCoordenacao = null;
   let chartStatus = null;
+  let chartIntern = null;
   let chartCodes = null;
   let chartCoset = null;
   let chartCgod = null;
@@ -27,7 +28,6 @@
     confirmCallback = onConfirm;
     cancelCallback = onCancel;
   };
-
 
   window.confirmDelete = function () {
     const modal = document.getElementById('confirmModal');
@@ -261,38 +261,51 @@
     const tbody = byId('projectsTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
+
     if (!list.length) {
       tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto cadastrado.</td></tr>`;
       return;
     }
-    list.forEach(p => {
+
+    // 🔽 Ordena pelos mais recentes (usando data de início ou fim)
+    const sorted = [...list].sort((a, b) => {
+      const da = new Date(a.inicio || a.fim || 0);
+      const db = new Date(b.inicio || b.fim || 0);
+      return db - da; // mais novo primeiro
+    });
+
+    // 🔽 Pega só os 5 primeiros
+    const recent = sorted.slice(0, 5);
+
+    recent.forEach(p => {
       const idArg = js(p.id);
       tbody.insertAdjacentHTML('beforeend', `
-          <tr>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-900">${escapeHtml(p.coordenacao) || '-'}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">
-                ${escapeHtml(p.status) || '-'}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail(${idArg})">👁️ Ver</button>
-              <button class="text-green-600 hover:text-green-900 mr-3" onclick="editProject(${idArg})">✏️ Editar</button>
-              <button class="text-red-600 hover:text-red-900" onclick="deleteProject(${idArg})">🗑️ Excluir</button>
-            </td>
-          </tr>
-        `);
+        <tr>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${escapeHtml(p.coordenacao) || '-'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">
+              ${escapeHtml(p.status) || '-'}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail(${idArg})">👁️ Ver</button>
+            <button class="text-green-600 hover:text-green-900 mr-3" onclick="editProject(${idArg})">✏️ Editar</button>
+            <button class="text-red-600 hover:text-red-900" onclick="deleteProject(${idArg})">🗑️ Excluir</button>
+          </td>
+        </tr>
+      `);
     });
   }
+
 
   function renderAllCoordTables(list) {
     renderCoordTable('CODES', 'codesTableBody', list);
@@ -598,7 +611,6 @@
     const ctx = byId('codesSprintsChart');
     if (!ctx) return;
 
-    // dentro de drawCodesSprintsChart(projects)
     const ativos = projects.filter(
       p => p.coordenacao === 'CODES' &&
         p.status === 'Em Andamento' &&
@@ -619,39 +631,34 @@
     }
 
     const labels = ativos.map(p => p.nome);
-    const progresso = ativos.map(p =>
-      Math.round((p.sprintsConcluidas / p.totalSprints) * 100)
-    );
+    const progresso = ativos.map(p => Math.round((p.sprintsConcluidas / p.totalSprints) * 100));
 
     if (chartCodes) chartCodes.destroy();
     chartCodes = new Chart(ctx, {
       type: "bar",
       data: {
         labels,
-        datasets: [{
-          label: "% concluído",
-          data: progresso,
-          backgroundColor: "#3b82f6"
-        }]
+        datasets: [{ label: "% concluído", data: progresso, backgroundColor: "#3b82f6" }]
       },
       options: {
-        indexAxis: "y", // barras horizontais
+        indexAxis: "y",
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: function (ctx) {
+              label(ctx) {
                 const proj = ativos[ctx.dataIndex];
-                return `${ctx.parsed.x}% (${proj.sprintsConcluidas}/${proj.totalSprints})`;
+                const equipe = proj.equipe ? ` • Equipe: ${proj.equipe}` : "";
+                return `${proj.nome}: ${ctx.parsed.x}% (${proj.sprintsConcluidas}/${proj.totalSprints})${equipe}`;
               }
             }
           }
         },
         scales: {
           x: {
-            min: 0,
-            max: 100,
+            min: 0, max: 100,
             ticks: { callback: v => v + "%" },
             title: { display: true, text: "% das Sprints concluídas" }
           }
@@ -659,6 +666,89 @@
       }
     });
   }
+
+  function drawCodesInternChart(projects) {
+    const ctx = byId('codesInternChart');
+    if (!ctx) return;
+
+    // 1) Converte e valida datas (nada de NaN)
+    const items = projects
+      .map(p => {
+        const di = Date.parse(p.inicio);
+        const df = Date.parse(p.fim);
+        if (!Number.isFinite(di) || !Number.isFinite(df)) return null; // descarta inválidos
+
+        return {
+          y: p.nome,
+          x: [di, df],                 // intervalo início → fim (ms)
+          start: di,
+          end: df,
+          atrasado: df < Date.now(),
+          responsavel: p.responsavel,
+          equipe: p.equipe
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.start - b.start);
+
+    if (!items.length) {
+      if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
+      return;
+    }
+
+    // 2) Domínio do eixo X baseado nos dados (evita 1970)
+    const min = Math.min(...items.map(d => d.start));
+    const max = Math.max(...items.map(d => d.end));
+    const pad = Math.max(24 * 60 * 60 * 1000, Math.round((max - min) * 0.05)); // 1 dia ou 5%
+
+    // 3) Desenha
+    if (chartIntern) chartIntern.destroy();
+    chartIntern = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        datasets: [{
+          data: items,
+          backgroundColor: items.map(d => d.atrasado ? '#dc2626' : '#3b82f6'),
+          borderRadius: 6
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        maintainAspectRatio: false,
+        parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label(ctx) {
+                const d = ctx.raw;
+                const ini = new Date(d.start).toLocaleDateString('pt-BR');
+                const fim = new Date(d.end).toLocaleDateString('pt-BR');
+                const resp = d.responsavel ? ` • Resp: ${d.responsavel}` : '';
+                const eq = d.equipe ? ` • Eq: ${d.equipe}` : '';
+                return `${d.y}: ${ini} → ${fim}${resp}${eq}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'time',
+            min: min - pad,
+            max: max + pad,
+            time: { unit: (max - min) > 1000 * 60 * 60 * 24 * 150 ? 'month' : 'week' },
+            title: { display: true, text: 'Período' }
+          },
+          y: { title: { display: true, text: 'Projetos' } }
+        }
+      }
+    });
+  }
+
+
+
+
+
 
 
   function drawCosetTiposChart(projects) {
@@ -737,14 +827,40 @@
     const mapTbody = { CODES: 'codesTableBody', COSET: 'cosetTableBody', CGOD: 'cgodTableBody' };
     // controla visibilidade do gráfico de sprints (CODES -> Em Desenvolvimento)
     const sprintsWrapper = document.getElementById('codesSprintsWrapper');
-    if (sprintsWrapper) {
-      if (coord === 'CODES' && cat === 'desenvolvimento') {
-        sprintsWrapper.classList.remove('hidden');
-        drawCodesSprintsChart(filtered); // redesenha com os projetos filtrados
-      } else {
-        sprintsWrapper.classList.add('hidden');
-        if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
+    const internWrapper = document.getElementById('codesInternWrapper');
+
+    if (coord === 'CODES' && cat === 'desenvolvimento') {
+      // Separa projetos da fábrica e de internalização
+      const fabrica = filtered.filter(p => !p.internalizacao);
+      const intern = filtered.filter(p => p.internalizacao);
+
+      // Gráfico da fábrica
+      if (sprintsWrapper) {
+        if (fabrica.length) {
+          sprintsWrapper.classList.remove('hidden');
+          drawCodesSprintsChart(fabrica);
+        } else {
+          sprintsWrapper.classList.add('hidden');
+          if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
+        }
       }
+
+      // Gráfico da internalização
+      if (internWrapper) {
+        if (intern.length) {
+          internWrapper.classList.remove('hidden');
+          drawCodesInternChart(intern);
+        } else {
+          internWrapper.classList.add('hidden');
+          if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
+        }
+      }
+    } else {
+      if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
+      if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
+
+      if (internWrapper) internWrapper.classList.add('hidden');
+      if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
     }
 
 
@@ -787,6 +903,7 @@
     setText('detailDescricao', p.descricao || '—');
     setText('detailOrcamento', formatCurrency(p.orcamento));
     setText('detailRiscos', p.riscos || '—');
+    setText('detailInternalizacao', p.internalizacao ? 'Sim' : 'Não');
 
     const prog = (p.progresso != null) ? Number(p.progresso) : null;
     const progBar = byId('detailProgress');
@@ -847,6 +964,8 @@
     setValue('projectQualidade', p.qualidade);
 
     toggleFormByCoord(p.coordenacao);
+    const chk = byId('projectInternalizacao');
+    if (chk) chk.checked = !!p.internalizacao;
 
     const h = document.querySelector('#projectModal h3'); if (h) h.textContent = 'Editar Projeto';
     const btn = byId('submitProjectBtn'); if (btn) btn.textContent = 'Atualizar Projeto';
@@ -909,7 +1028,8 @@
       equipe: getValue('projectEquipe'),
       rag: getValue('projectRag'),
       riscos: getValue('projectRisco'),
-      qualidade: numOrNull(getValue('projectQualidade'))
+      qualidade: numOrNull(getValue('projectQualidade')),
+      internalizacao: byId('projectInternalizacao')?.checked || false
     };
 
     // Validação mínima
