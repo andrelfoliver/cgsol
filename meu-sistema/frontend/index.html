@@ -581,10 +581,12 @@
         <!-- Gráfico Internalização -->
         <div id="codesInternWrapper" class="bg-white rounded-lg shadow-md p-6 hidden">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">Prazo Previsto — Internalização</h3>
-          <div class="h-80 flex items-center justify-center">
+          <div class="h-80">
             <canvas id="codesInternChart"></canvas>
           </div>
+          <div id="codesInternLegend" class="custom-legend text-xs text-gray-600 mt-2 flex justify-center gap-6"></div>
         </div>
+
       </div>
 
 
@@ -1386,6 +1388,13 @@
       const firstBtn = document.querySelector('nav .nav-btn:first-child');
       showPage('home', firstBtn);
     });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0"></script>
+  <script>
+    if (window['chartjs-plugin-annotation']) {
+      Chart.register(window['chartjs-plugin-annotation']);
+    }
   </script>
 
   <!-- Lógica dinâmica (main.js) -->

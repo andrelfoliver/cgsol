@@ -671,45 +671,43 @@
     const ctx = byId('codesInternChart');
     if (!ctx) return;
 
-    // 1) Converte e valida datas (nada de NaN)
+    const now = Date.now();
+
     const items = projects
       .map(p => {
-        const di = Date.parse(p.inicio);
-        const df = Date.parse(p.fim);
-        if (!Number.isFinite(di) || !Number.isFinite(df)) return null; // descarta inválidos
+        const ini = p.inicio ? new Date(p.inicio).getTime() : null;
+        const fim = p.fim ? new Date(p.fim).getTime() : null;
+        if (!ini || !fim) return null;
 
-        return {
-          y: p.nome,
-          x: [di, df],                 // intervalo início → fim (ms)
-          start: di,
-          end: df,
-          atrasado: df < Date.now(),
-          responsavel: p.responsavel,
-          equipe: p.equipe
-        };
+        const daysToEnd = Math.ceil((fim - now) / (1000 * 60 * 60 * 24));
+        let cor = '#16a34a';
+        if (fim < now) cor = '#dc2626';
+        else if (daysToEnd <= 7) cor = '#f59e0b';
+
+        return { y: p.nome, x: [ini, fim], responsavel: p.responsavel, equipe: p.equipe, status: p.status, cor };
       })
       .filter(Boolean)
-      .sort((a, b) => a.start - b.start);
+      .sort((a, b) => a.x[0] - b.x[0]);
 
     if (!items.length) {
-      if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
+      if (chartIntern) chartIntern.destroy();
       return;
     }
 
-    // 2) Domínio do eixo X baseado nos dados (evita 1970)
-    const min = Math.min(...items.map(d => d.start));
-    const max = Math.max(...items.map(d => d.end));
-    const pad = Math.max(24 * 60 * 60 * 1000, Math.round((max - min) * 0.05)); // 1 dia ou 5%
+    const minX = Math.min(...items.map(d => d.x[0]));
+    const maxX = Math.max(...items.map(d => d.x[1]));
+    const pad = 3 * 24 * 3600 * 1000;
 
-    // 3) Desenha
     if (chartIntern) chartIntern.destroy();
     chartIntern = new Chart(ctx, {
       type: 'bar',
       data: {
         datasets: [{
           data: items,
-          backgroundColor: items.map(d => d.atrasado ? '#dc2626' : '#3b82f6'),
-          borderRadius: 6
+          backgroundColor: items.map(d => d.cor),
+          borderRadius: 6,
+          barPercentage: 0.9,
+          categoryPercentage: 0.8
         }]
       },
       options: {
@@ -722,11 +720,35 @@
             callbacks: {
               label(ctx) {
                 const d = ctx.raw;
-                const ini = new Date(d.start).toLocaleDateString('pt-BR');
-                const fim = new Date(d.end).toLocaleDateString('pt-BR');
-                const resp = d.responsavel ? ` • Resp: ${d.responsavel}` : '';
-                const eq = d.equipe ? ` • Eq: ${d.equipe}` : '';
-                return `${d.y}: ${ini} → ${fim}${resp}${eq}`;
+                const ini = new Date(d.x[0]).toLocaleDateString('pt-BR');
+                const fim = new Date(d.x[1]).toLocaleDateString('pt-BR');
+                return [
+                  `Projeto: ${d.y}`,
+                  `Período: ${ini} → ${fim}`,
+                  d.responsavel ? `Responsável: ${d.responsavel}` : null,
+                  d.equipe ? `Equipe: ${d.equipe}` : null,
+                  d.status ? `Status: ${d.status}` : null
+                ].filter(Boolean);
+              }
+            }
+          },
+          annotation: {
+            annotations: {
+              hoje: {
+                type: 'line',
+                xMin: now,
+                xMax: now,
+                borderColor: '#111827',
+                borderWidth: 2,
+                label: {
+                  enabled: true,
+                  content: 'Hoje',
+                  position: 'start',
+                  backgroundColor: '#111827',
+                  color: '#fff',
+                  font: { size: 10 },
+                  yAdjust: -6
+                }
               }
             }
           }
@@ -734,20 +756,33 @@
         scales: {
           x: {
             type: 'time',
-            min: min - pad,
-            max: max + pad,
-            time: { unit: (max - min) > 1000 * 60 * 60 * 24 * 150 ? 'month' : 'week' },
+            min: minX - pad,
+            max: maxX + pad,
+            time: {
+              unit: 'day',
+              tooltipFormat: 'dd/MM/yyyy',
+              displayFormats: { day: 'dd/MM' }
+            },
             title: { display: true, text: 'Período' }
           },
           y: { title: { display: true, text: 'Projetos' } }
         }
       }
     });
+
+    // 👉 Legenda manual
+    const legendEl = ctx.parentNode.querySelector('.custom-legend');
+    if (!legendEl) {
+      const div = document.createElement('div');
+      div.className = 'custom-legend text-xs text-gray-600 mt-2 flex justify-center gap-6';
+      div.innerHTML = `
+        <span class="flex items-center gap-1"><span class="w-3 h-3 inline-block rounded-full" style="background:#16a34a"></span> Dentro do prazo</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 inline-block rounded-full" style="background:#f59e0b"></span> Próximo do prazo</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 inline-block rounded-full" style="background:#dc2626"></span> Atrasado</span>
+      `;
+      ctx.parentNode.appendChild(div);
+    }
   }
-
-
-
-
 
 
 
@@ -1109,8 +1144,8 @@
       case 'Em Risco': return 'bg-red-100 text-red-800';
       case 'Concluído': return 'bg-blue-100 text-blue-800';
       case 'Sustentação': return 'bg-yellow-100 text-yellow-800';
-      case 'Planejado': return 'bg-purple-100 text-purple-800';
-      case 'Pausado': return 'bg-gray-300 text-gray-800';
+      case 'Planejado': return 'bg-gray-300 text-gray-800';
+      case 'Pausado': return 'bg-purple-100 text-purple-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   }
