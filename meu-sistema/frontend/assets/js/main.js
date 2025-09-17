@@ -817,8 +817,9 @@
 
   // ========= FILTROS =========
   function filterProjects(coordenacao, categoria) {
+    const sprintsWrapper = document.getElementById('codesSprintsWrapper');
+    const internWrapper = document.getElementById('codesInternWrapper');
     const sustentacaoWrapper = document.getElementById('codesSustentacaoWrapper');
-
     // Navega para a página correta (usa showPage do HTML)
     const go = () => {
       const map = { CODES: 'codes', COSET: 'coset', CGOD: 'cgod' };
@@ -835,31 +836,118 @@
     const coord = (coordenacao || '').toUpperCase();
     const cat = (categoria || '').toLowerCase();
 
+
     let filtered = cacheProjetos.filter(p => (p.coordenacao || '').toUpperCase() === coord);
     if (coord === 'CODES') {
-      if (cat === 'ativos') filtered = filtered.filter(p => p.status === 'Em Andamento' || p.status === 'Sustentação');
-      if (cat === 'desenvolvimento') filtered = filtered.filter(p => p.status === 'Em Andamento');
-      if (cat === 'sustentacao') filtered = filtered.filter(p => (p.status || '').toLowerCase().includes('susten'));
-      if (cat === 'fora-prazo') filtered = filtered.filter(p => (p.rag === 'Vermelho') || p.status === 'Em Risco');
-      if (cat === 'planejado') filtered = filtered.filter(p => p.status === 'Planejado');
-      if (cat === 'concluido') filtered = filtered.filter(p => p.status === 'Concluído');
-      if (cat === 'pausado') filtered = filtered.filter(p => p.status === 'Pausado');
-      if (cat === 'total') filtered = filtered; // mostra todos os projetos CODES
-      if (cat === 'sustentacao') {
+      // Separa os grupos
+      const fabrica = filtered.filter(p => p.status === 'Em Andamento' && !p.internalizacao);
+      const intern = filtered.filter(p => p.status === 'Em Andamento' && p.internalizacao);
+      const sust = filtered.filter(p => (p.status || '').toLowerCase().includes('susten'));
+
+      if (cat === 'desenvolvimento') {
+        // Tabela só com projetos em andamento
+        filtered = fabrica.concat(intern);
+
+        // Fábrica
+        if (sprintsWrapper) {
+          if (fabrica.length) {
+            sprintsWrapper.classList.remove('hidden');
+            drawCodesSprintsChart(fabrica);
+          } else {
+            sprintsWrapper.classList.add('hidden');
+            if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
+          }
+        }
+
+        // Internalização
+        if (internWrapper) {
+          if (intern.length) {
+            internWrapper.classList.remove('hidden');
+            drawCodesInternChart(intern);
+          } else {
+            internWrapper.classList.add('hidden');
+            if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
+          }
+        }
+
+        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
+      }
+
+      else if (cat === 'sustentacao') {
+        filtered = sust;
+
         if (sustentacaoWrapper) {
           sustentacaoWrapper.classList.remove('hidden');
-          drawCodesSustentacaoCharts(filtered);
+          window.loadSustentacao && window.loadSustentacao();
         }
+
+        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
+        if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
+        if (internWrapper) internWrapper.classList.add('hidden');
+        if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
+      }
+
+      // ✅ ATIVOS (agora filtra só Em Andamento + Sustentação)
+      else if (cat === 'ativos') {
+        filtered = filtered.filter(p => p.status === 'Em Andamento' || p.status === 'Sustentação');
+        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
+        if (internWrapper) internWrapper.classList.add('hidden');
+        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
+      }
+
+      else if (cat === 'fora-prazo') {
+        const now = new Date();
+        filtered = filtered.filter(p => {
+          const st = (p.status || '').toLowerCase();
+          if (!['em andamento', 'sustentação', 'em risco'].includes(st)) return false;
+          if (!p.fim) return false;
+          const d = new Date(p.fim);
+          return !isNaN(d) && d < now;
+        });
+        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
+        if (internWrapper) internWrapper.classList.add('hidden');
+        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
       }
 
 
+      else if (cat === 'planejado') {
+        filtered = filtered.filter(p => p.status === 'Planejado');
+        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
+        if (internWrapper) internWrapper.classList.add('hidden');
+        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
+      }
+
+      else if (cat === 'pausado') {
+        filtered = filtered.filter(p => p.status === 'Pausado');
+        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
+        if (internWrapper) internWrapper.classList.add('hidden');
+        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
+      }
+
+      else if (cat === 'concluido') {
+        filtered = filtered.filter(p => p.status === 'Concluído');
+        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
+        if (internWrapper) internWrapper.classList.add('hidden');
+        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
+      }
+
+      else {
+        // Nenhum filtro específico
+        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
+        if (internWrapper) internWrapper.classList.add('hidden');
+        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
+      }
     }
+
+
+
     if (coord === 'COSET') {
       if (cat === 'infraestrutura') filtered = filtered.filter(p => p.tipo === 'Infraestrutura');
       if (cat === 'integracao') filtered = filtered.filter(p => p.tipo === 'Sistema Integrado' || p.tipo === 'Integração');
       if (cat === 'modernizacao') filtered = filtered.filter(p => p.tipo === 'Modernização');
       if (cat === 'sistemas-integrados') filtered = filtered.filter(p => p.tipo === 'Sistema Integrado');
     }
+
     if (coord === 'CGOD') {
       if (cat === 'analytics') filtered = filtered.filter(p => p.tipo === 'BI Dashboard' || p.tipo === 'Dashboard');
       if (cat === 'catalogos') filtered = filtered.filter(p => p.tipo === 'Sistema de Dados' || /cat[áa]logo/i.test(p.nome || ''));
@@ -869,16 +957,13 @@
     }
 
     const mapTbody = { CODES: 'codesTableBody', COSET: 'cosetTableBody', CGOD: 'cgodTableBody' };
+    renderCoordTable(coord, mapTbody[coord], filtered);
+
     // controla visibilidade do gráfico de sprints (CODES -> Em Desenvolvimento)
-    const sprintsWrapper = document.getElementById('codesSprintsWrapper');
-    const internWrapper = document.getElementById('codesInternWrapper');
+
 
     if (coord === 'CODES' && cat === 'desenvolvimento') {
-      // Separa projetos da fábrica e de internalização
-      const fabrica = filtered.filter(p => !p.internalizacao);
-      const intern = filtered.filter(p => p.internalizacao);
-
-      // Gráfico da fábrica
+      // Fábrica
       if (sprintsWrapper) {
         if (fabrica.length) {
           sprintsWrapper.classList.remove('hidden');
@@ -889,7 +974,7 @@
         }
       }
 
-      // Gráfico da internalização
+      // Internalização
       if (internWrapper) {
         if (intern.length) {
           internWrapper.classList.remove('hidden');
@@ -899,30 +984,40 @@
           if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
         }
       }
-    } else {
+
+      // Esconde Sustentação
+      const sustWrapper = document.getElementById('codesSustentacaoWrapper');
+      if (sustWrapper) sustWrapper.classList.add('hidden');
+
+    } else if (coord === 'CODES' && cat === 'sustentacao') {
+      const sustWrapper = document.getElementById('codesSustentacaoWrapper');
+      if (sustWrapper) {
+        sustWrapper.classList.remove('hidden');
+        window.loadSustentacao && window.loadSustentacao();
+      }
+
+
+      // Esconde os outros
       if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
       if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
 
       if (internWrapper) internWrapper.classList.add('hidden');
       if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
-    }
 
+    } else {
+      // Se não for desenvolvimento nem sustentação → esconde tudo
+      if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
+      if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
 
-    renderCoordTable(coord, mapTbody[coord], filtered);
+      if (internWrapper) internWrapper.classList.add('hidden');
+      if (chartIntern) chartIntern.destroy();
 
-  }
-
-  if (coord === 'CODES' && cat === 'sustentacao') {
-    if (sustentacaoWrapper) {
-      if (filtered.length) {
-        sustentacaoWrapper.classList.remove('hidden');
-        drawCodesSustentacaoCharts(filtered);
-      } else {
-        sustentacaoWrapper.classList.add('hidden');
-        if (chartSustentacao) { chartSustentacao.destroy(); chartSustentacao = null; }
-      }
+      const sustWrapper = document.getElementById('codesSustentacaoWrapper');
+      if (sustWrapper) sustWrapper.classList.add('hidden');
     }
   }
+
+
 
   // ========= DETALHE =========
   function showProjectDetail(idOrName) {

@@ -329,7 +329,8 @@
           <!-- CODES -->
           <div data-card="codes:desenvolvimento"
             class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-            onclick="filterProjects('codes','desenvolvimento')">
+            onclick="filterProjects('CODES','desenvolvimento')">
+
             <div class="flex items-center mb-4">
               <div class="p-2 rounded-lg bg-blue-100 text-blue-600 mr-3">💻</div>
               <h4 class="text-lg font-semibold text-gray-800">CODES</h4>
@@ -344,7 +345,8 @@
               </div>
               <div data-card="codes:sustentacao"
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('codes','sustentacao')">
+                onclick="filterProjects('CODES','sustentacao')">
+
                 <div>
                   <p class="font-medium text-gray-900">Em Sustentação</p>
                   <p class="text-xs text-gray-600">Sistemas em produção</p>
@@ -595,8 +597,21 @@
         <div class="h-80 flex items-center justify-center">
           <canvas id="codesSustentacaoChart"></canvas>
         </div>
+        <!-- 🔽 Tabela que o JS espera -->
+        <div class="mt-6 overflow-x-auto">
+          <table class="min-w-full table-auto border">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aplicação
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SLA</th>
+              </tr>
+            </thead>
+            <tbody id="sustentacaoTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+          </table>
+        </div>
       </div>
-
       <!-- Modal de Sustentação -->
       <div id="sustentacaoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen p-4">
@@ -662,7 +677,8 @@
 
       <div class="flex justify-end items-center mb-6">
         <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm"
-          onclick="exportData('pdf')">📄 Exportar PDF</button>
+          onclick="exportData('pdf')">📄
+          Exportar PDF</button>
       </div>
 
     </div><!-- /CODES -->
@@ -1427,10 +1443,11 @@
       Chart.register(window['chartjs-plugin-annotation']);
     }
   </script>
-  <script src="assets/js/codes-sustentacao.js" defer></script>
-
   <!-- Lógica dinâmica (main.js) -->
   <script src="assets/js/main.js?v=9" defer></script>
+  <script src="assets/js/codes-sustentacao.js?v=1" defer></script>
+
+
 </body>
 
 </html>

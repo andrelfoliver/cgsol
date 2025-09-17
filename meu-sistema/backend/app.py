@@ -22,6 +22,17 @@ def _parse_date(s):
         return None
 
 # ====== ROTAS ======
+@app.route('/api/sustentacao')
+def listar_sustentacao():
+    dados_fake = [
+        {"aplicacao": "CNES", "status": "Fechado", "sla": "No prazo"},
+        {"aplicacao": "CNES", "status": "Aberto", "sla": "Fora do prazo"},
+        {"aplicacao": "PAT", "status": "Fechado", "sla": "No prazo"},
+        {"aplicacao": "PAT", "status": "Fechado", "sla": "No prazo"},
+        {"aplicacao": "SIRH", "status": "Aberto", "sla": "No prazo"}
+    ]
+    return jsonify(dados_fake)
+
 # Editar andamento
 @app.route('/api/andamentos/<int:andamento_id>', methods=['PUT'])
 def editar_andamento(andamento_id):
