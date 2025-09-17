@@ -589,6 +589,37 @@
 
       </div>
 
+      <!-- Gráfico Sustentação -->
+      <div id="codesSustentacaoWrapper" class="bg-white rounded-lg shadow-md p-6 hidden">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Projetos em Sustentação</h3>
+        <div class="h-80 flex items-center justify-center">
+          <canvas id="codesSustentacaoChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Modal de Sustentação -->
+      <div id="sustentacaoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+          <div class="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+            <h3 class="text-lg font-semibold mb-4">Novo Projeto de Sustentação</h3>
+            <form id="sustentacaoForm" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Nome do Projeto</label>
+                <input type="text" id="sustentacaoNome" class="w-full border rounded px-3 py-2" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Descrição</label>
+                <textarea id="sustentacaoDescricao" rows="3" class="w-full border rounded px-3 py-2"></textarea>
+              </div>
+              <div class="flex justify-end gap-3">
+                <button type="button" onclick="hideModal('sustentacaoModal')"
+                  class="px-4 py-2 border rounded-lg">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Salvar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
 
       <!-- Tabela CODES -->
       <div class="bg-white rounded-lg shadow-md" id="tableView">
@@ -1396,6 +1427,7 @@
       Chart.register(window['chartjs-plugin-annotation']);
     }
   </script>
+  <script src="assets/js/codes-sustentacao.js" defer></script>
 
   <!-- Lógica dinâmica (main.js) -->
   <script src="assets/js/main.js?v=9" defer></script>

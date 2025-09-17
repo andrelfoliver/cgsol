@@ -817,6 +817,8 @@
 
   // ========= FILTROS =========
   function filterProjects(coordenacao, categoria) {
+    const sustentacaoWrapper = document.getElementById('codesSustentacaoWrapper');
+
     // Navega para a página correta (usa showPage do HTML)
     const go = () => {
       const map = { CODES: 'codes', COSET: 'coset', CGOD: 'cgod' };
@@ -843,6 +845,13 @@
       if (cat === 'concluido') filtered = filtered.filter(p => p.status === 'Concluído');
       if (cat === 'pausado') filtered = filtered.filter(p => p.status === 'Pausado');
       if (cat === 'total') filtered = filtered; // mostra todos os projetos CODES
+      if (cat === 'sustentacao') {
+        if (sustentacaoWrapper) {
+          sustentacaoWrapper.classList.remove('hidden');
+          drawCodesSustentacaoCharts(filtered);
+        }
+      }
+
 
     }
     if (coord === 'COSET') {
@@ -903,6 +912,17 @@
 
   }
 
+  if (coord === 'CODES' && cat === 'sustentacao') {
+    if (sustentacaoWrapper) {
+      if (filtered.length) {
+        sustentacaoWrapper.classList.remove('hidden');
+        drawCodesSustentacaoCharts(filtered);
+      } else {
+        sustentacaoWrapper.classList.add('hidden');
+        if (chartSustentacao) { chartSustentacao.destroy(); chartSustentacao = null; }
+      }
+    }
+  }
 
   // ========= DETALHE =========
   function showProjectDetail(idOrName) {
