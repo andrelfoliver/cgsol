@@ -442,8 +442,22 @@
 
     // CODES page
     setCardCount('codes', 'ativos', codes.filter(p => ['em andamento', 'sustentacao'].includes(norm(p.status))).length);
-    setCardCount('codes', 'fora-prazo', codes.filter(p => p.status === 'Em Risco' || (p.rag || '').toLowerCase() === 'vermelho').length);
-    // CODES page – novos cards
+    setCardCount('codes', 'fora-prazo',
+      codes.filter(p => {
+        if (p.status === 'Concluído') return false;
+
+        const st = (p.status || '').toLowerCase();
+        const rag = (p.rag || '').toLowerCase();
+        const d = p.fim ? new Date(p.fim) : null;
+
+        return (
+          st === 'em risco' ||
+          rag === 'vermelho' ||
+          (d && !isNaN(d) && d < new Date())
+        );
+      }).length
+    );
+
     setCardCount('codes', 'planejado', codes.filter(p => norm(p.status) === 'planejado').length);
     setCardCount('codes', 'concluido', codes.filter(p => norm(p.status) === 'concluido').length);
     setCardCount('codes', 'pausado', codes.filter(p => norm(p.status) === 'pausado').length);
@@ -898,16 +912,24 @@
       else if (cat === 'fora-prazo') {
         const now = new Date();
         filtered = filtered.filter(p => {
+          if (p.status === 'Concluído') return false;
+
           const st = (p.status || '').toLowerCase();
-          if (!['em andamento', 'sustentação', 'em risco'].includes(st)) return false;
-          if (!p.fim) return false;
-          const d = new Date(p.fim);
-          return !isNaN(d) && d < now;
+          const rag = (p.rag || '').toLowerCase();
+          const d = p.fim ? new Date(p.fim) : null;
+
+          return (
+            st === 'em risco' ||
+            rag === 'vermelho' ||
+            (d && !isNaN(d) && d < now)
+          );
         });
+
         if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
         if (internWrapper) internWrapper.classList.add('hidden');
         if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
       }
+
 
 
       else if (cat === 'planejado') {
