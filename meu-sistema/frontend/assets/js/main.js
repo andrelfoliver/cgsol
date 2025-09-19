@@ -444,19 +444,12 @@
     setCardCount('codes', 'ativos', codes.filter(p => ['em andamento', 'sustentacao'].includes(norm(p.status))).length);
     setCardCount('codes', 'fora-prazo',
       codes.filter(p => {
-        if (p.status === 'Concluído') return false;
-
-        const st = (p.status || '').toLowerCase();
-        const rag = (p.rag || '').toLowerCase();
-        const d = p.fim ? new Date(p.fim) : null;
-
-        return (
-          st === 'em risco' ||
-          rag === 'vermelho' ||
-          (d && !isNaN(d) && d < new Date())
-        );
+        if (!p.fim || p.status === 'Concluído') return false;
+        const d = new Date(p.fim);
+        return !isNaN(d) && d < new Date();
       }).length
     );
+
 
     setCardCount('codes', 'planejado', codes.filter(p => norm(p.status) === 'planejado').length);
     setCardCount('codes', 'concluido', codes.filter(p => norm(p.status) === 'concluido').length);
@@ -664,11 +657,18 @@
             callbacks: {
               label(ctx) {
                 const proj = ativos[ctx.dataIndex];
-                const equipe = proj.equipe ? ` • Equipe: ${proj.equipe}` : "";
-                return `${proj.nome}: ${ctx.parsed.x}% (${proj.sprintsConcluidas}/${proj.totalSprints})${equipe}`;
+                return [
+                  `Projeto: ${proj.nome}`,
+                  `Progresso: ${ctx.parsed.x}% (${proj.sprintsConcluidas}/${proj.totalSprints})`,
+                  proj.equipe ? `Equipe: ${proj.equipe}` : null,
+                  proj.responsavel ? `Responsável: ${proj.responsavel}` : null,
+                  `Status: ${proj.status || '—'}`
+                ].filter(Boolean);
               }
             }
           }
+
+
         },
         scales: {
           x: {
@@ -912,17 +912,9 @@
       else if (cat === 'fora-prazo') {
         const now = new Date();
         filtered = filtered.filter(p => {
-          if (p.status === 'Concluído') return false;
-
-          const st = (p.status || '').toLowerCase();
-          const rag = (p.rag || '').toLowerCase();
-          const d = p.fim ? new Date(p.fim) : null;
-
-          return (
-            st === 'em risco' ||
-            rag === 'vermelho' ||
-            (d && !isNaN(d) && d < now)
-          );
+          if (!p.fim || p.status === 'Concluído') return false;
+          const d = new Date(p.fim);
+          return !isNaN(d) && d < now;
         });
 
         if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
