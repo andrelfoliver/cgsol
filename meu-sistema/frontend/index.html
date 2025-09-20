@@ -283,19 +283,26 @@
 
       <!-- Gráficos -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        <!-- Donut -->
         <div class="bg-white rounded-lg shadow-md p-6">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">Projetos por Coordenação</h3>
-          <div class="h-96 flex items-center justify-center">
-            <canvas class="max-h-80 w-full" id="coordenacaoChart"></canvas>
+          <div class="chart-wrapper h-56">
+            <canvas id="coordenacaoChart"></canvas>
           </div>
+          <div id="coordenacaoLegend" class="legend-bullets mt-3 flex justify-center gap-4"></div>
         </div>
+
+        <!-- Barras -->
         <div class="bg-white rounded-lg shadow-md p-6">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">Status dos Projetos</h3>
-          <div class="h-80 flex items-center justify-center">
-            <canvas class="w-full h-full" id="statusChart"></canvas>
+          <div class="chart-wrapper h-56">
+            <canvas id="statusChart"></canvas>
           </div>
         </div>
+
       </div>
+
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow-md p-6">
@@ -854,23 +861,133 @@
     </div><!-- /CGOD -->
 
 
-    <!-- ========================== PDTI ========================== -->
-    <div class="page-content hidden" id="pdtiPage">
+    <!-- PDTI Page -->
+    <div id="pdtiPage" class="page-content hidden">
       <div class="mb-6">
         <div class="flex justify-between items-center">
           <div>
-            <h2 class="text-3xl font-bold text-gray-800 mb-2">PDTI - Plano Diretor de Tecnologia da Informação</h2>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">PDTI - Plano Diretor de Tecnologia da
+              Informação</h2>
             <p class="text-gray-600">Monitoramento das ações de Soluções Digitais</p>
           </div>
           <div class="flex space-x-3">
-            <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
-              onclick="exportPDTI('excel')">📊 Exportar Excel</button>
-            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-              onclick="showModal('pdtiActionModal')">➕ Nova Ação</button>
+            <button onclick="exportPDTI('excel')"
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">
+              📊 Exportar Excel
+            </button>
+            <button onclick="showModal('pdtiActionModal')"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+              ➕ Nova Ação
+            </button>
           </div>
         </div>
       </div>
 
+      <!-- KPIs PDTI -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+              📋
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Total de Ações</p>
+              <p class="text-2xl font-bold text-gray-900" id="totalAcoes">77</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">
+              ✅
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Concluídas</p>
+              <p class="text-2xl font-bold text-gray-900" id="acoesConcluidas">19</p>
+              <p class="text-xs text-green-600 font-medium">25%</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+              🔄
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Andamento</p>
+              <p class="text-2xl font-bold text-gray-900" id="acoesAndamento">16</p>
+              <p class="text-xs text-yellow-600 font-medium">21%</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 text-red-600">
+              ⏸️
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Não Iniciadas</p>
+              <p class="text-2xl font-bold text-gray-900" id="acoesNaoIniciadas">42</p>
+              <p class="text-xs text-red-600 font-medium">54%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Chart -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Progresso Geral do PDTI</h3>
+        <div class="w-full bg-gray-200 rounded-full h-6 mb-4">
+          <div
+            class="bg-gradient-to-r from-green-500 to-blue-500 h-6 rounded-full flex items-center justify-center text-white text-sm font-medium"
+            style="width: 25%">
+            25% Concluído
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <p class="text-2xl font-bold text-green-600">19</p>
+            <p class="text-sm text-gray-600">Concluídas</p>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-yellow-600">16</p>
+            <p class="text-sm text-gray-600">Em Andamento</p>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-red-600">42</p>
+            <p class="text-sm text-gray-600">Não Iniciadas</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <select id="pdtiStatusFilter" class="border border-gray-300 rounded-lg px-3 py-2" onchange="filterPDTI()">
+            <option value="">Todas as Situações</option>
+            <option value="Concluída">Concluída</option>
+            <option value="Em andamento">Em Andamento</option>
+            <option value="Não iniciada">Não Iniciada</option>
+            <option value="-">Sem Status</option>
+          </select>
+          <select id="pdtiTipoFilter" class="border border-gray-300 rounded-lg px-3 py-2" onchange="filterPDTI()">
+            <option value="">Todos os Tipos</option>
+            <option value="SDF">Soluções Digitais (SDF)</option>
+            <option value="SDD">Soluções de Dados (SDD)</option>
+            <option value="SDS">Soluções de Sistemas (SDS)</option>
+          </select>
+          <input type="text" id="pdtiSearchFilter" placeholder="Buscar por descrição..."
+            class="border border-gray-300 rounded-lg px-3 py-2" onkeyup="filterPDTI()">
+          <button onclick="clearPDTIFilters()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+            🔄 Limpar Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- PDTI Actions Table -->
       <div class="bg-white rounded-lg shadow-md">
         <div class="p-6 border-b border-gray-200">
           <h3 class="text-lg font-semibold text-gray-800">Ações do PDTI - Soluções Digitais</h3>
@@ -881,22 +998,35 @@
               <tr>
                 <th
                   class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onclick="sortPDTI('id')">ID AÇÃO ↕️</th>
+                  onclick="sortPDTI('id')">
+                  ID AÇÃO ↕️
+                </th>
                 <th
                   class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onclick="sortPDTI('descricao')">DESCRIÇÃO ↕️</th>
+                  onclick="sortPDTI('descricao')">
+                  DESCRIÇÃO ↕️
+                </th>
                 <th
                   class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onclick="sortPDTI('situacao')">SITUAÇÃO ↕️</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TIPO</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AÇÕES</th>
+                  onclick="sortPDTI('situacao')">
+                  SITUAÇÃO ↕️
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  TIPO
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  AÇÕES
+                </th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200" id="pdtiTableBody"></tbody>
+            <tbody id="pdtiTableBody" class="bg-white divide-y divide-gray-200">
+              <!-- Table content will be populated by JavaScript -->
+            </tbody>
           </table>
         </div>
       </div>
-    </div><!-- /PDTI -->
+    </div>
+
 
   </main>
 
@@ -1431,6 +1561,8 @@
   </script>
   <!-- Lógica dinâmica (main.js) -->
   <script src="assets/js/main.js?v=9" defer></script>
+  <script src="assets/js/pdti.js"></script>
+
   <script src="assets/js/codes-sustentacao.js?v=1" defer></script>
 
 

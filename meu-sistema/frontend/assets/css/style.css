@@ -152,3 +152,24 @@ canvas {
   border: 2px solid #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, .2);
 }
+
+/* Ajuste específico para gráficos menores na Home */
+#coordenacaoChart,
+#statusChart {
+  max-width: 350px;
+  /* reduz largura */
+  max-height: 280px;
+  /* reduz altura */
+  margin: 0 auto;
+  /* centraliza */
+}
+
+.chart-container {
+  display: flex;
+  align-items: center;
+  /* centraliza verticalmente */
+  justify-content: center;
+  /* centraliza horizontalmente */
+  height: 220px;
+  /* altura fixa do card de gráfico */
+}

@@ -514,18 +514,37 @@
     // Projetos por Coordenação
     const coordCanvas = byId('coordenacaoChart');
     if (coordCanvas && window.Chart) {
+      // Projetos por Coordenação (donut)
       chartCoordenacao = new Chart(coordCanvas.getContext('2d'), {
         type: 'doughnut',
         data: {
           labels: ['CODES', 'COSET', 'CGOD'],
           datasets: [{
             data: [codes, coset, cgod],
-            backgroundColor: ['#3b82f6', '#8b5cf6', '#f97316']
+            backgroundColor: ['#3b82f6', '#8b5cf6', '#f97316'],
+            borderColor: '#fff',
+            borderWidth: 2
           }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                usePointStyle: true,
+                pointStyle: 'circle',
+                padding: 20,
+                font: { size: 12 }
+              }
+            }
+          }
         }
       });
-    }
 
+    }
     // Distribuição por Status
     const distribCanvas = byId('statusDistribChart');
     if (distribCanvas && window.Chart) {
@@ -602,14 +621,45 @@
     // Status (barras)
     const statusCanvas = byId('statusChart');
     if (statusCanvas && window.Chart) {
+      // Status dos Projetos (barras)
       chartStatus = new Chart(statusCanvas.getContext('2d'), {
         type: 'bar',
         data: {
           labels: Object.keys(statusData),
-          datasets: [{ data: Object.values(statusData), backgroundColor: ['#6b7280', '#16a34a', '#dc2626', '#2563eb', '#f59e0b'] }]
+          datasets: [{
+            data: Object.values(statusData),
+            backgroundColor: ['#6b7280', '#16a34a', '#dc2626', '#2563eb', '#f59e0b'],
+            borderRadius: 6,
+            borderSkipped: false
+          }]
         },
-        options: { responsive: true, plugins: { legend: { display: false } } }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              ticks: {
+                maxRotation: 0,
+                minRotation: 0,
+                autoSkip: false,
+                align: 'center'
+              },
+              grid: {
+                display: false   // 🔴 remove grade vertical
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: '#f3f4f6' // mantém só grade horizontal clara
+              }
+            }
+          }
+        }
       });
+
+
     }
   }
 
