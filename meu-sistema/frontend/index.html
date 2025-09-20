@@ -866,8 +866,7 @@
       <div class="mb-6">
         <div class="flex justify-between items-center">
           <div>
-            <h2 class="text-3xl font-bold text-gray-800 mb-2">PDTI - Plano Diretor de Tecnologia da
-              Informação</h2>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Plano Diretor de TI: 2025 - 2027</h2>
             <p class="text-gray-600">Monitoramento das ações de Soluções Digitais</p>
           </div>
           <div class="flex space-x-3">
@@ -875,8 +874,7 @@
               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">
               📊 Exportar Excel
             </button>
-            <button onclick="showModal('pdtiActionModal')"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+            <button onclick="showPDTIModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
               ➕ Nova Ação
             </button>
           </div>
@@ -885,53 +883,53 @@
 
       <!-- KPIs PDTI -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <!-- Total -->
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterPDTIByStatus('')">
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100 text-blue-600">
-              📋
-            </div>
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">📋</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Total de Ações</p>
-              <p class="text-2xl font-bold text-gray-900" id="totalAcoes">77</p>
+              <p class="text-2xl font-bold text-gray-900" id="totalAcoes">0</p>
             </div>
           </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <!-- Concluídas -->
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterPDTIByStatus('Concluída')">
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-green-100 text-green-600">
-              ✅
-            </div>
+            <div class="p-3 rounded-full bg-green-100 text-green-600">✅</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Concluídas</p>
-              <p class="text-2xl font-bold text-gray-900" id="acoesConcluidas">19</p>
-              <p class="text-xs text-green-600 font-medium">25%</p>
+              <p class="text-2xl font-bold text-gray-900" id="acoesConcluidas">0</p>
+              <p class="text-xs text-green-600 font-medium">0%</p>
             </div>
           </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <!-- Em Andamento -->
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterPDTIByStatus('Em andamento')">
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
-              🔄
-            </div>
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🔄</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Em Andamento</p>
-              <p class="text-2xl font-bold text-gray-900" id="acoesAndamento">16</p>
-              <p class="text-xs text-yellow-600 font-medium">21%</p>
+              <p class="text-2xl font-bold text-gray-900" id="acoesAndamento">0</p>
+              <p class="text-xs text-yellow-600 font-medium">0%</p>
             </div>
           </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <!-- Não Iniciadas -->
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterPDTIByStatus('Não iniciada')">
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-red-100 text-red-600">
-              ⏸️
-            </div>
+            <div class="p-3 rounded-full bg-red-100 text-red-600">⏸️</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Não Iniciadas</p>
-              <p class="text-2xl font-bold text-gray-900" id="acoesNaoIniciadas">42</p>
-              <p class="text-xs text-red-600 font-medium">54%</p>
+              <p class="text-2xl font-bold text-gray-900" id="acoesNaoIniciadas">0</p>
+              <p class="text-xs text-red-600 font-medium">0%</p>
             </div>
           </div>
         </div>
@@ -941,26 +939,17 @@
       <div class="bg-white rounded-lg shadow-md p-6 mb-8">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Progresso Geral do PDTI</h3>
         <div class="w-full bg-gray-200 rounded-full h-6 mb-4">
-          <div
+          <div id="pdtiProgressBar"
             class="bg-gradient-to-r from-green-500 to-blue-500 h-6 rounded-full flex items-center justify-center text-white text-sm font-medium"
-            style="width: 25%">
-            25% Concluído
+            style="width: 0%">
+            0% Concluído
           </div>
+
         </div>
-        <div class="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p class="text-2xl font-bold text-green-600">19</p>
-            <p class="text-sm text-gray-600">Concluídas</p>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-yellow-600">16</p>
-            <p class="text-sm text-gray-600">Em Andamento</p>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-red-600">42</p>
-            <p class="text-sm text-gray-600">Não Iniciadas</p>
-          </div>
-        </div>
+
+
+
+
       </div>
 
       <!-- Filters -->
@@ -1484,6 +1473,50 @@
           <button class="text-gray-400 hover:text-gray-600" onclick="window.hideNotify()">✕</button>
         </div>
       </div>
+    </div>
+  </div>
+  <!-- Modal PDTI -->
+  <div id="pdtiModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
+      <h3 class="text-xl font-semibold mb-4">Nova Ação PDTI</h3>
+      <form id="pdtiForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ID da Ação</label>
+          <input id="pdtiId" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+          <textarea id="pdtiDescricao" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+            required></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Situação</label>
+            <select id="pdtiSituacao" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
+              <option value="Não iniciada">Não iniciada</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Concluída">Concluída</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+            <select id="pdtiTipo" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
+              <option value="SDF">Soluções Digitais</option>
+              <option value="SDD">Soluções de Dados</option>
+              <option value="SDS">Soluções de Sistemas</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="hidePDTIModal()"
+            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancelar</button>
+          <button id="submitPDTIBtn" type="submit"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar Ação</button>
+        </div>
+      </form>
     </div>
   </div>
 

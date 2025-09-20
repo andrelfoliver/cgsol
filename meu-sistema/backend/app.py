@@ -175,6 +175,47 @@ def deletar_projeto(id):
         app.logger.exception("Erro ao deletar projeto")
         return jsonify({'erro': str(e)}), 400
 
+from database import db, PDTIAction
+
+# Listar
+@app.route("/api/pdti", methods=["GET"])
+def listar_pdti():
+    itens = PDTIAction.query.order_by(PDTIAction.id).all()
+    return jsonify([a.to_dict() for a in itens])
+
+# Criar
+@app.route("/api/pdti", methods=["POST"])
+def criar_pdti():
+    data = request.get_json() or {}
+    novo = PDTIAction(
+        id=data.get("id"),
+        descricao=data.get("descricao"),
+        situacao=data.get("situacao", "Não iniciada"),
+        tipo=data.get("tipo"),
+    )
+    db.session.add(novo)
+    db.session.commit()
+    return jsonify(novo.to_dict()), 201
+
+# Editar
+@app.route("/api/pdti/<string:acao_id>", methods=["PUT"])
+def editar_pdti(acao_id):
+    acao = PDTIAction.query.get_or_404(acao_id)
+    data = request.get_json() or {}
+    for campo in ["descricao", "situacao", "tipo"]:
+        if campo in data:
+            setattr(acao, campo, data[campo])
+    db.session.commit()
+    return jsonify(acao.to_dict())
+
+# Excluir
+@app.route("/api/pdti/<string:acao_id>", methods=["DELETE"])
+def deletar_pdti(acao_id):
+    acao = PDTIAction.query.get_or_404(acao_id)
+    db.session.delete(acao)
+    db.session.commit()
+    return jsonify({"mensagem": "Ação excluída com sucesso"})
+
 if __name__ == '__main__':
     with app.app_context():
         print("DB URI:", app.config['SQLALCHEMY_DATABASE_URI'])

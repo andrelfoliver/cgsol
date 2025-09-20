@@ -323,7 +323,7 @@
     const emptyMsg = `<tr><td colspan="${colCount}" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto encontrado.</td></tr>`;
     if (!rows.length) { tbody.innerHTML = emptyMsg; return; }
 
-    rows.forEach(p => {
+    sortByStatus(rows).forEach(p => {
       const idArg = js(p.id);
       const progresso = (p.progresso != null) ? Number(p.progresso) : null;
       const sprints = (p.sprintsConcluidas != null && p.totalSprints != null)
@@ -1312,6 +1312,15 @@
 
 
   // ========= Utils =========
+  function sortByStatus(list) {
+    const order = { 'Em Andamento': 1, 'Não iniciada': 2, 'Concluída': 3 };
+    return [...list].sort((a, b) => {
+      const sa = order[a.status] || 99;
+      const sb = order[b.status] || 99;
+      return sa - sb;
+    });
+  }
+
   function findProjeto(idOrName) {
     return cacheProjetos.find(p => String(p.id) === String(idOrName)) ||
       cacheProjetos.find(p => (p.nome || '') === idOrName);

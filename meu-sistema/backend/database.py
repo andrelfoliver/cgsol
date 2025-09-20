@@ -66,3 +66,18 @@ class Andamento(db.Model):
             'data': self.data.isoformat() if self.data else None,
             'descricao': self.descricao
         }
+class PDTIAction(db.Model):
+    __tablename__ = 'pdti_acoes'
+
+    id = db.Column(db.String(20), primary_key=True)   # Ex: AC.SDF.01
+    descricao = db.Column(db.Text, nullable=False)
+    situacao = db.Column(db.String(50), nullable=False, default="Não iniciada")
+    tipo = db.Column(db.String(10), nullable=False)   # SDF, SDD, SDS
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'descricao': self.descricao,
+            'situacao': self.situacao,
+            'tipo': self.tipo
+        }
