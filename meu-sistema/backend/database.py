@@ -73,11 +73,14 @@ class PDTIAction(db.Model):
     descricao = db.Column(db.Text, nullable=False)
     situacao = db.Column(db.String(50), nullable=False, default="Não iniciada")
     tipo = db.Column(db.String(10), nullable=False)   # SDF, SDD, SDS
+    data_conclusao = db.Column(db.Date, nullable=True)  # ✅ novo campo
 
     def to_dict(self):
         return {
             'id': self.id,
             'descricao': self.descricao,
             'situacao': self.situacao,
-            'tipo': self.tipo
+            'tipo': self.tipo,
+            'data_conclusao': self.data_conclusao.isoformat() if self.data_conclusao else None
         }
+

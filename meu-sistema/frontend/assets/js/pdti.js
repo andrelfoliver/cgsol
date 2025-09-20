@@ -232,6 +232,93 @@ function updatePDTIKPIs() {
         document.getElementById('boxNaoIniciadas').textContent = naoIniciadas;
 }
 
+let pdtiTipoChart, pdtiTimelineChart;
+
+function renderPDTICharts() {
+    // ==== Donut por Tipo ====
+    const tipos = ['SDF', 'SDD', 'SDS'];
+    const counts = tipos.map(t => cachePDTI.filter(a => a.tipo === t).length);
+
+    if (pdtiTipoChart) pdtiTipoChart.destroy();
+    pdtiTipoChart = new Chart(document.getElementById('pdtiTipoChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Soluções Digitais (SDF)', 'Soluções de Dados (SDD)', 'Soluções de Sistemas (SDS)'],
+            datasets: [{
+                data: counts,
+                backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,   // ✅ força ocupar o container
+            cutout: '65%',                // ✅ reduz o furo para caber mais
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        boxWidth: 12,   // ✅ controla tamanho do marcador
+                        font: { size: 12 } // ✅ fonte menor pra não cortar
+                    }
+                }
+            }
+        }
+    });
+
+
+
+    // ==== Linha do Tempo (Concluídas por mês) ====
+    const concluidas = cachePDTI.filter(a => a.situacao === 'Concluída');
+    const countsByMonth = {};
+
+    concluidas.forEach(a => {
+        // 👉 aqui você pode usar data real; como mock, usamos "2025-01"
+        const mes = a.data_conclusao ? a.data_conclusao.slice(0, 7) : "2025-01";
+        countsByMonth[mes] = (countsByMonth[mes] || 0) + 1;
+    });
+
+    const labels = Object.keys(countsByMonth).sort();
+    const values = labels.map(m => countsByMonth[m]);
+
+    if (pdtiTimelineChart) pdtiTimelineChart.destroy();
+    pdtiTimelineChart = new Chart(document.getElementById('pdtiTimelineChart'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Concluídas',
+                data: values,
+                fill: false,
+                borderColor: '#16a34a',
+                tension: 0.2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } }
+            }
+        }
+    });
+}
+
+// Chamar sempre que carregar/atualizar
+async function loadPDTITable() {
+    try {
+        const res = await fetch(API_PDTI);
+        if (!res.ok) throw new Error(`Erro HTTP ${res.status}`);
+        cachePDTI = await res.json();
+
+        filterPDTI();
+        updatePDTIKPIs();
+        renderPDTICharts();   // <<< aqui!
+    } catch (err) {
+        console.error('Erro ao carregar PDTI:', err);
+    }
+}
 
 // ======================
 // CRUD

@@ -944,12 +944,25 @@
             style="width: 0%">
             0% Concluído
           </div>
-
+        </div>
+      </div>
+      <!-- Novos Gráficos PDTI -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Donut por Tipo -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribuição por Tipo</h3>
+          <div class="h-72 flex items-center justify-center">
+            <canvas id="pdtiTipoChart"></canvas>
+          </div>
         </div>
 
-
-
-
+        <!-- Linha do Tempo Concluídas -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Evolução de Ações Concluídas</h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="pdtiTimelineChart"></canvas>
+          </div>
+        </div>
       </div>
 
       <!-- Filters -->

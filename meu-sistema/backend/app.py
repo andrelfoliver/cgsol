@@ -187,6 +187,21 @@ def listar_pdti():
 @app.route("/api/pdti", methods=["POST"])
 def criar_pdti():
     data = request.get_json() or {}
+    situacao = data.get("situacao", "Não iniciada")
+
+    novo = PDTIAction(
+        id=data.get("id"),
+        descricao=data.get("descricao"),
+        situacao=situacao,
+        tipo=data.get("tipo"),
+        data_conclusao=date.today() if situacao == "Concluída" else None
+    )
+
+    db.session.add(novo)
+    db.session.commit()
+    return jsonify(novo.to_dict()), 201
+
+    data = request.get_json() or {}
     novo = PDTIAction(
         id=data.get("id"),
         descricao=data.get("descricao"),
@@ -202,11 +217,22 @@ def criar_pdti():
 def editar_pdti(acao_id):
     acao = PDTIAction.query.get_or_404(acao_id)
     data = request.get_json() or {}
-    for campo in ["descricao", "situacao", "tipo"]:
-        if campo in data:
-            setattr(acao, campo, data[campo])
+
+    if "descricao" in data:
+        acao.descricao = data["descricao"]
+    if "tipo" in data:
+        acao.tipo = data["tipo"]
+
+    if "situacao" in data:
+        acao.situacao = data["situacao"]
+        if acao.situacao == "Concluída" and not acao.data_conclusao:
+            acao.data_conclusao = date.today()
+        elif acao.situacao != "Concluída":
+            acao.data_conclusao = None
+
     db.session.commit()
     return jsonify(acao.to_dict())
+
 
 # Excluir
 @app.route("/api/pdti/<string:acao_id>", methods=["DELETE"])
