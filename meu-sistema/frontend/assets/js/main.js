@@ -20,6 +20,11 @@
   let confirmCallback = null;
   let cancelCallback = null;
 
+  // 👇 adicione
+  let chartStatusDistrib = null;
+  let chartRag = null;
+  let chartTimeline = null;
+
   window.showConfirm = function (msg, onConfirm, onCancel) {
     const modal = document.getElementById('confirmModal');
     const msgEl = document.getElementById('confirmMessage');
@@ -548,7 +553,8 @@
     // Distribuição por Status
     const distribCanvas = byId('statusDistribChart');
     if (distribCanvas && window.Chart) {
-      new Chart(distribCanvas.getContext('2d'), {
+      if (chartStatusDistrib) chartStatusDistrib.destroy();   // 👈 destrói antes
+      chartStatusDistrib = new Chart(distribCanvas.getContext('2d'), {
         type: 'doughnut',
         data: {
           labels: Object.keys(statusData),
@@ -570,7 +576,8 @@
     });
     const ragCanvas = byId('ragChart');
     if (ragCanvas && window.Chart) {
-      new Chart(ragCanvas.getContext('2d'), {
+      if (chartRag) chartRag.destroy();   // 👈 destrói antes
+      chartRag = new Chart(ragCanvas.getContext('2d'), {
         type: 'bar',
         data: {
           labels: Object.keys(ragCounts),
@@ -599,7 +606,8 @@
     const sortedKeys = Object.keys(monthlyData).sort();
     const timelineCanvas = byId('timelineChart');
     if (timelineCanvas && window.Chart) {
-      new Chart(timelineCanvas.getContext('2d'), {
+      if (chartTimeline) chartTimeline.destroy();   // 👈 destrói antes
+      chartTimeline = new Chart(timelineCanvas.getContext('2d'), {
         type: 'line',
         data: {
           labels: sortedKeys,

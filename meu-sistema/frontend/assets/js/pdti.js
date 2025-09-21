@@ -239,6 +239,12 @@ function renderPDTICharts() {
     const tipos = ['SDF', 'SDD', 'SDS'];
     const counts = tipos.map(t => cachePDTI.filter(a => a.tipo === t).length);
 
+    const tipoLabels = {
+        "Soluções Digitais (SDF)": "SDF — Soluções Digitais: Desenvolvimento e disponibilização de novos serviços digitais para cidadãos e servidores.",
+        "Soluções de Dados (SDD)": "SDD — Soluções de Dados: Gestão, integração e análise de dados institucionais, com foco em BI e Analytics.",
+        "Soluções de Sistemas (SDS)": "SDS — Soluções de Sistemas: Sustentação, modernização e evolução de sistemas corporativos existentes."
+    };
+
     if (pdtiTipoChart) pdtiTipoChart.destroy();
     pdtiTipoChart = new Chart(document.getElementById('pdtiTipoChart'), {
         type: 'doughnut',
@@ -251,30 +257,38 @@ function renderPDTICharts() {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,   // ✅ força ocupar o container
-            cutout: '65%',                // ✅ reduz o furo para caber mais
+            maintainAspectRatio: false,
+            cutout: '65%',
             plugins: {
                 legend: {
                     position: 'right',
                     labels: {
                         usePointStyle: true,
                         pointStyle: 'circle',
-                        boxWidth: 12,   // ✅ controla tamanho do marcador
-                        font: { size: 12 } // ✅ fonte menor pra não cortar
+                        boxWidth: 12,
+                        font: { size: 12 }
+                    },
+                    // 👇 adiciona hover tooltip na legenda
+                    onHover: (event, legendItem, legend) => {
+                        const descs = {
+                            "Soluções Digitais (SDF)": "SDF — Soluções Digitais: Desenvolvimento e disponibilização de novos serviços digitais para cidadãos e servidores.",
+                            "Soluções de Dados (SDD)": "SDD — Soluções de Dados: Gestão, integração e análise de dados institucionais, com foco em BI e Analytics.",
+                            "Soluções de Sistemas (SDS)": "SDS — Soluções de Sistemas: Sustentação, modernização e evolução de sistemas corporativos existentes."
+                        };
+                        const label = legendItem.text;
+                        event.native.target.title = descs[label] || label;
                     }
                 }
             }
+
         }
     });
-
-
 
     // ==== Linha do Tempo (Concluídas por mês) ====
     const concluidas = cachePDTI.filter(a => a.situacao === 'Concluída');
     const countsByMonth = {};
 
     concluidas.forEach(a => {
-        // 👉 aqui você pode usar data real; como mock, usamos "2025-01"
         const mes = a.data_conclusao ? a.data_conclusao.slice(0, 7) : "2025-01";
         countsByMonth[mes] = (countsByMonth[mes] || 0) + 1;
     });
@@ -304,6 +318,7 @@ function renderPDTICharts() {
         }
     });
 }
+
 
 // Chamar sempre que carregar/atualizar
 async function loadPDTITable() {
