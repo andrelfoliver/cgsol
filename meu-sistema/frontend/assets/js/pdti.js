@@ -240,9 +240,9 @@ function renderPDTICharts() {
     const counts = tipos.map(t => cachePDTI.filter(a => a.tipo === t).length);
 
     const tipoLabels = {
-        "Soluções Digitais (SDF)": "SDF — Soluções Digitais: Desenvolvimento e disponibilização de novos serviços digitais para cidadãos e servidores.",
-        "Soluções de Dados (SDD)": "SDD — Soluções de Dados: Gestão, integração e análise de dados institucionais, com foco em BI e Analytics.",
-        "Soluções de Sistemas (SDS)": "SDS — Soluções de Sistemas: Sustentação, modernização e evolução de sistemas corporativos existentes."
+        "Soluções Digitais (SDF)": "SDF — Soluções Digitais: Ações voltadas a novos produtos e serviços digitais, geralmente focados em disponibilizar sistemas para o público (ex: portais, aplicativos, novos módulos do SEI, carteira de trabalho digital, etc.).",
+        "Soluções de Dados (SDD)": "SDD — Soluções de Dados: Ações relacionadas a gestão, integração, análise e disponibilização de dados. Incluem bases estatísticas, relatórios, indicadores, BI/Analytics, interoperabilidade via APIs, data warehouse/data lake.",
+        "Soluções de Sistemas (SDS)": "SDS — Soluções de Sistemas: Ações ligadas à manutenção, evolução e sustentação de sistemas corporativos já existentes. Também abrange modernização tecnológica, ajustes de infraestrutura de software, correções e adequações legais."
     };
 
     if (pdtiTipoChart) pdtiTipoChart.destroy();
@@ -271,9 +271,9 @@ function renderPDTICharts() {
                     // 👇 adiciona hover tooltip na legenda
                     onHover: (event, legendItem, legend) => {
                         const descs = {
-                            "Soluções Digitais (SDF)": "SDF — Soluções Digitais: Desenvolvimento e disponibilização de novos serviços digitais para cidadãos e servidores.",
-                            "Soluções de Dados (SDD)": "SDD — Soluções de Dados: Gestão, integração e análise de dados institucionais, com foco em BI e Analytics.",
-                            "Soluções de Sistemas (SDS)": "SDS — Soluções de Sistemas: Sustentação, modernização e evolução de sistemas corporativos existentes."
+                            "Soluções Digitais (SDF)": "SDF — Soluções Digitais: Ações voltadas a novos produtos e serviços digitais, geralmente focados em disponibilizar sistemas para o público (ex: portais, aplicativos, novos módulos do SEI, carteira de trabalho digital, etc.).",
+                            "Soluções de Dados (SDD)": "SDD — Soluções de Dados: Ações relacionadas a gestão, integração, análise e disponibilização de dados. Incluem bases estatísticas, relatórios, indicadores, BI/Analytics, interoperabilidade via APIs, data warehouse/data lake.",
+                            "Soluções de Sistemas (SDS)": "SDS — Soluções de Sistemas: Ações ligadas à manutenção, evolução e sustentação de sistemas corporativos já existentes. Também abrange modernização tecnológica, ajustes de infraestrutura de software, correções e adequações legais."
                         };
                         const label = legendItem.text;
                         event.native.target.title = descs[label] || label;
