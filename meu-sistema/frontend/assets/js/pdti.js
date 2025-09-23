@@ -1,6 +1,8 @@
 // ======================
 // API PDTI
 // ======================
+
+
 const API_PDTI = 'http://localhost:5001/api/pdti';
 let cachePDTI = [];
 // normaliza strings (remove acentos e baixa)
@@ -29,19 +31,7 @@ function sortPdtiBySituacao(list) {
     });
 }
 
-async function loadPDTITable() {
-    try {
-        const res = await fetch(API_PDTI);
-        if (!res.ok) throw new Error(`Erro HTTP ${res.status}`);
-        cachePDTI = await res.json();
 
-        filterPDTI();       // aplica ordenação + filtros atuais (se houver)
-        updatePDTIKPIs();
-
-    } catch (err) {
-        console.error('Erro ao carregar PDTI:', err);
-    }
-}
 function showNotify(titulo, mensagem, tipo = "info") {
     const modal = document.getElementById("notifyModal");
     const bar = document.getElementById("notifyBar");
@@ -232,92 +222,399 @@ function updatePDTIKPIs() {
         document.getElementById('boxNaoIniciadas').textContent = naoIniciadas;
 }
 
+
+function updatePDTIProgress() {
+    const total = cachePDTI.length || 0;
+    const concluidas = cachePDTI.filter(a => a.situacao === 'Concluída').length;
+    const pct = total ? Math.round((concluidas / total) * 100) : 0;
+    const bar = document.getElementById('pdtiProgressBar');
+    if (bar) {
+        bar.style.width = pct + '%';
+        bar.textContent = `${pct}% Concluído`;
+    }
+}
+
+// 👉 expõe pro showPage (e mantém nomes que ele chama)
+window.updatePDTIProgress = updatePDTIProgress;
+window.drawPDTICharts = function () { renderPDTICharts(); }; // alias
+
+// ---- helpers timeline (contagem mensal contínua) ----
+function monthKey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+function parseISOorYMD(s) {
+    if (!s) return null;
+    const t = String(s).trim();
+    // aceita 'YYYY-MM-DD' (ou com horário)
+    const m = t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    const d = new Date(t);
+    return isNaN(d) ? null : d;
+}
+function buildMonthlySeries(items, dateProp) {
+    const dates = items
+        .map(x => parseISOorYMD(x[dateProp]))
+        .filter(d => d instanceof Date && !isNaN(d));
+    if (!dates.length) return [];
+
+    const min = new Date(Math.min(...dates));
+    const max = new Date(Math.max(...dates));
+    // normaliza p/ início do mês
+    min.setDate(1); min.setHours(0, 0, 0, 0);
+    max.setDate(1); max.setHours(0, 0, 0, 0);
+
+    // contagem bruta por mês
+    const counts = {};
+    dates.forEach(d => {
+        const k = monthKey(new Date(d.getFullYear(), d.getMonth(), 1));
+        counts[k] = (counts[k] || 0) + 1;
+    });
+
+    // preenche meses faltantes com 0
+    const out = [];
+    const cur = new Date(min);
+    while (cur <= max) {
+        const k = monthKey(cur);
+        out.push({ x: new Date(cur), y: counts[k] || 0 });
+        cur.setMonth(cur.getMonth() + 1);
+    }
+    return out;
+}
+
 let pdtiTipoChart, pdtiTimelineChart;
+// tenta pegar a data de conclusão em vários nomes de campo
+function getConclusaoDateField(a) {
+    return (
+        a.data_conclusao ??
+        a.dataConclusao ??
+        a.dt_conclusao ??
+        a.dtConclusao ??
+        a.conclusao ??
+        a.dataFim ??
+        a.data_fim ??
+        null
+    );
+}
+
+
+function monthKey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+
+function buildMonthlySeriesFlexible(items, getDateFn) {
+    const dates = items
+        .map(x => parseDateFlexible(getDateFn(x)))
+        .filter(d => d instanceof Date && !isNaN(d));
+
+    if (!dates.length) return [];
+
+    const min = new Date(Math.min(...dates));
+    const max = new Date(Math.max(...dates));
+    min.setDate(1); min.setHours(0, 0, 0, 0);
+    max.setDate(1); max.setHours(0, 0, 0, 0);
+
+    const counts = {};
+    dates.forEach(d => {
+        const k = monthKey(new Date(d.getFullYear(), d.getMonth(), 1));
+        counts[k] = (counts[k] || 0) + 1;
+    });
+
+    // série contínua mês a mês
+    const serie = [];
+    const cur = new Date(min);
+    while (cur <= max) {
+        const k = monthKey(cur);
+        serie.push({ x: new Date(cur), y: counts[k] || 0 });
+        cur.setMonth(cur.getMonth() + 1);
+    }
+    return serie;
+}
+// tenta achar a data de conclusão em vários nomes de campo
+function getConclusaoDateValue(a) {
+    // campos explícitos de conclusão
+    const cands = [
+        a.data_conclusao, a.dataConclusao, a.dt_conclusao, a.dtConclusao,
+        a.conclusao, a.mes_conclusao, a.mesConclusao,
+        a.dataFim, a.data_fim, a.fim,
+        a.termino, a.termino_real, a.data_conclusao_real,
+    ];
+    for (const v of cands) if (v) return v;
+
+    // se não houver, tente campos “audit” que às vezes vêm da API
+    const audit = [
+        a.updated_at, a.updatedAt, a.last_update, a.lastUpdate,
+        a.created_at, a.createdAt, a.inserted_at, a.insertedAt,
+        a.endDate, a.end_date
+    ];
+    for (const v of audit) if (v) return v;
+
+    // varredura por nome aproximado
+    for (const k of Object.keys(a)) {
+        if (/(conclu|fim|final|end|termin|mes.*conclu|mes.*fim|updated|created|last.*updat)/i.test(k) && a[k]) {
+            return a[k];
+        }
+    }
+    return null;
+}
+
+// === PARSER ROBUSTO DE MÊS/ANO ===
+// === parser robusto de mês/ano (aceita PT/EN, ano 2 ou 4 dígitos) ===
+function parseMonthAny(raw) {
+    if (raw == null) return null;
+    if (raw instanceof Date && !isNaN(raw)) {
+        return new Date(Date.UTC(raw.getUTCFullYear(), raw.getUTCMonth(), 1));
+    }
+    const t0 = String(raw).trim();
+
+    // normaliza nomes PT/EN para 3 letras
+    const mesesPT = { janeiro: 0, fevereiro: 1, marco: 2, março: 2, abril: 3, maio: 4, junho: 5, julho: 6, agosto: 7, setembro: 8, outubro: 9, novembro: 10, dezembro: 11, jan: 0, fev: 1, mar: 2, abr: 3, mai: 4, jun: 5, jul: 6, ago: 7, set: 8, out: 9, nov: 10, dez: 11 };
+    const mesesEN = { january: 0, february: 1, march: 2, april: 3, may: 4, june: 5, july: 6, august: 7, september: 8, october: 9, november: 10, december: 11, jan: 0, feb: 1, mar: 2, apr: 3, may2: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+    const lower = t0.toLowerCase();
+
+    const toDateUTC = (y, m) => new Date(Date.UTC(Number(y), Number(m), 1));
+    const fixYY = (yy) => (yy < 50 ? 2000 + yy : yy < 100 ? 1900 + yy : yy);
+
+    // 1) YYYY-MM(-DD) ou YYYY/MM(/DD)
+    let m = lower.match(/^(\d{4})[\/.-](\d{1,2})(?:[\/.-](\d{1,2}))?$/);
+    if (m) { const y = +m[1], mo = +m[2] - 1; if (mo >= 0 && mo < 12) return toDateUTC(y, mo); }
+
+    // 2) DD/MM/YYYY ou DD-MM-YYYY
+    m = lower.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+    if (m) { const y = fixYY(+m[3]), mo = +m[2] - 1; if (mo >= 0 && mo < 12) return toDateUTC(y, mo); }
+
+    // 3) MM/YYYY ou M/YY
+    m = lower.match(/^(\d{1,2})[\/.-](\d{2,4})$/);
+    if (m) { const mo = +m[1] - 1, y = fixYY(+m[2]); if (mo >= 0 && mo < 12) return toDateUTC(y, mo); }
+
+    // 4) YYYYMM
+    m = lower.match(/^(\d{4})(\d{2})$/);
+    if (m) { const y = +m[1], mo = +m[2] - 1; if (mo >= 0 && mo < 12) return toDateUTC(y, mo); }
+
+    // 5) "set/2025", "set 25", "setembro 2025", "oct 2025", etc.
+    m = lower.match(/^([a-zç]+)[ ./-]+(\d{2,4})$/);
+    if (m) {
+        const key = m[1].normalize('NFD').replace(/[^\w]/g, ''); // tira acento
+        const mo = (mesesPT[key] ?? mesesEN[key] ?? null);
+        if (mo != null) { const y = fixYY(+m[2]); return toDateUTC(y, mo); }
+    }
+
+    // 6) fallback: deixa o motor do JS tentar e normaliza p/ mês
+    const tryJs = new Date(t0);
+    if (!isNaN(tryJs)) return toDateUTC(tryJs.getUTCFullYear(), tryJs.getUTCMonth());
+
+    return null;
+}
+
+// === tenta por nome conhecido e depois "arranca" datas de QUALQUER campo/substring ===
+function getConclusaoSmartDate(a) {
+    // a) campos “clássicos”
+    const preferida = getConclusaoDateValue(a);
+    const d1 = parseMonthAny(preferida);
+    if (d1) return d1;
+
+    // b) varredura por todas as props (inclui trechos de textos longos)
+    const grabbers = [
+        // YYYY-MM(-DD) / YYYY/MM(/DD)
+        /(\d{4})[\/.-](\d{1,2})(?:[\/.-](\d{1,2}))?/g,
+        // DD/MM/YYYY
+        /(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/g,
+        // MM/YYYY ou M/YY
+        /(\d{1,2})[\/.-](\d{2,4})/g,
+        // YYYYMM
+        /(\d{4})(\d{2})/g,
+        // NomeMes/ano (PT/EN, abreviado ou completo)
+        /\b([a-zç]{3,9})[ ./-]+(\d{2,4})\b/gi
+    ];
+
+    for (const [, v] of Object.entries(a)) {
+        if (v == null) continue;
+        const text = String(v);
+        for (const rg of grabbers) {
+            rg.lastIndex = 0;
+            let m;
+            while ((m = rg.exec(text))) {
+                const found = m[0];
+                const d = parseMonthAny(found);
+                if (d) return d;
+            }
+        }
+    }
+    return null;
+}
+
+
+
+
+// utilitários p/ timeline contínua
+function monthKey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+
+function buildMonthlySeriesFlexible(items, getDateFn) {
+    const dates = items
+        .map(x => parseDateFlexible(getDateFn(x)))
+        .filter(d => d instanceof Date && !isNaN(d));
+
+    if (!dates.length) return [];
+
+    const min = new Date(Math.min(...dates));
+    const max = new Date(Math.max(...dates));
+    min.setDate(1); min.setHours(0, 0, 0, 0);
+    max.setDate(1); max.setHours(0, 0, 0, 0);
+
+    const counts = {};
+    dates.forEach(d => {
+        const k = monthKey(new Date(d.getFullYear(), d.getMonth(), 1));
+        counts[k] = (counts[k] || 0) + 1;
+    });
+
+    const serie = [];
+    const cur = new Date(min);
+    while (cur <= max) {
+        const k = monthKey(cur);
+        serie.push({ x: new Date(cur), y: counts[k] || 0 });
+        cur.setMonth(cur.getMonth() + 1);
+    }
+    return serie;
+}
+function parseYMDUTC(ymd) {
+    if (!ymd) return null;
+    const m = String(ymd).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return null;
+    const y = +m[1], mo = +m[2] - 1;
+    return new Date(Date.UTC(y, mo, 1)); // normaliza pro 1º dia do mês (UTC)
+}
 
 function renderPDTICharts() {
-    // ==== Donut por Tipo ====
-    const tipos = ['SDF', 'SDD', 'SDS'];
-    const counts = tipos.map(t => cachePDTI.filter(a => a.tipo === t).length);
-
-    const tipoLabels = {
-        "Soluções Digitais (SDF)": "SDF — Soluções Digitais: Ações voltadas a novos produtos e serviços digitais, geralmente focados em disponibilizar sistemas para o público (ex: portais, aplicativos, novos módulos do SEI, carteira de trabalho digital, etc.).",
-        "Soluções de Dados (SDD)": "SDD — Soluções de Dados: Ações relacionadas a gestão, integração, análise e disponibilização de dados. Incluem bases estatísticas, relatórios, indicadores, BI/Analytics, interoperabilidade via APIs, data warehouse/data lake.",
-        "Soluções de Sistemas (SDS)": "SDS — Soluções de Sistemas: Ações ligadas à manutenção, evolução e sustentação de sistemas corporativos já existentes. Também abrange modernização tecnológica, ajustes de infraestrutura de software, correções e adequações legais."
+    // ===== DONUT =====
+    const TIPOS = ['SDF', 'SDD', 'SDS'];
+    const COLORS = ['#3b82f6', '#8b5cf6', '#10b981'];
+    const tipoDesc = {
+        SDF: 'SDF — Soluções Digitais: novos produtos/serviços digitais (portais, apps, módulos, etc.).',
+        SDD: 'SDD — Soluções de Dados: gestão, integração e análise de dados (BI/Analytics, APIs, DW/Lake).',
+        SDS: 'SDS — Soluções de Sistemas: manutenção/evolução de sistemas e modernização tecnológica.'
     };
+    const counts = TIPOS.map(t => cachePDTI.filter(a => a.tipo === t).length);
+    const labelsLongas = ['Soluções Digitais (SDF)', 'Soluções de Dados (SDD)', 'Soluções de Sistemas (SDS)'];
 
     if (pdtiTipoChart) pdtiTipoChart.destroy();
-    pdtiTipoChart = new Chart(document.getElementById('pdtiTipoChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Soluções Digitais (SDF)', 'Soluções de Dados (SDD)', 'Soluções de Sistemas (SDS)'],
-            datasets: [{
-                data: counts,
-                backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981']
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '65%',
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        usePointStyle: true,
-                        pointStyle: 'circle',
-                        boxWidth: 12,
-                        font: { size: 12 }
+    const tipoCtx = document.getElementById('pdtiTipoChart');
+    if (tipoCtx) {
+        pdtiTipoChart = new Chart(tipoCtx, {
+            type: 'doughnut',
+            data: { labels: labelsLongas, datasets: [{ data: counts, backgroundColor: COLORS, borderColor: '#fff', borderWidth: 2 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 12, font: { size: 12 } },
+                        onHover: (evt, item) => {
+                            const txt = item.text || '';
+                            const key = txt.endsWith('(SDF)') ? 'SDF' : txt.endsWith('(SDD)') ? 'SDD' : txt.endsWith('(SDS)') ? 'SDS' : '';
+                            if (evt.native?.target) evt.native.target.title = key ? tipoDesc[key] : txt;
+                        }
                     },
-                    // 👇 adiciona hover tooltip na legenda
-                    onHover: (event, legendItem, legend) => {
-                        const descs = {
-                            "Soluções Digitais (SDF)": "SDF — Soluções Digitais: Ações voltadas a novos produtos e serviços digitais, geralmente focados em disponibilizar sistemas para o público (ex: portais, aplicativos, novos módulos do SEI, carteira de trabalho digital, etc.).",
-                            "Soluções de Dados (SDD)": "SDD — Soluções de Dados: Ações relacionadas a gestão, integração, análise e disponibilização de dados. Incluem bases estatísticas, relatórios, indicadores, BI/Analytics, interoperabilidade via APIs, data warehouse/data lake.",
-                            "Soluções de Sistemas (SDS)": "SDS — Soluções de Sistemas: Ações ligadas à manutenção, evolução e sustentação de sistemas corporativos já existentes. Também abrange modernização tecnológica, ajustes de infraestrutura de software, correções e adequações legais."
-                        };
-                        const label = legendItem.text;
-                        event.native.target.title = descs[label] || label;
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.label}: ${ctx.parsed}`,
+                            afterLabel: (ctx) => {
+                                const lbl = ctx.label || '';
+                                const key = lbl.endsWith('(SDF)') ? 'SDF' : lbl.endsWith('(SDD)') ? 'SDD' : lbl.endsWith('(SDS)') ? 'SDS' : '';
+                                return key ? tipoDesc[key] : '';
+                            }
+                        }
                     }
                 }
             }
+        });
+    }
 
-        }
-    });
-
-    // ==== Linha do Tempo (Concluídas por mês) ====
+    // ===== TIMELINE por mês (NÃO acumulada, área preenchida, label 'mes/aa') =====
     const concluidas = cachePDTI.filter(a => a.situacao === 'Concluída');
-    const countsByMonth = {};
 
+    // 1) mapa YYYY-MM -> contagem
+    const byMonth = {};
     concluidas.forEach(a => {
-        const mes = a.data_conclusao ? a.data_conclusao.slice(0, 7) : "2025-01";
-        countsByMonth[mes] = (countsByMonth[mes] || 0) + 1;
+        const k = String(a.data_conclusao || '').slice(0, 7); // "YYYY-MM"
+        if (k) byMonth[k] = (byMonth[k] || 0) + 1;
     });
 
-    const labels = Object.keys(countsByMonth).sort();
-    const values = labels.map(m => countsByMonth[m]);
+    // 2) faixa contínua entre min e max, preenchendo meses zerados
+    const keys = Object.keys(byMonth).sort();
+    let labelsISO = [], countsPerMonth = [];
+    if (keys.length) {
+        const [y0, m0] = keys[0].split('-').map(Number);
+        const [y1, m1] = keys[keys.length - 1].split('-').map(Number);
+        const cur = new Date(Date.UTC(y0, m0 - 1, 1));
+        const end = new Date(Date.UTC(y1, m1 - 1, 1));
 
-    if (pdtiTimelineChart) pdtiTimelineChart.destroy();
-    pdtiTimelineChart = new Chart(document.getElementById('pdtiTimelineChart'), {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Concluídas',
-                data: values,
-                fill: false,
-                borderColor: '#16a34a',
-                tension: 0.2
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, ticks: { precision: 0 } }
-            }
+        while (cur <= end) {
+            const ym = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, '0')}`;
+            labelsISO.push(ym);
+            countsPerMonth.push(byMonth[ym] || 0);
+            cur.setUTCMonth(cur.getUTCMonth() + 1);
         }
+    } else {
+        const now = new Date();
+        const ym = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+        labelsISO = [ym];
+        countsPerMonth = [0];
+    }
+
+    // 3) formata labels para 'mes/aa' em pt-BR
+    const MESES_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const labelsMonth = labelsISO.map(ym => {
+        const [yy, mm] = ym.split('-').map(Number);
+        return `${MESES_PT[mm - 1]}/${String(yy).slice(-2)}`; // ex.: "mai/25"
     });
+
+    // 4) plota (linha com área, NÃO acumulada)
+    if (pdtiTimelineChart) pdtiTimelineChart.destroy();
+    const tlCtx = document.getElementById('pdtiTimelineChart');
+    if (tlCtx) {
+        pdtiTimelineChart = new Chart(tlCtx, {
+            type: 'line',
+            data: {
+                labels: labelsMonth,
+                datasets: [{
+                    label: 'Concluídas no mês',
+                    data: countsPerMonth,
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(22,163,74,0.20)',
+                    fill: true,
+                    tension: 0.25,
+                    pointRadius: 3,
+                    pointHoverRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => items[0]?.label ?? '',
+                            label: (item) => `Concluídas: ${item.parsed.y}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { autoSkip: true, maxRotation: 0 },
+                        title: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 },
+                        title: { display: true, text: 'Quantidade' }
+                    }
+                }
+            }
+        });
+    }
+
+
+
+
+
 }
+
 
 
 // Chamar sempre que carregar/atualizar
@@ -325,11 +622,18 @@ async function loadPDTITable() {
     try {
         const res = await fetch(API_PDTI);
         if (!res.ok) throw new Error(`Erro HTTP ${res.status}`);
+
         cachePDTI = await res.json();
 
+        // 🔄 mantém o showPage em sintonia com os mesmos dados
+        window.pdtiData = cachePDTI;
+
+        // 🔁 render / KPIs / progresso / charts
         filterPDTI();
         updatePDTIKPIs();
-        renderPDTICharts();   // <<< aqui!
+        updatePDTIProgress();  // garante barra correta
+        renderPDTICharts();    // mantém a legenda com tooltip
+
     } catch (err) {
         console.error('Erro ao carregar PDTI:', err);
     }
@@ -425,6 +729,8 @@ document.getElementById('pdtiForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const form = e.target;
+
+    // monta payload básico
     const dados = {
         id: document.getElementById('pdtiId').value.trim(),
         descricao: document.getElementById('pdtiDescricao').value.trim(),
@@ -432,9 +738,30 @@ document.getElementById('pdtiForm').addEventListener('submit', async (e) => {
         tipo: document.getElementById('pdtiTipo').value
     };
 
+    // ---- NOVO: carimbar data_conclusao quando vira Concluída ----
+    // pega registro atual (se já existir)
+    const atual = cachePDTI.find(a => a.id === dados.id);
+
+    const virouConcluida =
+        dados.situacao === 'Concluída' &&
+        (!atual || (atual.situacao !== 'Concluída'));
+
+    const jaTemDataConclusao =
+        getConclusaoDateValue(atual || {}) != null ||
+        'data_conclusao' in (atual || {}) ||
+        'dataConclusao' in (atual || {});
+
+    if (virouConcluida && !jaTemDataConclusao) {
+        // use formato YYYY-MM (mês de referência) ou YYYY-MM-DD, como preferir
+        const hoje = new Date();
+        const y = hoje.getFullYear();
+        const m = String(hoje.getMonth() + 1).padStart(2, '0');
+        dados.data_conclusao = `${y}-${m}-01`; // grava primeiro dia do mês
+    }
+    // ---- FIM do carimbo automático ----
+
     try {
         if (form.dataset.id) {
-            // Atualizar existente
             await fetch(`${API_PDTI}/${form.dataset.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -442,7 +769,6 @@ document.getElementById('pdtiForm').addEventListener('submit', async (e) => {
             });
             showNotify("Ação Atualizada", `A ação ${dados.id} foi atualizada com sucesso.`, "success");
         } else {
-            // Criar novo
             await fetch(API_PDTI, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -458,7 +784,6 @@ document.getElementById('pdtiForm').addEventListener('submit', async (e) => {
         console.error("Erro ao salvar ação PDTI:", err);
         showNotify("Erro", "❌ Ocorreu um erro ao salvar a ação. Verifique o console.", "error");
     }
-
 });
 
 
@@ -468,3 +793,13 @@ document.getElementById('pdtiForm').addEventListener('submit', async (e) => {
 document.addEventListener('DOMContentLoaded', () => {
     loadPDTITable();
 });
+function normSituacao(s) {
+    if (!s || s === "-") return "nao iniciada";
+    const n = norm(s); // sem acento, minúsculo
+    // normalizações explícitas
+    if (n === "nao iniciadaa") return "nao iniciada";
+    if (n === "concluido") return "concluida";
+    if (n === "concluida") return "concluida";
+    if (n.replace(/\s+/g, "_") === "em_andamento") return "em andamento";
+    return n;
+}

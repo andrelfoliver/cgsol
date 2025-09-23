@@ -14,6 +14,7 @@ footer {
   text-align: center;
 }
 
+/* ================= NAV ================= */
 .navbar {
   display: flex;
   gap: 1rem;
@@ -31,12 +32,10 @@ footer {
   font-weight: 500;
   color: #6b7280;
   border-radius: 0;
-  /* remove arredondamento */
 }
 
 .nav-btn:hover {
   border-bottom-color: #3b82f6;
-  /* apenas borda inferior azul */
   color: #3b82f6;
 }
 
@@ -45,14 +44,7 @@ footer {
   color: #3b82f6;
 }
 
-.page-content {
-  padding: 2rem;
-}
-
-.hidden {
-  display: none;
-}
-
+/* ================= TABLE ================= */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -71,15 +63,22 @@ th {
   background-color: #f3f4f6;
 }
 
-canvas {
-  max-width: 100%;
-  max-height: 100%;
-  margin: 0 auto;
-  display: block;
+/* Hover padrão para tabelas */
+.table-hover tbody tr:hover {
+  background-color: #f3f4f6;
 }
 
+/* Ajustes específicos Sustentação */
+#sustentacaoTableBody td {
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
 
+#sustentacaoTableBody tr:nth-child(even) {
+  background-color: #f9fafb;
+}
 
+/* ================= MODAL ================= */
 .modal {
   position: fixed;
   top: 0;
@@ -96,10 +95,13 @@ canvas {
   background: white;
   padding: 2rem;
   border-radius: 0.5rem;
-  max-width: 500px;
+  max-width: 700px;
   width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
+/* ================= STATUS / RAG ================= */
 .rag-verde {
   background-color: #16a34a;
 }
@@ -116,6 +118,7 @@ canvas {
   background-color: #2563eb;
 }
 
+/* ================= CARD ================= */
 .project-card {
   transition: all 0.3s ease;
 }
@@ -125,51 +128,141 @@ canvas {
   box-shadow: 0 8px 25px rgba(0, 0, 0, .15);
 }
 
+/* ================= SLIDER ================= */
 .slider {
   -webkit-appearance: none;
   appearance: none;
   background: linear-gradient(to right, #3b82f6 0%, #3b82f6 0%, #e5e7eb 0%, #e5e7eb 100%);
 }
 
-.slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 20px;
-  width: 20px;
-  border-radius: 50%;
-  background: #3b82f6;
-  cursor: pointer;
-  border: 2px solid #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, .2);
-}
-
+.slider::-webkit-slider-thumb,
 .slider::-moz-range-thumb {
   height: 20px;
   width: 20px;
   border-radius: 50%;
   background: #3b82f6;
   cursor: pointer;
-  border: 2px solid #ffffff;
+  border: 2px solid #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, .2);
 }
 
-/* Ajuste específico para gráficos menores na Home */
+/* ================= GRÁFICOS ================= */
 #coordenacaoChart,
 #statusChart {
   max-width: 350px;
-  /* reduz largura */
   max-height: 280px;
-  /* reduz altura */
   margin: 0 auto;
-  /* centraliza */
 }
 
 .chart-container {
   display: flex;
   align-items: center;
-  /* centraliza verticalmente */
   justify-content: center;
-  /* centraliza horizontalmente */
   height: 220px;
-  /* altura fixa do card de gráfico */
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.badge-green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-yellow {
+  background: #fef9c3;
+  color: #92400e;
+}
+
+.badge-gray {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Barra de progresso */
+.progress-bar {
+  background: #e5e7eb;
+  border-radius: 9999px;
+  height: 0.5rem;
+  width: 100%;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: #2563eb;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* Links de ação */
+.action-btn {
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.75rem;
+}
+
+.action-view {
+  color: #2563eb;
+}
+
+.action-edit {
+  color: #16a34a;
+}
+
+.action-del {
+  color: #dc2626;
+}
+
+/* ===== Projetos Recentes — alinhamento das colunas ===== */
+th.col-progresso,
+td.col-progresso,
+th.col-sprints,
+td.col-sprints,
+th.col-actions,
+td.col-actions {
+  text-align: center;
+}
+
+/* Barra de progresso menor, centrada na célula */
+.col-progresso .progress-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.col-progresso .progress-bar {
+  width: 110px;
+  /* largura da barrinha na tabela recente */
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.col-progresso .progress-fill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 9999px;
+  transition: width .25s ease;
+}
+
+.col-progresso .progress-text {
+  font-weight: 600;
+  color: #111827;
+  min-width: 36px;
 }

@@ -6,77 +6,19 @@
   <meta content="width=device-width, initial-scale=1" name="viewport" />
   <title>SigSOL - Sistema de Gestão e Monitoramento da CGSOL</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
   <style>
-    .rag-verde {
-      background-color: #16a34a
-    }
-
-    .rag-amarelo {
-      background-color: #f59e0b
-    }
-
-    .rag-vermelho {
-      background-color: #dc2626
-    }
-
-    .status-concluido {
-      background-color: #2563eb
-    }
-
-    .project-card {
-      transition: all .3s ease
-    }
-
-    .project-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, .15)
-    }
-
-    .slider {
-      -webkit-appearance: none;
-      appearance: none;
-      background: linear-gradient(to right, #3b82f6 0%, #3b82f6 0%, #e5e7eb 0%, #e5e7eb 100%)
-    }
-
-    .slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      height: 20px;
-      width: 20px;
-      border-radius: 50%;
-      background: #3b82f6;
-      cursor: pointer;
-      border: 2px solid #fff;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, .2)
-    }
-
-    .slider::-moz-range-thumb {
-      height: 20px;
-      width: 20px;
-      border-radius: 50%;
-      background: #3b82f6;
-      cursor: pointer;
-      border: 2px solid #fff;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, .2)
-    }
-
-    #userRole:focus {
-      box-shadow: 0 0 0 2px rgba(255, 255, 255, .25);
-      border-color: rgba(255, 255, 255, .35)
-    }
-
+    /* Remove scrollbars em containers específicos */
     .no-scrollbar::-webkit-scrollbar {
-      display: none
+      display: none;
     }
 
     .no-scrollbar {
       -ms-overflow-style: none;
-      scrollbar-width: none
+      scrollbar-width: none;
     }
 
+    /* Selects do header */
     .header-select {
       background: #fff;
       border: 1px solid #e5e7eb;
@@ -84,14 +26,15 @@
       padding: .5rem .75rem;
       border-radius: .5rem;
       font-size: .875rem;
-      outline: 0
+      outline: 0;
     }
 
     .header-select:focus {
       box-shadow: 0 0 0 2px rgba(59, 130, 246, .35);
-      border-color: #93c5fd
+      border-color: #93c5fd;
     }
 
+    /* Tabs de navegação superiores */
     .nav-tab {
       display: inline-flex;
       align-items: center;
@@ -101,35 +44,38 @@
       color: #6b7280;
       border-bottom: 2px solid transparent;
       white-space: nowrap;
-      transition: color .15s ease, border-color .15s ease
+      transition: color .15s ease, border-color .15s ease;
     }
 
     .nav-tab .icon {
       display: inline-flex;
-      line-height: 1
+      line-height: 1;
     }
 
     .nav-tab:hover {
-      color: #111827
+      color: #111827;
     }
 
     .nav-tab.active {
       color: #2563eb;
-      border-bottom-color: #2563eb
+      border-bottom-color: #2563eb;
     }
 
+    /* Header e logo */
     .app-header .container>.grid {
-      row-gap: .25rem
+      row-gap: .25rem;
     }
 
     .brand-area .logo-img {
-      max-width: 220px
+      max-width: 220px;
     }
 
     .app-header+* {
-      border-top-color: transparent
+      border-top-color: transparent;
     }
   </style>
+
+
 </head>
 
 <body class="bg-gray-50 min-h-screen">
@@ -350,10 +296,9 @@
                 </div>
                 <span class="text-lg font-bold text-blue-600">0</span>
               </div>
-              <div data-card="codes:sustentacao"
+              <div
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                 onclick="filterProjects('CODES','sustentacao')">
-
                 <div>
                   <p class="font-medium text-gray-900">Em Sustentação</p>
                   <p class="text-xs text-gray-600">Sistemas em produção</p>
@@ -437,11 +382,18 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coordenação
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Farol de
-                  entrega</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-progresso">
+                  Progresso
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-sprints">
+                  Sprints
+                </th>
+                <th class="px-6 py-3 text-left  text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável
+                </th>
+
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-actions">
+                  Ações</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200" id="projectsTableBody"></tbody>
@@ -458,8 +410,11 @@
             <h2 class="text-3xl font-bold text-gray-800 mb-2">CODES</h2>
             <p class="text-gray-600">Coordenação de Desenvolvimento e Arquitetura de Soluções</p>
           </div>
+          <button onclick="syncSustentacao()" class="px-4 py-2 bg-green-600 text-white rounded">🔄 Carregar
+            Sustentação</button>
           <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
             onclick="openNewProject('CODES')">➕ Novo Projeto</button>
+
         </div>
       </div>
 
@@ -510,12 +465,13 @@
         <!-- Sustentação -->
         <div data-card="codes:sustentacao"
           class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','sustentacao')">
+          onclick="showSustentacao()">
+
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🔧</div>
             <div class="ml-4">
               <p class="text-sm font-medium text-gray-600">Em Sustentação</p>
-              <p class="text-2xl font-bold text-gray-900">0</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustentacaoCount">0</p>
             </div>
           </div>
         </div>
@@ -599,26 +555,72 @@
       </div>
 
       <!-- Gráfico Sustentação -->
-      <div id="codesSustentacaoWrapper" class="bg-white rounded-lg shadow-md p-6 hidden">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Projetos em Sustentação</h3>
-        <div class="h-80 flex items-center justify-center">
-          <canvas id="codesSustentacaoChart"></canvas>
+      <!-- Wrapper CODES -->
+      <div id="codesWrapper">
+
+        <!-- Sustentação -->
+        <div id="codesSustentacaoWrapper" class="hidden mt-6">
+          <!-- Tabela Sustentação -->
+          <div class="mt-6">
+            <h3 class="text-lg font-semibold mb-2">Chamados de Sustentação</h3>
+            <div class="overflow-x-auto bg-white shadow rounded-lg mt-6">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Desenvolvedor</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Solicitante</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="sustentacaoTableBody" class="divide-y divide-gray-200">
+                  <!-- Linhas preenchidas via sustentacao.js -->
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+          <!-- Gráfico Sustentação -->
+          <div class="mt-6">
+            <h3 class="text-lg font-semibold mb-2">Distribuição por Status</h3>
+            <div class="bg-white shadow rounded-lg p-4 h-80">
+              <canvas id="codesSustentacaoChart"></canvas>
+            </div>
+          </div>
         </div>
-        <!-- 🔽 Tabela que o JS espera -->
-        <div class="mt-6 overflow-x-auto">
-          <table class="min-w-full table-auto border">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aplicação
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SLA</th>
-              </tr>
-            </thead>
-            <tbody id="sustentacaoTableBody" class="bg-white divide-y divide-gray-200"></tbody>
-          </table>
+
+        <!-- Fábrica (tabela principal) -->
+        <div id="tableView" class="bg-white rounded-lg shadow-md mt-6">
+          <div class="overflow-x-auto">
+            <table class="min-w-full table-auto">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Projeto</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Farol de entrega</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Progresso</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sprints</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Responsável</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="codesTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+            </table>
+          </div>
         </div>
+
       </div>
+
+
       <!-- Modal de Sustentação -->
       <div id="sustentacaoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen p-4">
@@ -643,52 +645,8 @@
         </div>
       </div>
 
-      <!-- Tabela CODES -->
-      <div class="bg-white rounded-lg shadow-md" id="tableView">
-        <div class="overflow-x-auto">
-          <table class="min-w-full table-auto">
-            <thead class="bg-gray-50">
-              <tr>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onclick="sortTable('nome')">Projeto ↕️</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Farol de
-                  entrega</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progresso
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sprints</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200" id="codesTableBody"></tbody>
-          </table>
-        </div>
-      </div>
+    </div><!-- ✅ FECHA codesPage AQUI -->
 
-      <!-- Filtros + Export -->
-      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <select class="border border-gray-300 rounded-lg px-3 py-2" disabled>
-            <option>Todos os Status</option>
-          </select>
-          <select class="border border-gray-300 rounded-lg px-3 py-2" disabled>
-            <option>Todos os Responsáveis</option>
-          </select>
-          <input class="border border-gray-300 rounded-lg px-3 py-2" type="date" disabled />
-          <button class="bg-gray-300 text-white px-4 py-2 rounded-lg cursor-not-allowed">🔍 Filtrar</button>
-        </div>
-      </div>
-
-      <div class="flex justify-end items-center mb-6">
-        <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm"
-          onclick="exportData('pdf')">📄
-          Exportar PDF</button>
-      </div>
-
-    </div><!-- /CODES -->
 
     <!-- ========================== COSET ========================== -->
     <div class="page-content hidden" id="cosetPage">
@@ -757,15 +715,19 @@
           <table class="min-w-full table-auto">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status
+                </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Farol de
                   entrega</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progresso
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Responsável
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações
+                </th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200" id="cosetTableBody"></tbody>
@@ -843,15 +805,19 @@
           <table class="min-w-full table-auto">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status
+                </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Farol de
                   entrega</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progresso
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Responsável
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações
+                </th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200" id="cgodTableBody"></tbody>
@@ -1546,25 +1512,139 @@
     }
 
     function showPage(pageId, el) {
+      // Esconde todas as páginas
       document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+
+      // Mostra apenas a página alvo
       const target = document.getElementById(pageId + 'Page');
       if (target) target.classList.remove('hidden');
 
+      // Atualiza visual dos botões de nav (somente os botões do nav)
       document.querySelectorAll('nav .nav-btn').forEach(btn => {
         btn.classList.remove('border-blue-500', 'text-blue-600');
         btn.classList.add('border-transparent', 'text-gray-500');
       });
-      if (el) {
+      if (el && el.classList) {
         el.classList.remove('border-transparent', 'text-gray-500');
         el.classList.add('border-blue-500', 'text-blue-600');
       }
+
+      // Função auxiliar para tentar redesenhar charts/tabelas de forma segura
+      const tryRedraw = () => {
+        if (!window.__appsReady) window.__appsReady = { tries: 0 };
+
+        // limita tentativas
+        if (window.__appsReady.tries >= 4) {
+          window.__appsReady.tries = 0;
+        }
+        window.__appsReady.tries++;
+
+        try {
+          // fonte única de dados (se main.js preencher window.cacheProjetos)
+          const data = Array.isArray(window.cacheProjetos) ? window.cacheProjetos : [];
+
+          // HOME
+          if (pageId === 'home') {
+            if (typeof drawCharts === 'function' && data.length) drawCharts(data);
+            try { chartCoordenacao?.resize?.(); chartCoordenacao?.update?.(); } catch (e) { }
+            try { chartStatus?.resize?.(); chartStatus?.update?.(); } catch (e) { }
+            try { chartStatusDistrib?.resize?.(); chartStatusDistrib?.update?.(); } catch (e) { }
+            try { chartRag?.resize?.(); chartRag?.update?.(); } catch (e) { }
+            try { chartTimeline?.resize?.(); chartTimeline?.update?.(); } catch (e) { }
+          }
+
+          // CODES
+          if (pageId === 'codes') {
+            document.getElementById('tableView')?.classList.remove('hidden');
+            document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
+            document.getElementById('codesInternWrapper')?.classList.remove('hidden');
+
+            if (typeof drawCodesSprintsChart === 'function' && data.length) drawCodesSprintsChart(data);
+            if (typeof drawCodesInternChart === 'function' && data.length) drawCodesInternChart(data);
+
+            try { chartCodes?.resize?.(); chartCodes?.update?.(); } catch (e) { }
+            try { chartIntern?.resize?.(); chartIntern?.update?.(); } catch (e) { }
+          }
+
+          // COSET
+          if (pageId === 'coset') {
+            if (typeof renderAllCoordTables === 'function') {
+              renderAllCoordTables(data);
+            } else {
+              const tbody = document.getElementById('cosetTableBody');
+              if (tbody && data.length) {
+                tbody.innerHTML = data
+                  .filter(p => (p.coordenacao || '').toString().toLowerCase().includes('coset'))
+                  .map(p => `<tr>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
+                    </tr>`).join('');
+              }
+            }
+
+            if (typeof drawCosetTiposChart === 'function') drawCosetTiposChart(data);
+            try { chartCoset?.resize?.(); chartCoset?.update?.(); } catch (e) { }
+          }
+
+          // CGOD
+          if (pageId === 'cgod') {
+            if (typeof renderAllCoordTables === 'function') {
+              renderAllCoordTables(data);
+            } else {
+              const tbody = document.getElementById('cgodTableBody');
+              if (tbody && data.length) {
+                tbody.innerHTML = data
+                  .filter(p => (p.coordenacao || '').toString().toLowerCase().includes('cgod'))
+                  .map(p => `<tr>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
+                    </tr>`).join('');
+              }
+            }
+
+            if (typeof drawCgodChart === 'function') drawCgodChart(data);
+            try { chartCgod?.resize?.(); chartCgod?.update?.(); } catch (e) { }
+          }
+
+          // PDTI
+          if (pageId === 'pdti') {
+            if (typeof loadPDTITable === 'function') loadPDTITable();   // busca API e atualiza tudo
+            if (typeof filterPDTI === 'function') filterPDTI();
+            if (typeof renderPDTICharts === 'function') renderPDTICharts();
+            if (typeof updatePDTIProgress === 'function') updatePDTIProgress();
+
+
+            try { chartPdtiTipo?.resize?.(); chartPdtiTipo?.update?.(); } catch (e) { }
+            try { chartPdtiTimeline?.resize?.(); chartPdtiTimeline?.update?.(); } catch (e) { }
+          }
+
+          // Atualiza KPIs e tabela recente se existirem funções
+          if (typeof updateKPIs === 'function') updateKPIs(data);
+          if (typeof renderRecentTable === 'function') renderRecentTable(data);
+
+          // zera tentativas quando deu certo
+          window.__appsReady.tries = 0;
+
+        } catch (err) {
+          console.warn('Erro ao redesenhar charts em showPage:', err);
+          if (window.__appsReady.tries < 4) setTimeout(tryRedraw, 150);
+        }
+      };
+
+      // Pequeno atraso para garantir que o canvas esteja visível
+      setTimeout(tryRedraw, 80);
     }
 
     function hideModal(id) { const el = document.getElementById(id); if (el) el.classList.add('hidden'); }
-    window.showModal = function (id) {
-      const el = document.getElementById(id);
-      if (el) el.classList.remove('hidden');
-    };
+    window.showModal = function (id) { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); };
     window.hideNotify = function () { const el = document.getElementById('notifyModal'); if (el) el.classList.add('hidden'); };
 
     function updateProgressDisplay() {
@@ -1572,23 +1652,25 @@
       const display = document.getElementById('progressDisplay');
       const input = document.getElementById('projectProgresso');
       const bar = document.getElementById('progressBar');
-      const value = Number(slider.value) || 0;
+      const value = Number(slider?.value) || 0;
       display.textContent = value + '%';
-      input.value = value;
-      bar.style.width = value + '%';
-      const pct = (value / slider.max) * 100;
-      slider.style.background = `linear-gradient(to right,#3b82f6 0%,#3b82f6 ${pct}%,#e5e7eb ${pct}%,#e5e7eb 100%)`;
+      if (input) input.value = value;
+      if (bar) bar.style.width = value + '%';
+      const pct = (value / (slider?.max || 100)) * 100;
+      if (slider) slider.style.background = `linear-gradient(to right,#3b82f6 0%,#3b82f6 ${pct}%,#e5e7eb ${pct}%,#e5e7eb 100%)`;
     }
+
     function updateProgressSlider() {
       const input = document.getElementById('projectProgresso');
       const slider = document.getElementById('projectProgressoSlider');
       const display = document.getElementById('progressDisplay');
       const bar = document.getElementById('progressBar');
-      let value = parseInt(input.value) || 0;
+      let value = parseInt(input?.value) || 0;
       if (value < 0) value = 0; if (value > 100) value = 100;
-      input.value = value; slider.value = value; display.textContent = value + '%'; bar.style.width = value + '%';
-      const pct = (value / slider.max) * 100;
-      slider.style.background = `linear-gradient(to right,#3b82f6 0%,#3b82f6 ${pct}%,#e5e7eb ${pct}%,#e5e7eb 100%)`;
+      if (input) input.value = value; if (slider) slider.value = value; if (display) display.textContent = value + '%';
+      if (bar) bar.style.width = value + '%';
+      const pct = (value / (slider?.max || 100)) * 100;
+      if (slider) slider.style.background = `linear-gradient(to right,#3b82f6 0%,#3b82f6 ${pct}%,#e5e7eb ${pct}%,#e5e7eb 100%)`;
     }
 
     // Placeholders
@@ -1602,17 +1684,215 @@
     });
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0"></script>
+  <script>
+    // Garante que todas as páginas (#homePage, #codesPage, #cosetPage, #cgodPage, #pdtiPage)
+    // sejam filhas diretas de <main>. Isso corrige casos de aninhamento acidental.
+    (function ensurePageSiblings() {
+      const main = document.querySelector('main.container, main.container.mx-auto, main.container.mx-auto.px-4.py-6') || document.querySelector('main');
+      if (!main) return;
+      ['home', 'codes', 'coset', 'cgod', 'pdti'].forEach(id => {
+        const page = document.getElementById(id + 'Page');
+        if (page && page.parentElement !== main) {
+          main.appendChild(page); // move para ser filho direto de <main>
+        }
+      });
+    })();
+
+    // Opcional: chame no começo do showPage para garantir em cada clique
+    (function wrapShowPageOnce() {
+      if (window.__showPageWrapped) return;
+      window.__showPageWrapped = true;
+      const _orig = window.showPage;
+      window.showPage = function (pageId, el) {
+        // garante estrutura correta antes de mostrar
+        (function ensurePageSiblings() {
+          const main = document.querySelector('main.container, main.container.mx-auto, main.container.mx-auto.px-4.py-6') || document.querySelector('main');
+          if (!main) return;
+          ['home', 'codes', 'coset', 'cgod', 'pdti'].forEach(id => {
+            const page = document.getElementById(id + 'Page');
+            if (page && page.parentElement !== main) main.appendChild(page);
+          });
+        })();
+        return _orig(pageId, el);
+      };
+    })();
+  </script>
+
   <script>
     if (window['chartjs-plugin-annotation']) {
       Chart.register(window['chartjs-plugin-annotation']);
     }
   </script>
+
+  <script>
+    /*
+      Filler compatível — preenche COSET / CGOD / PDTI a partir de window.cacheProjetos / window.pdtiData.
+      Cole ANTES de: <script src="assets/js/main.js?v=10" defer>
+    */
+
+    (function () {
+      try {
+        // dados de exemplo (usados somente se não existir cache)
+        if (!Array.isArray(window.cacheProjetos)) {
+          window.cacheProjetos = [
+            { id: 1, nome: 'Portal Unificado', coordenacao: 'COSET', status: 'Em Andamento', rag: 'Verde', progresso: 45, responsavel: 'Ana', sprints: 6 },
+            { id: 2, nome: 'Catálogo de Dados', coordenacao: 'CGOD', status: 'Em Andamento', rag: 'Amarelo', progresso: 25, responsavel: 'Bruno', sprints: 4 },
+            { id: 3, nome: 'Sistema de Pagamentos', coordenacao: 'COSET', status: 'Planejado', rag: '', progresso: 0, responsavel: 'Carla', sprints: 0 },
+            { id: 4, nome: 'BI Operacional', coordenacao: 'CGOD', status: 'Concluído', rag: 'Verde', progresso: 100, responsavel: 'Diego', sprints: 8 },
+            { id: 5, nome: 'APP Interno', coordenacao: 'CODES', status: 'Sustentação', rag: 'Amarelo', progresso: 85, responsavel: 'Eduarda', sprints: 12 }
+          ];
+        }
+
+
+
+        // renderiza tabelas por coordenação
+        window.renderAllCoordTables = function (data) {
+          try {
+            var cosetTbody = document.getElementById('cosetTableBody');
+            var cgodTbody = document.getElementById('cgodTableBody');
+            var recentTbody = document.getElementById('projectsTableBody');
+            var codesTbody = document.getElementById('codesTableBody');
+
+            if (cosetTbody) cosetTbody.innerHTML = '';
+            if (cgodTbody) cgodTbody.innerHTML = '';
+            if (recentTbody) recentTbody.innerHTML = '';
+            if (codesTbody) codesTbody.innerHTML = '';
+
+            for (var i = 0; i < data.length; i++) {
+              var p = data[i];
+              var nome = p.nome || p.projeto || '—';
+              var status = p.status || '—';
+              var rag = p.rag || '—';
+              var progresso = (typeof p.progresso !== 'undefined') ? p.progresso : 0;
+              var responsavel = p.responsavel || '—';
+
+              var row = ''
+                + '<tr>'
+                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + nome + '</td>'
+                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + status + '</td>'
+                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + rag + '</td>'
+                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + progresso + '%</td>'
+                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + responsavel + '</td>'
+                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>'
+                + '</tr>';
+
+              var coord = (p.coordenacao || '').toString().toLowerCase();
+              if (coord.indexOf('coset') !== -1 && cosetTbody) cosetTbody.innerHTML += row;
+              else if (coord.indexOf('cgod') !== -1 && cgodTbody) cgodTbody.innerHTML += row;
+              else if (coord.indexOf('codes') !== -1 && codesTbody) codesTbody.innerHTML += row;
+
+              if (recentTbody) recentTbody.innerHTML += row;
+            }
+
+            // KPIs simples
+            var getCount = function (needle) {
+              needle = (needle || '').toString().toLowerCase();
+              var count = 0;
+              for (var j = 0; j < data.length; j++) {
+                if ((data[j].coordenacao || '').toString().toLowerCase().indexOf(needle) !== -1) count++;
+              }
+              return count;
+            };
+
+            var el;
+            el = document.getElementById('projetosCoset'); if (el) el.textContent = getCount('coset');
+            el = document.getElementById('projetosCgod'); if (el) el.textContent = getCount('cgod');
+            el = document.getElementById('projetosCodes'); if (el) el.textContent = getCount('codes');
+            el = document.getElementById('totalProjetos'); if (el) el.textContent = (data && data.length) ? data.length : 0;
+
+          } catch (err) {
+            console.warn('renderAllCoordTables erro:', err);
+          }
+        };
+
+        // atualiza KPIs gerais
+        window.updateKPIs = function (data) {
+          try {
+            var concluido = 0, foraPrazo = 0, ativos = 0, soma = 0;
+            for (var i = 0; i < data.length; i++) {
+              var p = data[i];
+              var st = (p.status || '').toString().toLowerCase();
+              if (st.indexOf('concl') !== -1) concluido++;
+              if ((p.rag || '').toString().toLowerCase() === 'vermelho') foraPrazo++;
+              if (st.indexOf('concl') === -1) ativos++;
+              soma += (p.progresso || 0);
+            }
+            var progressoMedio = data.length ? Math.round(soma / data.length) : 0;
+
+            var el;
+            el = document.getElementById('kpiConcluidosMes'); if (el) el.textContent = concluido;
+            el = document.getElementById('kpiForaPrazo'); if (el) el.textContent = foraPrazo;
+            el = document.getElementById('kpiProjetosAtivos'); if (el) el.textContent = ativos;
+            el = document.getElementById('kpiProgressoMedio'); if (el) el.textContent = progressoMedio + '%';
+          } catch (e) {
+            console.warn('updateKPIs erro:', e);
+          }
+        };
+
+
+
+        // inicializa
+        if (typeof renderAllCoordTables === 'function') renderAllCoordTables(window.cacheProjetos || []);
+        if (typeof updateKPIs === 'function') updateKPIs(window.cacheProjetos || []);
+        if (typeof filterPDTI === 'function') filterPDTI();
+        if (typeof updatePDTIProgress === 'function') updatePDTIProgress();
+
+      } catch (outerErr) {
+        console.error('filler geral erro:', outerErr);
+      }
+    })();
+  </script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+
+  <script>
+    if (window['chartjs-plugin-annotation'] && window.Chart) {
+      Chart.register(window['chartjs-plugin-annotation']);
+    }
+  </script>
   <!-- Lógica dinâmica (main.js) -->
-  <script src="assets/js/main.js?v=9" defer></script>
+  <script src="assets/js/main.js?v=10" defer></script>
+  <script src="assets/js/sustentacao.js?v=2"></script>
+
+
   <script src="assets/js/pdti.js"></script>
 
-  <script src="assets/js/codes-sustentacao.js?v=1" defer></script>
+  <!--script src="assets/js/codes-sustentacao.js?v=1" defer></script-->
+
+  <!-- Modal Ver Chamado -->
+  <!-- Modal Ver Chamado -->
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="verChamadoModal">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Detalhes do Chamado</h3>
+            <button class="text-gray-400 hover:text-gray-600" onclick="hideModal('verChamadoModal')">✕</button>
+          </div>
+
+          <div class="space-y-4 text-sm text-gray-700">
+            <p><span class="font-medium">Projeto:</span> <span id="verProjeto">—</span></p>
+            <p><span class="font-medium">Número:</span> <span id="verNumero">—</span></p>
+            <p><span class="font-medium">Status:</span> <span id="verStatus">—</span></p>
+            <p><span class="font-medium">Desenvolvedor:</span> <span id="verDev">—</span></p>
+            <p><span class="font-medium">Solicitante:</span> <span id="verSolicitante">—</span></p>
+            <div>
+              <h4 class="font-semibold text-gray-800 mb-1">Observações</h4>
+              <p id="verObs" class="text-gray-600">—</p>
+            </div>
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-6">
+            <button type="button" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              onclick="hideModal('verChamadoModal')">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 
 </body>

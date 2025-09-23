@@ -84,3 +84,17 @@ class PDTIAction(db.Model):
             'data_conclusao': self.data_conclusao.isoformat() if self.data_conclusao else None
         }
 
+class SustentacaoChamado(db.Model):
+    __tablename__ = "sustentacao_chamados"
+
+    id = db.Column(db.Integer, primary_key=True)
+    numero_chamado = db.Column(db.String(50), unique=True, nullable=False)
+    projeto = db.Column(db.String(100), nullable=False)
+    desenvolvedor = db.Column(db.String(100))
+    data_chamado = db.Column(db.DateTime)
+    descricao = db.Column(db.Text)
+    solicitante = db.Column(db.String(150))
+    status = db.Column(db.String(50))
+    observacao = db.Column(db.Text)
+    criado_em = db.Column(db.DateTime, default=db.func.now())
+    atualizado_em = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())

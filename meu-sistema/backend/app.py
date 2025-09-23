@@ -7,6 +7,11 @@ from database import db, Projeto, Andamento
 app = Flask(__name__, static_url_path="/api")
 CORS(app)
 
+# modelo sustentacao_chamados (precisa estar definido em database.py)
+from database import SustentacaoChamado  
+
+
+
 # ====== CONFIG ======
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@db:5432/projetos_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -22,16 +27,20 @@ def _parse_date(s):
         return None
 
 # ====== ROTAS ======
-@app.route('/api/sustentacao')
+@app.route('/api/sustentacao', methods=['GET'])
 def listar_sustentacao():
-    dados_fake = [
-        {"aplicacao": "CNES", "status": "Fechado", "sla": "No prazo"},
-        {"aplicacao": "CNES", "status": "Aberto", "sla": "Fora do prazo"},
-        {"aplicacao": "PAT", "status": "Fechado", "sla": "No prazo"},
-        {"aplicacao": "PAT", "status": "Fechado", "sla": "No prazo"},
-        {"aplicacao": "SIRH", "status": "Aberto", "sla": "No prazo"}
-    ]
-    return jsonify(dados_fake)
+    chamados = SustentacaoChamado.query.order_by(SustentacaoChamado.data_chamado.desc()).all()
+    return jsonify([{
+        "numero_chamado": c.numero_chamado,
+        "projeto": c.projeto,
+        "desenvolvedor": c.desenvolvedor,
+        "data_chamado": c.data_chamado.isoformat() if c.data_chamado else None,
+        "descricao": c.descricao,
+        "solicitante": c.solicitante,
+        "status": c.status,
+        "observacao": c.observacao
+    } for c in chamados])
+
 
 # Editar andamento
 @app.route('/api/andamentos/<int:andamento_id>', methods=['PUT'])

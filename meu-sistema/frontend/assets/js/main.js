@@ -47,6 +47,11 @@
   };
 
   // ========= boot =========
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadProjetos();
+  });
+
   onReady(async () => {
     const form = byId('projectForm');
     if (form) {
@@ -65,13 +70,24 @@
     window.editProject = editProject;
     window.deleteProject = deleteProject;
     window.openNewProject = openNewProject;
+    window.showSustentacao = showSustentacao;
 
 
 
     await loadProjetos();
     updateLastUpdateTime();
   });
-
+  // ========= funções =========
+  async function carregarProjetos() {
+    try {
+      const resp = await fetch(API);
+      if (!resp.ok) throw new Error("Erro ao buscar projetos");
+      cacheProjetos = await resp.json();
+      renderProjects(cacheProjetos);
+    } catch (err) {
+      console.error("Erro ao carregar projetos:", err);
+    }
+  }
   function onReady(fn) {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', fn, { once: true });
@@ -81,10 +97,32 @@
   // ========= helpers DOM =========
   function byId(id) { return document.getElementById(id); }
   function setText(id, v) { const el = byId(id); if (el) el.textContent = (v ?? '—'); }
-  function setValue(id, v) { const el = byId(id); if (el != null) el.value = (v ?? ''); }
-  function getValue(id) { const el = byId(id); return el ? el.value : ''; }
+
+  function setValue(id, v) {
+    const el = byId(id);
+    if (!el) return;
+    if (el.type === 'checkbox') {
+      el.checked = !!v;
+    } else if (el.type === 'date') {
+      // aceita 'YYYY-MM-DD' ou ISO, fatia os 10 primeiros
+      el.value = v ? String(v).slice(0, 10) : '';
+    } else {
+      el.value = (v ?? '');
+    }
+  }
+
+  function getValue(id) {
+    const el = byId(id);
+    if (!el) return '';
+    if (el.type === 'checkbox') return !!el.checked;
+    return (el.value ?? '').toString().trim();
+  }
+
+  async function safeJsonOrNull(res) {
+    try { return await res.json(); } catch { return null; }
+  }
+
   function js(v) { return JSON.stringify(v); }
-  async function safeJsonOrNull(res) { try { return await res.json(); } catch { return null; } }
   function escapeHtml(s) {
     if (s == null) return s;
     return String(s).replace(/[&<>"']/g, c => ({
@@ -129,6 +167,7 @@
   window.loadAndamentos = loadAndamentos;
 
 
+  // ========= Carregar projetos =========
   async function loadProjetos() {
     try {
       const res = await fetch(API);
@@ -136,17 +175,17 @@
       const projetos = await res.json();
       cacheProjetos = Array.isArray(projetos) ? projetos : [];
 
+      // expõe para index.html/showPage
+      window.cacheProjetos = cacheProjetos;
+
       renderRecentTable(cacheProjetos);
       renderAllCoordTables(cacheProjetos);
       updateKPIs(cacheProjetos);
       drawCharts(cacheProjetos);
-      //drawCodesSprintsChart(cacheProjetos);
-      drawCosetTiposChart(cacheProjetos);
-
-      updateLastUpdateTime();
+      drawCodesSprintsChart(cacheProjetos);
+      drawCodesInternChart(cacheProjetos);
     } catch (err) {
       console.error(err);
-      toast('Erro', 'Erro ao carregar projetos: ' + err.message, 'error');
     }
   }
   function startEditAndamento(andamentoId, projetoId, descricaoRaw) {
@@ -166,6 +205,7 @@
       </div>
     `;
   }
+
 
 
 
@@ -260,56 +300,87 @@
       console.error("Erro ao carregar andamentos", err);
     }
   }
-
-  // ========= Tabelas =========
+  // ========= Ações (links com ícones) =========
+  function actionLinksHtml(idArg) {
+    return `
+      <a href="#" onclick="showProjectDetail(${idArg}); return false;"
+         class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 mr-4" role="button">
+        <span>👁️</span><span>Ver</span>
+      </a>
+      <a href="#" onclick="editProject(${idArg}); return false;"
+         class="inline-flex items-center gap-1 text-green-600 hover:text-green-800 mr-4" role="button">
+        <span>✏️</span><span>Editar</span>
+      </a>
+      <a href="#" onclick="deleteProject(${idArg}); return false;"
+         class="inline-flex items-center gap-1 text-red-600 hover:text-red-800" role="button">
+        <span>🗑️</span><span>Excluir</span>
+      </a>
+    `;
+  }
+  // ========= Projetos Recentes =========
   function renderRecentTable(list) {
     const tbody = byId('projectsTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
 
     if (!list.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto cadastrado.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto cadastrado.</td></tr>`;
       return;
     }
 
-    // 🔽 Ordena pelos mais recentes (usando data de início ou fim)
+    // 🔽 Ordena pelos mais recentes (data início ou fim)
     const sorted = [...list].sort((a, b) => {
       const da = new Date(a.inicio || a.fim || 0);
       const db = new Date(b.inicio || b.fim || 0);
-      return db - da; // mais novo primeiro
+      return db - da;
     });
 
     // 🔽 Pega só os 5 primeiros
     const recent = sorted.slice(0, 5);
 
     recent.forEach(p => {
-      const idArg = js(p.id);
+      const idArg = js(p.id ?? p.nome);
+      const progresso = (p.progresso != null) ? Number(p.progresso) : null;
+      const sprints = (p.sprintsConcluidas != null && p.totalSprints != null)
+        ? `${p.sprintsConcluidas} de ${p.totalSprints}` : '—';
+
       tbody.insertAdjacentHTML('beforeend', `
-        <tr>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">${escapeHtml(p.coordenacao) || '-'}</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">
-              ${escapeHtml(p.status) || '-'}
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="showProjectDetail(${idArg})">👁️ Ver</button>
-            <button class="text-green-600 hover:text-green-900 mr-3" onclick="editProject(${idArg})">✏️ Editar</button>
-            <button class="text-red-600 hover:text-red-900" onclick="deleteProject(${idArg})">🗑️ Excluir</button>
-          </td>
-        </tr>
-      `);
+      <tr>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">${escapeHtml(p.coordenacao) || '-'}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">
+            ${escapeHtml(p.status) || '-'}
+          </span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="flex items-center">
+            <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+              <div class="h-2 rounded-full bg-blue-600" style="width:${progresso != null ? progresso : 0}%"></div>
+            </div>
+            <span class="text-sm text-gray-900">${progresso != null ? progresso + '%' : '—'}</span>
+          </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sprints}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+          <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
+          <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
+          <button onclick="deleteProject(${idArg})" class="text-red-600 hover:text-red-900">🗑️ Excluir</button>
+        </td>
+      </tr>
+    `);
     });
   }
+
+
+
+
+
 
 
   function renderAllCoordTables(list) {
@@ -330,59 +401,51 @@
 
     sortByStatus(rows).forEach(p => {
       const idArg = js(p.id);
-      const progresso = (p.progresso != null) ? Number(p.progresso) : null;
+      const progresso = (p.progresso != null) ? Number(p.progresso) : 0;
       const sprints = (p.sprintsConcluidas != null && p.totalSprints != null)
         ? `${p.sprintsConcluidas} de ${p.totalSprints}` : '—';
 
+      let rowHtml = `
+        <tr>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">
+              ${escapeHtml(p.status) || '-'}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag || p.farol)}">
+              ${escapeHtml(p.rag || p.farol) || '—'}
+            </span>
+
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:${progresso}%"></div>
+            </div>
+            <span class="ml-2">${progresso}%</span>
+          </td>`;
+
+      // 👇 Só CODES mostra a coluna de Sprints
       if (tbodyId === 'codesTableBody') {
-        tbody.insertAdjacentHTML('beforeend', `
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div></td>
-              <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span></td>
-              <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span></td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                    <div class="h-2 rounded-full bg-blue-600" style="width:${progresso != null ? progresso : 0}%"></div>
-                  </div>
-                  <span class="text-sm text-gray-900">${progresso != null ? progresso + '%' : '—'}</span>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sprints}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
-                <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
-                <button onclick="deleteProject(${idArg})" class="text-red-600 hover:text-red-900">🗑️ Excluir</button>
-              </td>
-            </tr>
-          `);
-      } else {
-        // COSET / CGOD
-        tbody.insertAdjacentHTML('beforeend', `
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div></td>
-              <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">${escapeHtml(p.status) || '-'}</span></td>
-              <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag)}">${escapeHtml(p.rag) || '—'}</span></td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                    <div class="h-2 rounded-full bg-blue-600" style="width:${progresso != null ? progresso : 0}%"></div>
-                  </div>
-                  <span class="text-sm text-gray-900">${progresso != null ? progresso + '%' : '—'}</span>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
-                <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
-                <button onclick="deleteProject(${idArg})" class="text-red-600 hover:text-red-900">🗑️ Excluir</button>
-              </td>
-            </tr>
-          `);
+        rowHtml += `
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sprints}</td>`;
       }
+
+      rowHtml += `
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            ${actionLinksHtml(idArg)}
+          </td>
+        </tr>`;
+
+      tbody.insertAdjacentHTML('beforeend', rowHtml);
     });
   }
+
+
 
   // ========= KPIs =========
   function updateKPIs(list) {
@@ -745,7 +808,19 @@
 
     const now = Date.now();
 
+    function isInternalizacaoTrue(val) {
+      if (val === true) return true;
+      if (typeof val === 'number') return val === 1;
+      if (typeof val === 'string') {
+        const v = val.trim().toLowerCase();
+        return v === 'true' || v === '1' || v === 'sim' || v === 'yes';
+      }
+      return false;
+    }
+
+    // FILTRA apenas projetos da coordenação CODES marcados como internalizacao
     const items = projects
+      .filter(p => (p.coordenacao || '').toUpperCase() === 'CODES' && isInternalizacaoTrue(p.internalizacao))
       .map(p => {
         const ini = p.inicio ? new Date(p.inicio).getTime() : null;
         const fim = p.fim ? new Date(p.fim).getTime() : null;
@@ -762,7 +837,14 @@
       .sort((a, b) => a.x[0] - b.x[0]);
 
     if (!items.length) {
-      if (chartIntern) chartIntern.destroy();
+      if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
+      // limpa canvas para mensagem amigável
+      const c = ctx.getContext("2d");
+      c.clearRect(0, 0, ctx.width, ctx.height);
+      c.font = "14px Arial";
+      c.fillStyle = "#666";
+      c.textAlign = "center";
+      c.fillText("Nenhum projeto de internalização com datas válidas.", ctx.width / 2, ctx.height / 2);
       return;
     }
 
@@ -842,7 +924,7 @@
       }
     });
 
-    // 👉 Legenda manual
+    // Legenda manual
     const legendEl = ctx.parentNode.querySelector('.custom-legend');
     if (!legendEl) {
       const div = document.createElement('div');
@@ -855,6 +937,7 @@
       ctx.parentNode.appendChild(div);
     }
   }
+
 
 
 
@@ -886,206 +969,82 @@
   }
 
 
-
-  // ========= FILTROS =========
+  // ================== FILTRO DE PROJETOS ==================
   function filterProjects(coordenacao, categoria) {
-    const sprintsWrapper = document.getElementById('codesSprintsWrapper');
-    const internWrapper = document.getElementById('codesInternWrapper');
-    const sustentacaoWrapper = document.getElementById('codesSustentacaoWrapper');
-    // Navega para a página correta (usa showPage do HTML)
-    const go = () => {
-      const map = { CODES: 'codes', COSET: 'coset', CGOD: 'cgod' };
-      const key = map[(coordenacao || '').toUpperCase()];
-      if (key && typeof window.showPage === 'function') {
-        const getter = window.getNavButtonFor;
-        let btn = null;
-        if (typeof getter === 'function') btn = getter(key);
-        window.showPage(key, btn);
-      }
+    console.log("Filtro acionado:", coordenacao, categoria);
+
+    // Esconde Sustentação ao aplicar filtros da fábrica
+    document.getElementById("codesSustentacaoWrapper")?.classList.add("hidden");
+
+    // Mostra a tabela padrão
+    document.getElementById("tableView")?.classList.remove("hidden");
+
+    // Filtra os projetos
+    let filtrados = cacheProjetos.filter(
+      p => (p.coordenacao || "").toUpperCase() === coordenacao.toUpperCase()
+    );
+
+    if (categoria && categoria !== "total") {
+      const catLower = categoria.toLowerCase();
+      const now = new Date();
+
+      filtrados = filtrados.filter(p => {
+        const status = (p.status || "").toLowerCase();
+        switch (catLower) {
+          case "ativos":
+            return ["em andamento", "em risco", "sustentação", "sustentacao"].includes(status);
+          case "desenvolvimento":
+            return status === "em andamento";
+          case "fora-prazo":
+            return p.fim && new Date(p.fim) < now && status !== "concluído";
+          case "planejado":
+            return status === "planejado";
+          case "pausado":
+            return status === "pausado";
+          case "concluido":
+            return status === "concluído" || status === "concluido";
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Renderiza usando o layout oficial (barra, RAG, sprints, etc.)
+    const mapTbody = {
+      CODES: "codesTableBody",
+      COSET: "cosetTableBody",
+      CGOD: "cgodTableBody"
     };
-    go();
-
-    const coord = (coordenacao || '').toUpperCase();
-    const cat = (categoria || '').toLowerCase();
-
-
-    let filtered = cacheProjetos.filter(p => (p.coordenacao || '').toUpperCase() === coord);
-    if (coord === 'CODES') {
-      // Separa os grupos
-      const fabrica = filtered.filter(p => p.status === 'Em Andamento' && !p.internalizacao);
-      const intern = filtered.filter(p => p.status === 'Em Andamento' && p.internalizacao);
-      const sust = filtered.filter(p => (p.status || '').toLowerCase().includes('susten'));
-
-      if (cat === 'desenvolvimento') {
-        // Tabela só com projetos em andamento
-        filtered = fabrica.concat(intern);
-
-        // Fábrica
-        if (sprintsWrapper) {
-          if (fabrica.length) {
-            sprintsWrapper.classList.remove('hidden');
-            drawCodesSprintsChart(fabrica);
-          } else {
-            sprintsWrapper.classList.add('hidden');
-            if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
-          }
-        }
-
-        // Internalização
-        if (internWrapper) {
-          if (intern.length) {
-            internWrapper.classList.remove('hidden');
-            drawCodesInternChart(intern);
-          } else {
-            internWrapper.classList.add('hidden');
-            if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
-          }
-        }
-
-        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
-      }
-
-      else if (cat === 'sustentacao') {
-        filtered = sust;
-
-        if (sustentacaoWrapper) {
-          sustentacaoWrapper.classList.remove('hidden');
-          window.loadSustentacao && window.loadSustentacao();
-        }
-
-        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
-        if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
-        if (internWrapper) internWrapper.classList.add('hidden');
-        if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
-      }
-
-      // ✅ ATIVOS (agora filtra só Em Andamento + Sustentação)
-      else if (cat === 'ativos') {
-        filtered = filtered.filter(p => p.status === 'Em Andamento' || p.status === 'Sustentação');
-        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
-        if (internWrapper) internWrapper.classList.add('hidden');
-        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
-      }
-
-      else if (cat === 'fora-prazo') {
-        const now = new Date();
-        filtered = filtered.filter(p => {
-          if (!p.fim || p.status === 'Concluído') return false;
-          const d = new Date(p.fim);
-          return !isNaN(d) && d < now;
-        });
-
-        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
-        if (internWrapper) internWrapper.classList.add('hidden');
-        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
-      }
-
-
-
-      else if (cat === 'planejado') {
-        filtered = filtered.filter(p => p.status === 'Planejado');
-        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
-        if (internWrapper) internWrapper.classList.add('hidden');
-        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
-      }
-
-      else if (cat === 'pausado') {
-        filtered = filtered.filter(p => p.status === 'Pausado');
-        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
-        if (internWrapper) internWrapper.classList.add('hidden');
-        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
-      }
-
-      else if (cat === 'concluido') {
-        filtered = filtered.filter(p => p.status === 'Concluído');
-        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
-        if (internWrapper) internWrapper.classList.add('hidden');
-        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
-      }
-
-      else {
-        // Nenhum filtro específico
-        if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
-        if (internWrapper) internWrapper.classList.add('hidden');
-        if (sustentacaoWrapper) sustentacaoWrapper.classList.add('hidden');
-      }
+    if (mapTbody[coordenacao.toUpperCase()]) {
+      renderCoordTable(coordenacao.toUpperCase(), mapTbody[coordenacao.toUpperCase()], filtrados);
     }
+  }
 
 
 
-    if (coord === 'COSET') {
-      if (cat === 'infraestrutura') filtered = filtered.filter(p => p.tipo === 'Infraestrutura');
-      if (cat === 'integracao') filtered = filtered.filter(p => p.tipo === 'Sistema Integrado' || p.tipo === 'Integração');
-      if (cat === 'modernizacao') filtered = filtered.filter(p => p.tipo === 'Modernização');
-      if (cat === 'sistemas-integrados') filtered = filtered.filter(p => p.tipo === 'Sistema Integrado');
-    }
+  function showSustentacao() {
+    // Esconde Sustentação para evitar ficar aberta indevidamente
+    document.getElementById('codesSustentacaoWrapper')?.classList.add('hidden');
 
-    if (coord === 'CGOD') {
-      if (cat === 'analytics') filtered = filtered.filter(p => p.tipo === 'BI Dashboard' || p.tipo === 'Dashboard');
-      if (cat === 'catalogos') filtered = filtered.filter(p => p.tipo === 'Sistema de Dados' || /cat[áa]logo/i.test(p.nome || ''));
-      if (cat === 'datalake') filtered = filtered.filter(p => p.tipo === 'Sistema de Dados');
-      if (cat === 'qualidade') filtered = filtered.filter(p => p.tipo === 'Qualidade de Dados');
-      if (cat === 'governanca') filtered = filtered.filter(p => p.tipo === 'Governança');
-    }
+    // Navega para aba CODES
+    const btn = (typeof window.getNavButtonFor === 'function') ? getNavButtonFor('codes') : null;
+    showPage('codes', btn);
 
-    const mapTbody = { CODES: 'codesTableBody', COSET: 'cosetTableBody', CGOD: 'cgodTableBody' };
-    renderCoordTable(coord, mapTbody[coord], filtered);
+    // Esconde tudo que é da Fábrica
+    document.getElementById('codesSprintsWrapper')?.classList.add('hidden');
+    document.getElementById('codesInternWrapper')?.classList.add('hidden');
+    document.getElementById('tableView')?.classList.add('hidden');
 
-    // controla visibilidade do gráfico de sprints (CODES -> Em Desenvolvimento)
+    // Destroi gráficos da Fábrica se existirem
+    if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
+    if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
 
+    // Agora mostra Sustentação
+    document.getElementById('codesSustentacaoWrapper')?.classList.remove('hidden');
 
-    if (coord === 'CODES' && cat === 'desenvolvimento') {
-      // Fábrica
-      if (sprintsWrapper) {
-        if (fabrica.length) {
-          sprintsWrapper.classList.remove('hidden');
-          drawCodesSprintsChart(fabrica);
-        } else {
-          sprintsWrapper.classList.add('hidden');
-          if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
-        }
-      }
-
-      // Internalização
-      if (internWrapper) {
-        if (intern.length) {
-          internWrapper.classList.remove('hidden');
-          drawCodesInternChart(intern);
-        } else {
-          internWrapper.classList.add('hidden');
-          if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
-        }
-      }
-
-      // Esconde Sustentação
-      const sustWrapper = document.getElementById('codesSustentacaoWrapper');
-      if (sustWrapper) sustWrapper.classList.add('hidden');
-
-    } else if (coord === 'CODES' && cat === 'sustentacao') {
-      const sustWrapper = document.getElementById('codesSustentacaoWrapper');
-      if (sustWrapper) {
-        sustWrapper.classList.remove('hidden');
-        window.loadSustentacao && window.loadSustentacao();
-      }
-
-
-      // Esconde os outros
-      if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
-      if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
-
-      if (internWrapper) internWrapper.classList.add('hidden');
-      if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
-
-    } else {
-      // Se não for desenvolvimento nem sustentação → esconde tudo
-      if (sprintsWrapper) sprintsWrapper.classList.add('hidden');
-      if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
-
-      if (internWrapper) internWrapper.classList.add('hidden');
-      if (chartIntern) chartIntern.destroy();
-
-      const sustWrapper = document.getElementById('codesSustentacaoWrapper');
-      if (sustWrapper) sustWrapper.classList.add('hidden');
+    // Carrega dados da API de Sustentação
+    if (typeof loadSustentacao === 'function') {
+      loadSustentacao();
     }
   }
 
@@ -1189,9 +1148,20 @@
     const chk = byId('projectInternalizacao');
     if (chk) chk.checked = !!p.internalizacao;
 
-    const h = document.querySelector('#projectModal h3'); if (h) h.textContent = 'Editar Projeto';
-    const btn = byId('submitProjectBtn'); if (btn) btn.textContent = 'Atualizar Projeto';
-    const modal = byId('projectModal'); if (modal) modal.classList.remove('hidden');
+    const h = document.querySelector('#projectModal h3');
+    if (h) h.textContent = 'Editar Projeto';
+
+    const btn = byId('submitProjectBtn');
+    if (btn) btn.textContent = 'Atualizar Projeto';
+
+    // Garante abertura correta do modal (mesma lógica do "Novo Projeto")
+    if (typeof window.showModal === 'function') {
+      window.showModal('projectModal');
+    } else {
+      const modal = byId('projectModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
   }
 
   function openNewProject(coord) {
@@ -1276,12 +1246,24 @@
       }
       await safeJsonOrNull(res);
 
-      // UI
+      // UI após salvar/atualizar
       delete form.dataset.id;
-      const h = document.querySelector('#projectModal h3'); if (h) h.textContent = 'Novo Projeto';
-      const btn = byId('submitProjectBtn'); if (btn) btn.textContent = 'Salvar Projeto';
       form.reset();
-      const modal = byId('projectModal'); if (modal) modal.classList.add('hidden');
+
+      const h = document.querySelector('#projectModal h3');
+      if (h) h.textContent = 'Novo Projeto';
+
+      const btn = byId('submitProjectBtn');
+      if (btn) btn.textContent = 'Salvar Projeto';
+
+      // fecha o modal
+      const modal = byId('projectModal');
+      if (modal) modal.classList.add('hidden');
+
+      await loadProjetos();
+      toast('Sucesso', isEdit ? 'Projeto atualizado com sucesso!' : 'Projeto cadastrado com sucesso!', 'success');
+
+
 
       await loadProjetos();
       toast('Sucesso', isEdit ? 'Projeto atualizado com sucesso!' : 'Projeto cadastrado com sucesso!', 'success');
@@ -1347,13 +1329,18 @@
   }
 
   function ragClass(rag) {
-    switch (rag) {
-      case 'Verde': return 'rag-verde';
-      case 'Amarelo': return 'rag-amarelo';
-      case 'Vermelho': return 'rag-vermelho';
-      default: return 'bg-gray-300';
-    }
+    if (!rag) return 'bg-gray-300 text-gray-800';
+    const r = String(rag).trim().toLowerCase();
+    if (r === 'verde') return 'bg-green-600 text-white';
+    if (r === 'amarelo' || r === 'amarelo claro' || r === 'amarelo-escuro') return 'bg-yellow-500 text-white';
+    if (r === 'vermelho') return 'bg-red-600 text-white';
+    // aceitar também versões em inglês ou abreviações (opcional)
+    if (r === 'green') return 'bg-green-600 text-white';
+    if (r === 'yellow') return 'bg-yellow-500 text-white';
+    if (r === 'red') return 'bg-red-600 text-white';
+    return 'bg-gray-300 text-gray-800';
   }
+
 
   function formatDate(s) {
     if (!s) return '—';
@@ -1424,5 +1411,26 @@
     wrap.classList.remove('hidden');
     setTimeout(() => { wrap.classList.add('hidden'); }, 3500);
   }
+  /* ==== Exports mínimos para index.html/showPage ==== */
+  window.cacheProjetos = window.cacheProjetos || cacheProjetos; // garante existência inicial
+
+  window.drawCharts = (list) => drawCharts(list || cacheProjetos);
+  window.drawCodesSprintsChart = (list) => drawCodesSprintsChart(list || cacheProjetos);
+  window.drawCodesInternChart = (list) => drawCodesInternChart(list || cacheProjetos);
+  window.drawCosetTiposChart = (list) => (typeof drawCosetTiposChart === 'function') ? drawCosetTiposChart(list || cacheProjetos) : null;
+  window.renderAllCoordTables = (list) => (typeof renderAllCoordTables === 'function') ? renderAllCoordTables(list || cacheProjetos) : null;
+  window.renderRecentTable = (list) => (typeof renderRecentTable === 'function') ? renderRecentTable(list || cacheProjetos) : null;
+  window.updateKPIs = (list) => (typeof updateKPIs === 'function') ? updateKPIs(list || cacheProjetos) : null;
+
+  /* opcional: expõe referências de charts para resize() sem quebrar encapsulamento */
+  window._charts = {
+    get coord() { return chartCoordenacao; },
+    get status() { return chartStatus; },
+    get distrib() { return chartStatusDistrib; },
+    get rag() { return chartRag; },
+    get timeline() { return chartTimeline; },
+    get codes() { return chartCodes; },
+    get intern() { return chartIntern; }
+  };
 
 })(); // 🔚 fim do IIFE

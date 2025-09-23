@@ -23,16 +23,20 @@
         tbody.innerHTML = "";
 
         if (!list.length) {
-            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-gray-500 py-4">Nenhum dado encontrado.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-gray-500 py-4">Nenhum chamado encontrado.</td></tr>`;
             return;
         }
 
         list.forEach(item => {
             tbody.insertAdjacentHTML("beforeend", `
           <tr>
-            <td class="px-6 py-3">${item.aplicacao}</td>
-            <td class="px-6 py-3">${item.status}</td>
-            <td class="px-6 py-3">${item.sla}</td>
+            <td class="px-4 py-2">${item.numero_chamado}</td>
+            <td class="px-4 py-2">${item.projeto}</td>
+            <td class="px-4 py-2">${item.desenvolvedor || "-"}</td>
+            <td class="px-4 py-2">${item.data_chamado ? new Date(item.data_chamado).toLocaleString("pt-BR") : "-"}</td>
+            <td class="px-4 py-2">${item.solicitante || "-"}</td>
+            <td class="px-4 py-2">${item.status}</td>
+            <td class="px-4 py-2">${item.observacao || "-"}</td>
           </tr>
         `);
         });
@@ -42,24 +46,28 @@
         const ctx = document.getElementById("codesSustentacaoChart");
         if (!ctx) return;
 
-        const apps = [...new Set(list.map(x => x.aplicacao))];
-        const abertos = apps.map(app => list.filter(x => x.aplicacao === app && x.status === "Aberto").length);
-        const fechados = apps.map(app => list.filter(x => x.aplicacao === app && x.status === "Fechado").length);
+        // Conta quantidade de chamados por status
+        const statusCounts = {};
+        list.forEach(ch => {
+            const st = ch.status || "Indefinido";
+            statusCounts[st] = (statusCounts[st] || 0) + 1;
+        });
 
         if (chartSustentacao) chartSustentacao.destroy();
         chartSustentacao = new Chart(ctx, {
             type: "bar",
             data: {
-                labels: apps,
-                datasets: [
-                    { label: "Abertos", data: abertos, backgroundColor: "#dc2626" },
-                    { label: "Fechados", data: fechados, backgroundColor: "#16a34a" }
-                ]
+                labels: Object.keys(statusCounts),
+                datasets: [{
+                    label: "Chamados",
+                    data: Object.values(statusCounts),
+                    backgroundColor: "#3b82f6"
+                }]
             },
             options: {
                 responsive: true,
-                plugins: { legend: { position: "bottom" } },
-                scales: { y: { beginAtZero: true } }
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
             }
         });
     }
