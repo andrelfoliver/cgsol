@@ -3,32 +3,19 @@
     'use strict';
 
     const API_ROOT = 'http://localhost:5001/api';
-    let chartSustentacao = null;
-    // Cache local dos chamados para abrir o modal só com o número
+
+    // gráficos
+    let chartSustStatus = null;
+    let chartSustProjetos = null;
+
+    // cache de chamados (para abrir modal pelo número)
     let sustCache = [];
 
-    // escape básico p/ evitar injeção em células
     const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[m]));
 
-    // -------- utils --------
-    const safe = v => (v === undefined || v === null || v === '' ? '—' : String(v));
-
-    function formatToBrasilia(raw) {
-        if (!raw) return '—';
-        const d = new Date(raw);
-        if (isNaN(d)) return '—';
-        d.setHours(d.getHours() - 3); // UTC -> Brasília
-        return d.toLocaleString('pt-BR', {
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit',
-            hour12: false
-        });
-    }
-
     function normalizeChamado(r, projetosById) {
-        // tenta deduzir projeto pelo id se vier numérico
         const projetoId =
             r.projeto_id ?? r.id_projeto ?? r.projetoId ?? r.idProjeto ??
             (Number.isInteger(r.projeto) ? r.projeto : null);
@@ -40,13 +27,23 @@
         return {
             id: r.id ?? r.chamado_id ?? r.ticket_id ?? null,
             numero: r.numero ?? r.numero_chamado ?? r.ticket ?? r.chamado ?? r.id ?? null,
-            projeto: projetoNome ?? null,
-            desenvolvedor: r.desenvolvedor ?? r.dev ?? r.responsavel ?? null,
+            projeto: projetoNome ?? '—',
+            desenvolvedor: r.desenvolvedor ?? r.dev ?? r.responsavel ?? '—',
             data: r.data ?? r.data_abertura ?? r.created_at ?? r.abertura ?? null,
-            solicitante: r.solicitante ?? r.aberto_por ?? r.solicitante_nome ?? null,
-            status: r.status ?? r.situacao ?? r.state ?? null,
-            observacao: r.observacao ?? r.observacoes ?? r.obs ?? null
+            solicitante: r.solicitante ?? r.aberto_por ?? r.solicitante_nome ?? '—',
+            status: r.status ?? r.situacao ?? r.state ?? '—',
+            observacao: r.observacao ?? r.observacoes ?? r.obs ?? ''
         };
+    }
+    function renderBulletsLegend(containerId, labels, colors) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        el.innerHTML = labels.map((lbl, i) =>
+            `<span class="inline-flex items-center">
+             <span class="legend-dot" style="background:${colors[i]};"></span>
+             <span>${esc(lbl)}</span>
+           </span>`
+        ).join('');
     }
 
     async function fetchProjetosById() {
@@ -57,12 +54,10 @@
             const map = {};
             (arr || []).forEach(p => { if (p?.id != null) map[String(p.id)] = p.nome || `Projeto ${p.id}`; });
             return map;
-        } catch {
-            return {};
-        }
+        } catch { return {}; }
     }
 
-    // -------- tabela --------
+    // ---------- TABELA ----------
     function renderTable(list) {
         const tbody = document.getElementById('sustentacaoTableBody');
         if (!tbody) return;
@@ -71,134 +66,180 @@
         tbody.innerHTML = '';
 
         if (!sustCache.length) {
-            tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum chamado encontrado.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum chamado encontrado.</td></tr>`;
             return;
         }
 
         sustCache.forEach(ch => {
-            // badge de status
             let badgeClass = 'badge-gray';
-            if (/andamento/i.test(ch.status)) badgeClass = 'badge-green';
-            else if (/risco|erro/i.test(ch.status)) badgeClass = 'badge-red';
-            else if (/susten|pendente/i.test(ch.status)) badgeClass = 'badge-yellow';
+            if (/desenvolv/i.test(ch.status)) badgeClass = 'badge-green';
+            else if (/homolog/i.test(ch.status)) badgeClass = 'badge-purple';
+            else if (/pendente/i.test(ch.status)) badgeClass = 'badge-yellow';
+            else if (/suspens|erro|incid/i.test(ch.status)) badgeClass = 'badge-red';
 
             tbody.insertAdjacentHTML('beforeend', `
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 text-sm font-medium text-gray-900">${esc(ch.projeto)}</td>
-          <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.numero)}</td>
-          <td class="px-6 py-4 text-sm"><span class="badge ${badgeClass}">${esc(ch.status)}</span></td>
-          <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.desenvolvedor)}</td>
-          <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.solicitante)}</td>
-          <td class="px-6 py-4 text-sm font-medium">
-            <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')" class="action-btn action-view">👁️ Ver</a>
-            <a href="#" onclick="editarChamado('${esc(ch.numero)}')" class="action-btn action-edit">✏️ Editar</a>
-            <a href="#" onclick="excluirChamado('${esc(ch.numero)}')" class="action-btn action-del">🗑️ Excluir</a>
-          </td>
-        </tr>
-      `);
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 text-sm font-medium text-gray-900">${esc(ch.projeto)}</td>
+                  <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.numero)}</td>
+                  <td class="px-6 py-4 text-sm"><span class="badge ${badgeClass}">${esc(ch.status)}</span></td>
+                  <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.desenvolvedor)}</td>
+                  <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.solicitante)}</td>
+                  <td class="px-6 py-4 text-sm font-medium">
+                    <div class="action-group">
+                      <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')" class="action-btn text-blue-600 hover:text-blue-800">
+                        <span class="action-ico">👁️</span><span>Ver</span>
+                      </a>
+                      <a href="#" onclick="editarChamado('${esc(ch.numero)}')" class="action-btn text-green-600 hover:text-green-800">
+                        <span class="action-ico">✏️</span><span>Editar</span>
+                      </a>
+                      <a href="#" onclick="excluirChamado('${esc(ch.numero)}')" class="action-btn text-red-600 hover:text-red-800">
+                        <span class="action-ico">🗑️</span><span>Excluir</span>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              `);
+
         });
     }
 
+    // abrir modal por número usando o cache
+    window.verChamadoByNumero = function (numero) {
+        const ch = sustCache.find(c => String(c.numero) === String(numero));
+        if (!ch) return;
+        window.verChamado(ch.numero, ch.projeto, ch.status, ch.desenvolvedor, ch.solicitante, ch.observacao);
+    };
 
     window.verChamado = function (numero, projeto, status, dev, solicitante, obs) {
-        document.getElementById('verProjeto').textContent = projeto || '—';
-        document.getElementById('verNumero').textContent = numero || '—';
-        document.getElementById('verStatus').textContent = status || '—';
-        document.getElementById('verDev').textContent = dev || '—';
-        document.getElementById('verSolicitante').textContent = solicitante || '—';
-        document.getElementById('verObs').textContent = obs || '—';
+        document.getElementById('verProjeto')?.replaceChildren(document.createTextNode(projeto || '—'));
+        document.getElementById('verNumero')?.replaceChildren(document.createTextNode(numero || '—'));
+        document.getElementById('verStatus')?.replaceChildren(document.createTextNode(status || '—'));
+        document.getElementById('verDev')?.replaceChildren(document.createTextNode(dev || '—'));
+        document.getElementById('verSolicitante')?.replaceChildren(document.createTextNode(solicitante || '—'));
+        document.getElementById('verObs')?.replaceChildren(document.createTextNode(obs || '—'));
         window.showModal && window.showModal('verChamadoModal');
     };
 
+    // ---------- GRÁFICOS ----------
+    const statusColors = {
+        'a desenvolver': '#16a34a',
+        'em desenvolvimento': '#3b82f6',
+        'em homologação': '#ef4444',
+        'em homologacao': '#ef4444',
+        'pendente': '#f59e0b',
+        'suspenso': '#8b5cf6',
+        'em testes': '#10b981',
+        'aberto': '#2563eb',
+        'fechado': '#9ca3af'
+    };
 
-    // -------- gráfico --------
-    function colorFor(status) {
-        const map = {
-            'A desenvolver': '#6b7280',
-            'Em desenvolvimento': '#3b82f6',
-            'Em homologação': '#8b5cf6',
-            'Pendente': '#f59e0b',
-            'Suspenso': '#9ca3af',
-            'Em testes': '#10b981',
-            'Aberto': '#16a34a',
-            'Fechado': '#dc2626'
-        };
-        return map[status] || '#2563eb';
-    }
+    function drawStatusChart(list) {
+        const el = document.getElementById('sustStatusChart');
+        if (!el || !window.Chart) return;
 
-    function drawChart(list) {
-        const canvas = document.getElementById('codesSustentacaoChart');
-        if (!canvas || !window.Chart) return;
-
-        // conta por status
         const counts = {};
         list.forEach(ch => {
-            const s = (ch.status || '—').trim();
-            counts[s] = (counts[s] || 0) + 1;
+            const key = String(ch.status || '—').trim();
+            counts[key] = (counts[key] || 0) + 1;
         });
 
         const labels = Object.keys(counts);
         const data = labels.map(l => counts[l]);
+        const colors = labels.map(l => {
+            const k = l.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+            return statusColors[k] || '#6b7280';
+        });
 
-        if (chartSustentacao) chartSustentacao.destroy();
+        if (chartSustStatus) chartSustStatus.destroy();
+        chartSustStatus = new Chart(el.getContext('2d'), {
+            type: 'doughnut',
+            data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#fff', borderWidth: 2 }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: { legend: { display: false } } // 👈 escondemos a legenda padrão
+            }
+        });
 
-        chartSustentacao = new Chart(canvas.getContext('2d'), {
+        // 👇 legenda custom com bolinhas
+        renderBulletsLegend('sustStatusLegend', labels, colors);
+
+    }
+
+    function drawProjetosChart(list) {
+        const el = document.getElementById('sustProjetosChart');
+        if (!el || !window.Chart) return;
+
+        const byProj = {};
+        list.forEach(ch => {
+            const k = ch.projeto || '—';
+            byProj[k] = (byProj[k] || 0) + 1;
+        });
+
+        // top 12 projetos por volume (ajuste se quiser mais)
+        const entries = Object.entries(byProj).sort((a, b) => b[1] - a[1]).slice(0, 12);
+        const labels = entries.map(([k]) => k);
+        const data = entries.map(([, v]) => v);
+
+        if (chartSustProjetos) chartSustProjetos.destroy();
+        chartSustProjetos = new Chart(el.getContext('2d'), {
             type: 'bar',
             data: {
                 labels,
-                datasets: [{
-                    label: 'Chamados',
-                    data,
-                    backgroundColor: labels.map(colorFor),
-                    borderRadius: 6
-                }]
+                datasets: [{ label: 'Chamados', data, borderRadius: 6, backgroundColor: '#3b82f6' }]
             },
             options: {
-                indexAxis: 'y', // 👈 faz as barras ficarem horizontais
+                indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    title: { display: true, text: 'Distribuição de Chamados por Status' }
-                },
-                scales: {
-                    x: { beginAtZero: true, ticks: { stepSize: 1 } },
-                    y: { ticks: { font: { size: 12 } } }
-                }
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }
         });
     }
 
-
-
-    // -------- carga principal --------
+    // ---------- CARGA ----------
     async function loadSustentacao() {
         try {
-            // pega projetos (para resolver nome quando vier só id)
             const projetosById = await fetchProjetosById();
-
-            // endpoint dos chamados (ajuste se o seu for diferente)
             const resp = await fetch(`${API_ROOT}/sustentacao`);
             if (!resp.ok) throw new Error(`Erro ao buscar sustentação (${resp.status})`);
-            const payload = await resp.json();
+            const raw = await resp.json();
+            const list = Array.isArray(raw) ? raw.map(r => normalizeChamado(r, projetosById)) : [];
 
-            const list = Array.isArray(payload) ? payload.map(r => normalizeChamado(r, projetosById)) : [];
-
-            // atualiza card "Em Sustentação"
+            // card (se existir)
             const countEl = document.getElementById('sustChamadosCount');
             if (countEl) countEl.textContent = String(list.length);
 
             renderTable(list);
-            drawChart(list);
-        } catch (err) {
-            console.error(err);
+            //drawStatusChart(list);
+            //drawProjetosChart(list);
+            ensureCharts(list);  // <- use isso no lugar
+
+        } catch (e) {
+            console.error(e);
             const tbody = document.getElementById('sustentacaoTableBody');
-            if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-red-600">Falha ao carregar: ${err.message}</td></tr>`;
-            }
+            if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-red-600">Falha ao carregar: ${e.message}</td></tr>`;
+            // limpa gráficos se der erro
+            try { chartSustStatus?.destroy(); chartSustStatus = null; } catch { }
+            try { chartSustProjetos?.destroy(); chartSustProjetos = null; } catch { }
         }
     }
+    // helper: tenta desenhar assim que o Chart estiver disponível
+    function ensureCharts(list) {
+        const draw = () => { drawStatusChart(list); drawProjetosChart(list); };
+        if (window.Chart) { draw(); return; }
 
-    // expõe para o index usar
+        // aguarda o Chart.js (até ~3s)
+        let tries = 0;
+        const iv = setInterval(() => {
+            if (window.Chart || tries++ > 20) {
+                clearInterval(iv);
+                if (window.Chart) draw();
+            }
+        }, 150);
+    }
+
     window.loadSustentacao = loadSustentacao;
 })();

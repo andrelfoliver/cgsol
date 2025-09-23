@@ -6,62 +6,8 @@ body {
   color: #111827;
 }
 
-header,
-footer {
-  background-color: #1f2937;
-  color: white;
-  padding: 1rem;
-  text-align: center;
-}
 
-/* ================= NAV ================= */
-.navbar {
-  display: flex;
-  gap: 1rem;
-  padding: 1rem;
-  background-color: #e5e7eb;
-  justify-content: center;
-}
 
-.nav-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background-color: white;
-  cursor: pointer;
-  font-weight: 500;
-  color: #6b7280;
-  border-radius: 0;
-}
-
-.nav-btn:hover {
-  border-bottom-color: #3b82f6;
-  color: #3b82f6;
-}
-
-.nav-btn.border-b-blue-500 {
-  border-bottom-color: #3b82f6;
-  color: #3b82f6;
-}
-
-/* ================= TABLE ================= */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-  background-color: white;
-}
-
-th,
-td {
-  border: 1px solid #e5e7eb;
-  padding: 0.75rem;
-  text-align: left;
-}
-
-th {
-  background-color: #f3f4f6;
-}
 
 /* Hover padrão para tabelas */
 .table-hover tbody tr:hover {
@@ -265,4 +211,102 @@ td.col-actions {
   font-weight: 600;
   color: #111827;
   min-width: 36px;
+}
+
+/* assets/css/style.css */
+.action-group {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: nowrap;
+  /* evita quebra */
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  white-space: nowrap;
+  /* evita quebra do texto */
+}
+
+.action-ico {
+  line-height: 1;
+}
+
+/* opcional: equaliza altura dos emojis/ícones */
+
+
+/* Remove scrollbars em containers específicos */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Selects do header */
+.header-select {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  padding: .5rem .75rem;
+  border-radius: .5rem;
+  font-size: .875rem;
+  outline: 0;
+}
+
+.header-select:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, .35);
+  border-color: #93c5fd;
+}
+
+/* Tabs de navegação superiores */
+.nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .75rem 1rem;
+  font-weight: 600;
+  color: #6b7280;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color .15s ease, border-color .15s ease;
+}
+
+.nav-tab .icon {
+  display: inline-flex;
+  line-height: 1;
+}
+
+.nav-tab:hover {
+  color: #111827;
+}
+
+.nav-tab.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+/* Header e logo */
+.app-header .container>.grid {
+  row-gap: .25rem;
+}
+
+.brand-area .logo-img {
+  max-width: 220px;
+}
+
+.app-header+* {
+  border-top-color: transparent;
+}
+
+.legend-dot {
+  width: .75rem;
+  height: .75rem;
+  border-radius: 9999px;
+  display: inline-block;
+  margin-right: .5rem;
 }
