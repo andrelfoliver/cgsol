@@ -185,7 +185,7 @@
             const list = Array.isArray(payload) ? payload.map(r => normalizeChamado(r, projetosById)) : [];
 
             // atualiza card "Em Sustentação"
-            const countEl = document.getElementById('sustentacaoCount');
+            const countEl = document.getElementById('sustChamadosCount');
             if (countEl) countEl.textContent = String(list.length);
 
             renderTable(list);

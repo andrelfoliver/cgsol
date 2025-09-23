@@ -564,41 +564,28 @@
           <div class="mt-6">
             <h3 class="text-lg font-semibold mb-2">Chamados de Sustentação</h3>
             <div class="overflow-x-auto bg-white shadow rounded-lg mt-6">
+              <div id="sustChartsWrapper" class="mb-4" style="height:260px">
+                <canvas id="sustDistribChart"></canvas>
+              </div>
+
               <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead>
                   <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Desenvolvedor</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Solicitante</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações
-                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Projeto</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Número</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Desenvolvedor</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Solicitante</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
                   </tr>
                 </thead>
-                <tbody id="sustentacaoTableBody" class="divide-y divide-gray-200">
-                  <!-- Linhas preenchidas via sustentacao.js -->
-                </tbody>
+                <tbody id="sustentacaoTableBody"></tbody>
               </table>
-            </div>
-
-          </div>
-
-          <!-- Gráfico Sustentação -->
-          <div class="mt-6">
-            <h3 class="text-lg font-semibold mb-2">Distribuição por Status</h3>
-            <div class="bg-white shadow rounded-lg p-4 h-80">
-              <canvas id="codesSustentacaoChart"></canvas>
             </div>
           </div>
         </div>
 
-        <!-- Fábrica (tabela principal) -->
+        <!-- Fábrica (tabela principal) — FORA do wrapper de Sustentação -->
         <div id="tableView" class="bg-white rounded-lg shadow-md mt-6">
           <div class="overflow-x-auto">
             <table class="min-w-full table-auto">
@@ -619,6 +606,7 @@
         </div>
 
       </div>
+
 
 
       <!-- Modal de Sustentação -->
@@ -1505,6 +1493,7 @@
   <!-- HELPERS + NAV -->
   <script>
     const NAV_INDEX = { home: 1, codes: 2, coset: 3, cgod: 4, pdti: 5 };
+    window.__codesView = 'fabrica'; // 'fabrica' | 'sustentacao'
 
     function getNavButtonFor(page) {
       const idx = NAV_INDEX[page] || 1;
@@ -1554,17 +1543,33 @@
           }
 
           // CODES
+          // CODES
           if (pageId === 'codes') {
-            document.getElementById('tableView')?.classList.remove('hidden');
-            document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
-            document.getElementById('codesInternWrapper')?.classList.remove('hidden');
+            const isSust = window.__codesView === 'sustentacao';
 
-            if (typeof drawCodesSprintsChart === 'function' && data.length) drawCodesSprintsChart(data);
-            if (typeof drawCodesInternChart === 'function' && data.length) drawCodesInternChart(data);
+            if (isSust) {
+              // 👇 Modo Sustentação: esconde gráficos da fábrica
+              document.getElementById('codesSustentacaoWrapper')?.classList.remove('hidden');
 
-            try { chartCodes?.resize?.(); chartCodes?.update?.(); } catch (e) { }
-            try { chartIntern?.resize?.(); chartIntern?.update?.(); } catch (e) { }
+              document.getElementById('tableView')?.classList.add('hidden');
+              document.getElementById('codesSprintsWrapper')?.classList.add('hidden');
+              document.getElementById('codesInternWrapper')?.classList.add('hidden');
+            } else {
+              // 👇 Modo Fábrica: mostra tabela + gráficos
+              document.getElementById('codesSustentacaoWrapper')?.classList.add('hidden');
+
+              document.getElementById('tableView')?.classList.remove('hidden');
+              document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
+              document.getElementById('codesInternWrapper')?.classList.remove('hidden');
+
+              if (typeof drawCodesSprintsChart === 'function' && data.length) drawCodesSprintsChart(data);
+              if (typeof drawCodesInternChart === 'function' && data.length) drawCodesInternChart(data);
+
+              try { chartCodes?.resize?.(); chartCodes?.update?.(); } catch (e) { }
+              try { chartIntern?.resize?.(); chartIntern?.update?.(); } catch (e) { }
+            }
           }
+
 
           // COSET
           if (pageId === 'coset') {

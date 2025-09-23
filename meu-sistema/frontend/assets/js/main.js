@@ -19,11 +19,14 @@
   let chartCgod = null;
   let confirmCallback = null;
   let cancelCallback = null;
+  let chartSustDistrib = null;
 
   // 👇 adicione
   let chartStatusDistrib = null;
   let chartRag = null;
   let chartTimeline = null;
+
+  let sustentacaoTotal = null; // override do card "Em Sustentação"
 
   window.showConfirm = function (msg, onConfirm, onCancel) {
     const modal = document.getElementById('confirmModal');
@@ -48,11 +51,14 @@
 
   // ========= boot =========
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    await loadProjetos();
-  });
+
 
   onReady(async () => {
+    // estado neutro das áreas
+    document.getElementById('codesSustentacaoWrapper')?.classList.add('hidden');
+    document.getElementById('tableView')?.classList.remove('hidden');
+
+    // form
     const form = byId('projectForm');
     if (form) {
       const coordSel = byId('projectCoord');
@@ -60,11 +66,10 @@
         coordSel.addEventListener('change', () => toggleFormByCoord(coordSel.value));
         toggleFormByCoord(coordSel.value);
       }
-
       form.addEventListener('submit', handleCreateOrUpdate);
     }
 
-    // Expor funções no escopo global (usadas no HTML)
+    // Expor funções no escopo global
     window.filterProjects = filterProjects;
     window.showProjectDetail = showProjectDetail;
     window.editProject = editProject;
@@ -72,11 +77,21 @@
     window.openNewProject = openNewProject;
     window.showSustentacao = showSustentacao;
 
-
-
+    // 1) carrega projetos (tabelas/gráficos/kpis)
     await loadProjetos();
+
+    // 2) SEMPRE carrega Sustentação para atualizar o CARD já na Home
+    await loadSustentacao();
+
+    // 3) garante visibilidade dos wrappers das tabelas (ajuste os IDs se forem outros)
+    document.getElementById('codesTableWrapper')?.classList.remove('hidden');
+    document.getElementById('cosetTableWrapper')?.classList.remove('hidden');
+    document.getElementById('cgodTableWrapper')?.classList.remove('hidden');
+
     updateLastUpdateTime();
   });
+
+
   // ========= funções =========
   async function carregarProjetos() {
     try {
@@ -97,6 +112,13 @@
   // ========= helpers DOM =========
   function byId(id) { return document.getElementById(id); }
   function setText(id, v) { const el = byId(id); if (el) el.textContent = (v ?? '—'); }
+  const norm = s => String(s ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
 
   function setValue(id, v) {
     const el = byId(id);
@@ -110,6 +132,11 @@
       el.value = (v ?? '');
     }
   }
+  const isSust = v => {
+    const n = norm(v);
+    // pega “sustentacao”, “sustentacao/operacao”, etc.
+    return n.startsWith('sustentacao');
+  };
 
   function getValue(id) {
     const el = byId(id);
@@ -317,6 +344,59 @@
       </a>
     `;
   }
+
+  // === Ações da tabela de Sustentação ===
+  function sustActionLinksHtml(idArg) {
+    return `
+      <a href="#" onclick="sustView(${idArg}); return false;" class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 mr-4">
+        <span>👁️</span><span>Ver</span>
+      </a>
+      <a href="#" onclick="sustEdit(${idArg}); return false;" class="inline-flex items-center gap-1 text-green-600 hover:text-green-800 mr-4">
+        <span>✏️</span><span>Editar</span>
+      </a>
+      <a href="#" onclick="sustDelete(${idArg}); return false;" class="inline-flex items-center gap-1 text-red-600 hover:text-red-800">
+        <span>🗑️</span><span>Excluir</span>
+      </a>`;
+  }
+  // stubs mínimos:
+  window.sustView = id => console.log('ver chamado', id);
+  window.sustEdit = id => console.log('editar chamado', id);
+  window.sustDelete = id => showConfirm('Excluir este chamado?', async () => {
+    // await fetch(`${API_ROOT}/sustentacao/${id}`, { method: 'DELETE' });
+    loadSustentacao();
+  });
+
+
+
+
+  // Handlers mínimos (adeque quando tiver os modais/rotas reais)
+  function viewChamado(id) {
+    // se existir um modal próprio, chame-o aqui
+    toast('Chamado', `Abrir detalhes do chamado ${id}`, 'info');
+  }
+  function editChamado(id) {
+    // idem para modal de edição
+    toast('Editar', `Abrir edição do chamado ${id}`, 'info');
+  }
+  async function deleteChamado(id) {
+    showConfirm(`Excluir chamado ${id}?`, async () => {
+      try {
+        const r = await fetch(`${API_ROOT}/sustentacao/${id}`, { method: 'DELETE' });
+        if (!r.ok) throw new Error(`Falha ao excluir (${r.status})`);
+        toast('Sucesso', 'Chamado excluído', 'success');
+        await loadSustentacao(); // recarrega lista + gráfico + card
+      } catch (e) {
+        console.error(e);
+        toast('Erro', e.message, 'error');
+      }
+    });
+  }
+
+  // deixe acessível no onclick do HTML
+  window.viewChamado = viewChamado;
+  window.editChamado = editChamado;
+  window.deleteChamado = deleteChamado;
+
   // ========= Projetos Recentes =========
   function renderRecentTable(list) {
     const tbody = byId('projectsTableBody');
@@ -394,7 +474,7 @@
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const rows = list.filter(p => (p.coordenacao || '') === coord);
+    const rows = list.filter(p => (p.coordenacao || '').toUpperCase() === String(coord).toUpperCase());
     const colCount = (tbodyId === 'codesTableBody') ? 7 : 6;
     const emptyMsg = `<tr><td colspan="${colCount}" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto encontrado.</td></tr>`;
     if (!rows.length) { tbody.innerHTML = emptyMsg; return; }
@@ -449,10 +529,8 @@
 
   // ========= KPIs =========
   function updateKPIs(list) {
-    const norm = str => String(str || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
+
+
 
     const codes = list.filter(p => norm(p.coordenacao) === 'codes');
     const coset = list.filter(p => norm(p.coordenacao) === 'coset');
@@ -471,11 +549,14 @@
 
     // Fora do prazo
     const foraPrazo = list.filter(p => {
-      if (!p.fim || p.status === 'Concluído') return false;
+      if (!p.fim) return false;
+      const s = norm(p.status);
+      if (s === 'concluido') return false;
       const d = new Date(p.fim);
       return !isNaN(d) && d < now;
     }).length;
     setText('kpiForaPrazo', foraPrazo);
+
 
     // Progresso médio
     const progressoVals = list.map(p => p.progresso).filter(v => v != null);
@@ -485,10 +566,12 @@
     setText('kpiProgressoMedio', progressoMedio + '%');
 
     // Projetos ativos
-    const ativos = list.filter(p =>
-      p.status === 'Em Andamento' || p.status === 'Sustentação'
-    ).length;
+    const ativos = list.filter(p => {
+      const s = norm(p.status);
+      return ['em andamento', 'em risco', 'sustentacao'].includes(s);
+    }).length;
     setText('kpiProjetosAtivos', ativos);
+
 
     // Totais Home
     setText('totalProjetos', list.length);
@@ -498,7 +581,9 @@
 
     // Home – Detalhamento CODES
     setCardCount('codes', 'desenvolvimento', codes.filter(p => norm(p.status) === 'em andamento').length);
-    setCardCount('codes', 'sustentacao', codes.filter(p => norm(p.status) === 'sustentacao').length);
+    // CODES – contagem Sustentação (fallback por status, mas prioriza os chamados, se já carregados)
+    const sustCount = codes.filter(p => isSust(p.status)).length;
+    applySustCard(sustentacaoTotal ?? sustCount);
 
     // Home – Detalhamento COSET
     setCardCount('coset', 'infraestrutura', coset.filter(p => norm(p.tipo).includes('infraestrutura')).length);
@@ -519,6 +604,7 @@
     );
 
 
+
     setCardCount('codes', 'planejado', codes.filter(p => norm(p.status) === 'planejado').length);
     setCardCount('codes', 'concluido', codes.filter(p => norm(p.status) === 'concluido').length);
     setCardCount('codes', 'pausado', codes.filter(p => norm(p.status) === 'pausado').length);
@@ -534,6 +620,15 @@
     setCardCount('cgod', 'qualidade', cgod.filter(p => norm(p.tipo).includes('qualidade')).length);
     setCardCount('cgod', 'governanca', cgod.filter(p => norm(p.tipo).includes('governanca')).length);
   }
+  // --- override do card "Em Sustentação" vindo dos chamados ---
+  function applySustCard(total) {
+    sustentacaoTotal = Number.isFinite(total) ? total : 0;
+    // cobre cards com e sem acento no data-card
+    setCardCount('codes', 'sustentacao', sustentacaoTotal);
+    setCardCount('codes', 'sustentação', sustentacaoTotal);
+  }
+  // (opcional p/ debugar no console)
+  window.applySustCard = applySustCard;
 
   function setCardCount(coordKey, cat, value) {
     const sel = `[data-card="${coordKey}:${cat}"]`;
@@ -560,20 +655,64 @@
     });
   }
 
+  function drawSustDistribChart(itens) {
+    const canvas = byId('sustDistribChart');
+    if (!canvas || !window.Chart) return;
+
+    // agrupa por status (normalizado) mas mantém o primeiro rótulo “bonito”
+    const map = new Map();
+    (Array.isArray(itens) ? itens : []).forEach(x => {
+      const raw = (x.status || x.situacao || x.etapa || '-').toString().trim();
+      const key = norm(raw);
+      if (!map.has(key)) map.set(key, { label: raw, count: 0 });
+      map.get(key).count++;
+    });
+
+    const labels = [...map.values()].map(v => v.label);
+    const data = [...map.values()].map(v => v.count);
+
+    if (chartSustDistrib) chartSustDistrib.destroy();
+    chartSustDistrib = new Chart(canvas.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6366f1', '#14b8a6', '#f43f5e'],
+          borderColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '60%',
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+    // dá cara de card e espaço antes da tabela
+    const card = canvas.closest('.bg-white, .card, .rounded, .shadow') || canvas.parentElement;
+    if (card) {
+      card.classList.add('bg-white', 'p-6', 'rounded', 'shadow', 'mb-6'); // <-- margem inferior
+    }
+
+  }
 
   // ========= GRÁFICOS (Home) =========
   function drawCharts(list) {
-    const codes = list.filter(p => p.coordenacao === 'CODES').length;
-    const coset = list.filter(p => p.coordenacao === 'COSET').length;
-    const cgod = list.filter(p => p.coordenacao === 'CGOD').length;
+    const codes = list.filter(p => (p.coordenacao || '').toUpperCase() === 'CODES').length;
+    const coset = list.filter(p => (p.coordenacao || '').toUpperCase() === 'COSET').length;
+    const cgod = list.filter(p => (p.coordenacao || '').toUpperCase() === 'CGOD').length;
 
-    const st = s => list.filter(p => p.status === s).length;
+    // compara normalizando para evitar 'Concluido' vs 'Concluído'
+    const stNorm = alvo => list.filter(p => norm(p.status) === norm(alvo)).length;
+
     const statusData = {
-      'Planejado': st('Planejado'),
-      'Em Andamento': st('Em Andamento'),
-      'Em Risco': st('Em Risco'),
-      'Concluído': st('Concluído'),
-      'Sustentação': st('Sustentação')
+      'Planejado': stNorm('Planejado'),
+      'Em Andamento': stNorm('Em Andamento'),
+      'Em Risco': stNorm('Em Risco'),
+      'Concluído': stNorm('Concluído'),
+      'Sustentação': stNorm('Sustentação')
     };
 
     if (chartCoordenacao) chartCoordenacao.destroy();
@@ -740,12 +879,13 @@
     if (!ctx) return;
 
     const ativos = projects.filter(
-      p => p.coordenacao === 'CODES' &&
-        p.status === 'Em Andamento' &&
+      p => (p.coordenacao || '').toUpperCase() === 'CODES' &&
+        (p.status || '').toLowerCase() === 'em andamento' &&
         p.totalSprints &&
         p.sprintsConcluidas != null &&
         p.sprintsConcluidas < p.totalSprints
     );
+
 
     if (!ativos.length) {
       if (chartCodes) chartCodes.destroy();
@@ -973,11 +1113,30 @@
   function filterProjects(coordenacao, categoria) {
     console.log("Filtro acionado:", coordenacao, categoria);
 
+    // 👇 sempre que filtrar CODES (fábrica), volta o modo p/ 'fabrica'
+    if ((coordenacao || '').toUpperCase() === 'CODES') {
+      window.__codesView = 'fabrica';
+    }
+
     // Esconde Sustentação ao aplicar filtros da fábrica
     document.getElementById("codesSustentacaoWrapper")?.classList.add("hidden");
 
     // Mostra a tabela padrão
     document.getElementById("tableView")?.classList.remove("hidden");
+    // 👇 se estou filtrando CODES (cards da fábrica), reexibe os gráficos
+    if ((coordenacao || '').toUpperCase() === 'CODES') {
+      // mostra os wrappers dos gráficos
+      document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
+      document.getElementById('codesInternWrapper')?.classList.remove('hidden');
+
+      // (re)desenha os gráficos usando o cache atual
+      if (typeof drawCodesSprintsChart === 'function') drawCodesSprintsChart(cacheProjetos);
+      if (typeof drawCodesInternChart === 'function') drawCodesInternChart(cacheProjetos);
+
+      // se quiser, força um resize/update caso já existam instâncias
+      try { chartCodes?.resize?.(); chartCodes?.update?.(); } catch (e) { }
+      try { chartIntern?.resize?.(); chartIntern?.update?.(); } catch (e) { }
+    }
 
     // Filtra os projetos
     let filtrados = cacheProjetos.filter(
@@ -1023,30 +1182,29 @@
 
 
   function showSustentacao() {
-    // Esconde Sustentação para evitar ficar aberta indevidamente
-    document.getElementById('codesSustentacaoWrapper')?.classList.add('hidden');
+    // 👇 entra em modo Sustentação ANTES de navegar
+    window.__codesView = 'sustentacao';
 
-    // Navega para aba CODES
+    // vai para a aba CODES
     const btn = (typeof window.getNavButtonFor === 'function') ? getNavButtonFor('codes') : null;
     showPage('codes', btn);
 
-    // Esconde tudo que é da Fábrica
+    // garante que os gráficos da fábrica não apareçam
     document.getElementById('codesSprintsWrapper')?.classList.add('hidden');
     document.getElementById('codesInternWrapper')?.classList.add('hidden');
     document.getElementById('tableView')?.classList.add('hidden');
 
-    // Destroi gráficos da Fábrica se existirem
     if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
     if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
 
-    // Agora mostra Sustentação
+    // mostra a área de Sustentação
     document.getElementById('codesSustentacaoWrapper')?.classList.remove('hidden');
 
-    // Carrega dados da API de Sustentação
     if (typeof loadSustentacao === 'function') {
       loadSustentacao();
     }
   }
+
 
 
 
@@ -1194,6 +1352,111 @@
     const wrapper = el.closest('div');
     if (wrapper) wrapper.style.display = show ? '' : 'none';
   }
+  async function loadSustentacao() {
+    try {
+      const res = await fetch(`${API_ROOT}/sustentacao`);
+      if (!res.ok) throw new Error(`Falha ao carregar Sustentação (${res.status})`);
+      const itens = await res.json();
+
+      drawSustDistribChart(itens);                 // gráfico vem antes da tabela
+      renderSustentacaoTable(itens);               // tabela estilizada
+      applySustCard(Array.isArray(itens) ? itens.length : 0); // atualiza card
+    } catch (e) {
+      console.error(e);
+      drawSustDistribChart([]);    // limpa gráfico
+      renderSustentacaoTable([]);  // mostra “Nenhum chamado”
+      applySustCard(0);
+    }
+  }
+
+
+  function renderSustentacaoTable(itens) {
+    const tbody = document.getElementById('sustentacaoTableBody');
+    if (!tbody) { console.warn('tbody da Sustentação não encontrado (#sustTableBody)'); return; }
+    // garante o <thead> com os títulos padrão
+    const table = tbody.closest('table');
+    if (table) {
+      const thead = table.querySelector('thead') || table.createTHead();
+      thead.innerHTML = `
+    <tr>
+      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto</th>
+      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número</th>
+      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Desenvolvedor</th>
+      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Solicitante</th>
+      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+    </tr>
+  `;
+    }
+
+    if (!Array.isArray(itens) || !itens.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">
+      Nenhum chamado.
+    </td></tr>`;
+      return;
+    }
+
+    function pick(obj, keys) {
+      for (const k of keys) {
+        if (k in obj) {
+          const v = obj[k];
+          if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+        }
+      }
+      return null;
+    }
+    function pickSmart(obj, aliases) {
+      // normaliza chaves do objeto uma vez
+      const map = {};
+      for (const k of Object.keys(obj)) map[norm(k)] = k;
+
+      for (const a of aliases) {
+        const nk = norm(a);
+        if (map[nk] != null) {
+          const v = obj[map[nk]];
+          if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+        }
+      }
+      return null;
+    }
+
+    tbody.innerHTML = itens.map(x => {
+      const id = pickSmart(x, [
+        'id', 'chamadoId', 'idChamado', 'id_chamado',
+        'numero_chamado',      // 👈 adiciona aqui
+        'numero', 'número', 'numeroChamado', 'numChamado'
+      ]) || Math.random();
+      const idArg = js(id);
+
+      const projeto = pickSmart(x, ['projeto', 'sistema', 'projetoNome', 'projeto_nome']) || '-';
+
+      // tente todas as variações possíveis que já vi em GLPI/Jira/planilhas
+      const numero = pickSmart(x, [
+        'numero_chamado',      // 👈 adiciona aqui
+        'numero', 'número', 'chamado', 'ticket', 'protocolo',
+        'numeroChamado', 'numChamado', 'idChamado', 'id_ticket', 'id', 'glpi', 'glpi_id'
+      ]) || '-';
+
+
+      const status = pickSmart(x, ['status', 'situacao', 'situação', 'etapa']) || '-';
+      const dev = pickSmart(x, ['desenvolvedor', 'dev', 'responsavel', 'responsável']) || '-';
+      const solicit = pickSmart(x, ['solicitante', 'requerente', 'demandante', 'cliente']) || '-';
+
+
+      return `
+        <tr>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(projeto)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(String(numero))}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(status)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(dev)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(solicit)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            ${sustActionLinksHtml(idArg)}
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
 
   // ========= Criar / Atualizar =========
   async function handleCreateOrUpdate(e) {
@@ -1259,10 +1522,6 @@
       // fecha o modal
       const modal = byId('projectModal');
       if (modal) modal.classList.add('hidden');
-
-      await loadProjetos();
-      toast('Sucesso', isEdit ? 'Projeto atualizado com sucesso!' : 'Projeto cadastrado com sucesso!', 'success');
-
 
 
       await loadProjetos();

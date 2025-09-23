@@ -18,6 +18,7 @@ function normSituacao(s) {
     if (n === "nao iniciadaa") return "nao iniciada"; // só por segurança
     return n;
 }
+let currentPDTI = []; // sempre aponta para o dataset em uso (filtrado ou completo)
 
 // ======================
 // Carregar tabela PDTI
@@ -175,24 +176,21 @@ window.filterPDTIByStatus = filterPDTIByStatus;
 // ======================
 // Atualizar KPIs
 // ======================
-function updatePDTIKPIs() {
-    const total = cachePDTI.length;
-    const concluidas = cachePDTI.filter(a => a.situacao === 'Concluída').length;
-    const andamento = cachePDTI.filter(a => a.situacao === 'Em andamento').length;
-    const naoIniciadas = cachePDTI.filter(a => a.situacao === 'Não iniciada').length;
+function updatePDTIKPIs(data = cachePDTI) {
+    const total = data.length;
+    const concluidas = data.filter(a => a.situacao === 'Concluída').length;
+    const andamento = data.filter(a => a.situacao === 'Em andamento').length;
+    const naoIniciadas = data.filter(a => a.situacao === 'Não iniciada').length;
 
-    // Totais principais
     document.getElementById('totalAcoes').textContent = total;
     document.getElementById('acoesConcluidas').textContent = concluidas;
     document.getElementById('acoesAndamento').textContent = andamento;
     document.getElementById('acoesNaoIniciadas').textContent = naoIniciadas;
 
-    // Percentuais
     const concluidasPercent = total ? Math.round((concluidas / total) * 100) : 0;
     const andamentoPercent = total ? Math.round((andamento / total) * 100) : 0;
     const naoIniciadasPercent = total ? Math.round((naoIniciadas / total) * 100) : 0;
 
-    // Atualiza % nos cards
     const cards = [
         { id: 'acoesConcluidas', pct: concluidasPercent },
         { id: 'acoesAndamento', pct: andamentoPercent },
@@ -206,14 +204,12 @@ function updatePDTIKPIs() {
         }
     });
 
-    // Barra de progresso geral
     const progressBar = document.getElementById('pdtiProgressBar');
     if (progressBar) {
         progressBar.style.width = `${concluidasPercent}%`;
         progressBar.textContent = `${concluidasPercent}% Concluído`;
     }
 
-    // Boxes embaixo da barra
     if (document.getElementById('boxConcluidas'))
         document.getElementById('boxConcluidas').textContent = concluidas;
     if (document.getElementById('boxAndamento'))
@@ -222,10 +218,9 @@ function updatePDTIKPIs() {
         document.getElementById('boxNaoIniciadas').textContent = naoIniciadas;
 }
 
-
-function updatePDTIProgress() {
-    const total = cachePDTI.length || 0;
-    const concluidas = cachePDTI.filter(a => a.situacao === 'Concluída').length;
+function updatePDTIProgress(data = cachePDTI) {
+    const total = data.length || 0;
+    const concluidas = data.filter(a => a.situacao === 'Concluída').length;
     const pct = total ? Math.round((concluidas / total) * 100) : 0;
     const bar = document.getElementById('pdtiProgressBar');
     if (bar) {
@@ -233,6 +228,7 @@ function updatePDTIProgress() {
         bar.textContent = `${pct}% Concluído`;
     }
 }
+
 
 // 👉 expõe pro showPage (e mantém nomes que ele chama)
 window.updatePDTIProgress = updatePDTIProgress;
@@ -479,62 +475,35 @@ function parseYMDUTC(ymd) {
     return new Date(Date.UTC(y, mo, 1)); // normaliza pro 1º dia do mês (UTC)
 }
 
-function renderPDTICharts() {
+function renderPDTICharts(data = cachePDTI) {
     // ===== DONUT =====
     const TIPOS = ['SDF', 'SDD', 'SDS'];
     const COLORS = ['#3b82f6', '#8b5cf6', '#10b981'];
-    const tipoDesc = {
-        SDF: 'SDF — Soluções Digitais: novos produtos/serviços digitais (portais, apps, módulos, etc.).',
-        SDD: 'SDD — Soluções de Dados: gestão, integração e análise de dados (BI/Analytics, APIs, DW/Lake).',
-        SDS: 'SDS — Soluções de Sistemas: manutenção/evolução de sistemas e modernização tecnológica.'
-    };
-    const counts = TIPOS.map(t => cachePDTI.filter(a => a.tipo === t).length);
     const labelsLongas = ['Soluções Digitais (SDF)', 'Soluções de Dados (SDD)', 'Soluções de Sistemas (SDS)'];
 
-    if (pdtiTipoChart) pdtiTipoChart.destroy();
+    if (pdtiTipoChart) pdtiTipoChart.destroy?.();
     const tipoCtx = document.getElementById('pdtiTipoChart');
     if (tipoCtx) {
+        const countsTipos = TIPOS.map(t => data.filter(a => a.tipo === t).length);
         pdtiTipoChart = new Chart(tipoCtx, {
             type: 'doughnut',
-            data: { labels: labelsLongas, datasets: [{ data: counts, backgroundColor: COLORS, borderColor: '#fff', borderWidth: 2 }] },
+            data: { labels: labelsLongas, datasets: [{ data: countsTipos, backgroundColor: COLORS, borderColor: '#fff', borderWidth: 2 }] },
             options: {
                 responsive: true, maintainAspectRatio: false, cutout: '65%',
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 12, font: { size: 12 } },
-                        onHover: (evt, item) => {
-                            const txt = item.text || '';
-                            const key = txt.endsWith('(SDF)') ? 'SDF' : txt.endsWith('(SDD)') ? 'SDD' : txt.endsWith('(SDS)') ? 'SDS' : '';
-                            if (evt.native?.target) evt.native.target.title = key ? tipoDesc[key] : txt;
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: (ctx) => `${ctx.label}: ${ctx.parsed}`,
-                            afterLabel: (ctx) => {
-                                const lbl = ctx.label || '';
-                                const key = lbl.endsWith('(SDF)') ? 'SDF' : lbl.endsWith('(SDD)') ? 'SDD' : lbl.endsWith('(SDS)') ? 'SDS' : '';
-                                return key ? tipoDesc[key] : '';
-                            }
-                        }
-                    }
-                }
+                plugins: { legend: { position: 'right', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 12, font: { size: 12 } } } }
             }
         });
     }
 
-    // ===== TIMELINE por mês (NÃO acumulada, área preenchida, label 'mes/aa') =====
-    const concluidas = cachePDTI.filter(a => a.situacao === 'Concluída');
+    // ===== TIMELINE por mês (NÃO acumulada, área preenchida) =====
+    const concluidas = data.filter(a => a.situacao === 'Concluída');
 
-    // 1) mapa YYYY-MM -> contagem
     const byMonth = {};
     concluidas.forEach(a => {
         const k = String(a.data_conclusao || '').slice(0, 7); // "YYYY-MM"
         if (k) byMonth[k] = (byMonth[k] || 0) + 1;
     });
 
-    // 2) faixa contínua entre min e max, preenchendo meses zerados
     const keys = Object.keys(byMonth).sort();
     let labelsISO = [], countsPerMonth = [];
     if (keys.length) {
@@ -542,7 +511,6 @@ function renderPDTICharts() {
         const [y1, m1] = keys[keys.length - 1].split('-').map(Number);
         const cur = new Date(Date.UTC(y0, m0 - 1, 1));
         const end = new Date(Date.UTC(y1, m1 - 1, 1));
-
         while (cur <= end) {
             const ym = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, '0')}`;
             labelsISO.push(ym);
@@ -556,15 +524,13 @@ function renderPDTICharts() {
         countsPerMonth = [0];
     }
 
-    // 3) formata labels para 'mes/aa' em pt-BR
     const MESES_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     const labelsMonth = labelsISO.map(ym => {
         const [yy, mm] = ym.split('-').map(Number);
-        return `${MESES_PT[mm - 1]}/${String(yy).slice(-2)}`; // ex.: "mai/25"
+        return `${MESES_PT[mm - 1]}/${String(yy).slice(-2)}`;
     });
 
-    // 4) plota (linha com área, NÃO acumulada)
-    if (pdtiTimelineChart) pdtiTimelineChart.destroy();
+    if (pdtiTimelineChart) pdtiTimelineChart.destroy?.();
     const tlCtx = document.getElementById('pdtiTimelineChart');
     if (tlCtx) {
         pdtiTimelineChart = new Chart(tlCtx, {
@@ -583,37 +549,17 @@ function renderPDTICharts() {
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            title: (items) => items[0]?.label ?? '',
-                            label: (item) => `Concluídas: ${item.parsed.y}`
-                        }
-                    }
-                },
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
-                    x: {
-                        ticks: { autoSkip: true, maxRotation: 0 },
-                        title: { display: false }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        ticks: { precision: 0 },
-                        title: { display: true, text: 'Quantidade' }
-                    }
+                    x: { ticks: { autoSkip: true, maxRotation: 0 } },
+                    y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Quantidade' } }
                 }
             }
         });
     }
-
-
-
-
-
 }
+
 
 
 
