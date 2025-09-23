@@ -53,6 +53,13 @@
                 // descricao: document.getElementById('editDesc').value.trim(),
                 // data_chamado: '2025-09-23T14:30'
             };
+            // prepara confirmação
+            window.__pendingEdit = { numero, payload };
+
+            const msg = document.getElementById('confirmEditMessage');
+            if (msg) msg.textContent = `Deseja salvar as alterações do chamado ${numero}?`;
+
+            window.showModal && window.showModal('confirmEditModal');
 
             try {
                 const resp = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(numero)}`, {
@@ -74,6 +81,40 @@
             }
         });
     }
+    window.cancelEdit = function () {
+        window.__pendingEdit = null;
+        hideModal && hideModal('confirmEditModal');
+    };
+
+    window.confirmEdit = async function () {
+        const pen = window.__pendingEdit;
+        if (!pen) {
+            hideModal && hideModal('confirmEditModal');
+            return;
+        }
+
+        try {
+            const resp = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(pen.numero)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pen.payload)
+            });
+
+            if (!resp.ok) {
+                const err = await resp.text();
+                throw new Error(`HTTP ${resp.status} - ${err}`);
+            }
+
+            hideModal && hideModal('confirmEditModal');
+            hideModal && hideModal('editChamadoModal');
+            await loadSustentacao(); // recarrega tabela e gráficos
+        } catch (err) {
+            console.error('Falha ao salvar edição:', err);
+            alert('Não foi possível salvar o chamado.');
+        } finally {
+            window.__pendingEdit = null;
+        }
+    };
 
     // liga quando o DOM estiver pronto
     document.addEventListener('DOMContentLoaded', attachEditHandler);
@@ -168,6 +209,22 @@
             return map;
         } catch { return {}; }
     }
+    // === cores por status (badge da TABELA) ===
+    function badgeClassFor(statusRaw) {
+        const s = String(statusRaw || '')
+            .normalize('NFD').replace(/\p{Diacritic}/gu, '') // remove acentos
+            .toLowerCase().trim();
+
+        if (s.includes('pendente')) return 'badge-yellow'; // Pendente
+        if (s === 'a desenvolver' || s.startsWith('a desenvolv'))
+            return 'badge-blue';   // A desenvolver
+        if (s.includes('em desenvolvimento')) return 'badge-green';  // Em desenvolvimento
+        if (s.includes('em homologacao')) return 'badge-purple'; // Em homologação
+        if (s.includes('em testes')) return 'badge-teal';   // Em testes
+        if (s.includes('suspens')) return 'badge-red';    // Suspenso
+
+        return 'badge-gray'; // fallback
+    }
 
     // ---------- TABELA ----------
     function renderTable(list) {
@@ -183,11 +240,8 @@
         }
 
         sustCache.forEach(ch => {
-            let badgeClass = 'badge-gray';
-            if (/desenvolv/i.test(ch.status)) badgeClass = 'badge-green';
-            else if (/homolog/i.test(ch.status)) badgeClass = 'badge-purple';
-            else if (/pendente/i.test(ch.status)) badgeClass = 'badge-yellow';
-            else if (/suspens|erro|incid/i.test(ch.status)) badgeClass = 'badge-red';
+            const badgeClass = badgeClassFor(ch.status);
+
 
             tbody.insertAdjacentHTML('beforeend', `
                 <tr class="hover:bg-gray-50">
@@ -231,18 +285,71 @@
         document.getElementById('verObs')?.replaceChildren(document.createTextNode(obs || '—'));
         window.showModal && window.showModal('verChamadoModal');
     };
+    // mapeia status -> classes do "pill"
+    function classForStatusPill(status) {
+        const s = (status || '').toLowerCase();
+        if (s.includes('pendente')) return 'bg-yellow-100 text-yellow-800';
+        if (s.includes('em desenvolvimento')) return 'bg-green-100 text-green-800';
+        if (s.includes('suspens')) return 'bg-red-100 text-red-800';
+        if (s.includes('a desenvolver')) return 'bg-emerald-100 text-emerald-800';
+        if (s.includes('homolog')) return 'bg-indigo-100 text-indigo-800';
+        if (s.includes('teste')) return 'bg-blue-100 text-blue-800';
+        return 'bg-gray-100 text-gray-700';
+    }
+
+    // melhora o verChamado para aplicar o "pill" bonito
+    const _oldVerChamado = window.verChamado;
+    window.verChamado = function (numero, projeto, status, dev, solicitante, obs) {
+        // preenche textos
+        document.getElementById('verProjeto')?.replaceChildren(document.createTextNode(projeto || '—'));
+        document.getElementById('verNumero')?.replaceChildren(document.createTextNode(numero || '—'));
+        document.getElementById('verDev')?.replaceChildren(document.createTextNode(dev || '—'));
+        document.getElementById('verSolicitante')?.replaceChildren(document.createTextNode(solicitante || '—'));
+        document.getElementById('verObs')?.replaceChildren(document.createTextNode(obs || '—'));
+
+        // status pill (mantém classes base e troca as cores)
+        const st = document.getElementById('verStatus');
+        if (st) {
+            st.textContent = status || '—';
+            st.className = 'inline-flex items-center mt-2 text-sm font-semibold px-2.5 py-1 rounded-full ' + classForStatusPill(status);
+        }
+
+        // abre
+        window.showModal && window.showModal('verChamadoModal');
+    };
+
+    // UX: fecha ao clicar fora / ESC
+    (function enhanceViewModalUX() {
+        const modal = document.getElementById('verChamadoModal');
+        if (!modal) return;
+
+        // clique fora
+        modal.addEventListener('click', (e) => {
+            const target = e.target;
+            if (target && target.getAttribute('data-modal-close') === 'verChamadoModal') {
+                hideModal('verChamadoModal');
+            }
+        });
+
+        // tecla ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                hideModal('verChamadoModal');
+            }
+        });
+    })();
 
     // ---------- GRÁFICOS ----------
+    const css = getComputedStyle(document.documentElement);
+
     const statusColors = {
-        'a desenvolver': '#16a34a',
-        'em desenvolvimento': '#3b82f6',
-        'em homologação': '#ef4444',
-        'em homologacao': '#ef4444',
-        'pendente': '#f59e0b',
-        'suspenso': '#8b5cf6',
-        'em testes': '#10b981',
-        'aberto': '#2563eb',
-        'fechado': '#9ca3af'
+        'a desenvolver': css.getPropertyValue('--st-a-desenvolver').trim(),
+        'em desenvolvimento': css.getPropertyValue('--st-em-desenvolvimento').trim(),
+        'em homologação': css.getPropertyValue('--st-em-homologacao').trim(),
+        'em homologacao': css.getPropertyValue('--st-em-homologacao').trim(),
+        'pendente': css.getPropertyValue('--st-pendente').trim(),
+        'suspenso': css.getPropertyValue('--st-suspenso').trim(),
+        'em testes': css.getPropertyValue('--st-em-testes').trim()
     };
 
     function drawStatusChart(list) {

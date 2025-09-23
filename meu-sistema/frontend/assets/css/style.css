@@ -6,7 +6,65 @@ body {
   color: #111827;
 }
 
+/* style.css */
+:root {
+  --st-a-desenvolver: #16a34a;
+  --st-em-desenvolvimento: #3b82f6;
+  --st-em-homologacao: #ef4444;
+  --st-pendente: #f59e0b;
+  --st-suspenso: #8b5cf6;
+  --st-em-testes: #10b981;
+}
 
+/* badges genéricos que já existem */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: .75rem;
+  padding: .25rem .5rem;
+  border-radius: 9999px;
+}
+
+.badge-gray {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.badge-yellow {
+  background: #fef9c3;
+  color: #92400e;
+}
+
+.badge-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* novos (ou ajuste as cores como preferir) */
+.badge-blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* para “A desenvolver” */
+.badge-purple {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+/* para “Em homologação” */
+.badge-teal {
+  background: #ccfbf1;
+  color: #115e59;
+}
+
+/* para “Em testes” */
 
 
 /* Hover padrão para tabelas */
