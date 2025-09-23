@@ -20,11 +20,25 @@ db.init_app(app)
 with app.app_context():
     print("Campos do modelo Projeto:", [c.name for c in Projeto.__table__.columns])
 
-def _parse_date(s):
+from datetime import date, datetime
+
+def _parse_date(s: str | None):
     try:
-        return date.fromisoformat(s) if s else None
+        return date.fromisoformat((s or '').split('T')[0]) if s else None
     except Exception:
         return None
+
+def _parse_datetime(s: str | None):
+    """Aceita '2025-09-23', '2025-09-23T14:30', ou '...Z'"""
+    try:
+        if not s:
+            return None
+        s = s.replace('Z', '+00:00')   # ISO com Z
+        dt = datetime.fromisoformat(s)
+        return dt.replace(tzinfo=None) # salva naive (sem tz)
+    except Exception:
+        return None
+
 
 # ====== ROTAS ======
 @app.route('/api/sustentacao', methods=['GET'])
@@ -41,6 +55,72 @@ def listar_sustentacao():
         "observacao": c.observacao
     } for c in chamados])
 
+# ========= SUSTENTAÇÃO: CRUD =========
+
+# Criar (opcional)
+@app.route('/api/sustentacao', methods=['POST'])
+def criar_chamado_sustentacao():
+    data = request.get_json() or {}
+    app.logger.info("POST /api/sustentacao payload=%s", data)
+
+    novo = SustentacaoChamado(
+        numero_chamado = data.get('numero_chamado'),
+        projeto        = data.get('projeto'),
+        desenvolvedor  = data.get('desenvolvedor'),
+        data_chamado   = _parse_datetime(data.get('data_chamado')),  # <- AQUI
+        descricao      = data.get('descricao'),
+        solicitante    = data.get('solicitante'),
+        status         = data.get('status'),
+        observacao     = data.get('observacao')
+    )
+    db.session.add(novo)
+    db.session.commit()
+    return jsonify({
+        "numero_chamado": novo.numero_chamado, "projeto": novo.projeto,
+        "desenvolvedor": novo.desenvolvedor,
+        "data_chamado": novo.data_chamado.isoformat() if novo.data_chamado else None,
+        "descricao": novo.descricao, "solicitante": novo.solicitante,
+        "status": novo.status, "observacao": novo.observacao
+    }), 201
+
+
+# Atualizar por número do chamado (é o que o front usa)
+@app.route('/api/sustentacao/<string:numero>', methods=['PUT'])
+def editar_chamado_sustentacao(numero):
+    data = request.get_json() or {}
+    app.logger.info("PUT /api/sustentacao/%s payload=%s", numero, data)
+
+    ch = SustentacaoChamado.query.filter_by(numero_chamado=numero).first_or_404()
+
+    try:
+        for fld in ('projeto','desenvolvedor','descricao','solicitante','status','observacao'):
+            if fld in data:
+                setattr(ch, fld, data[fld])
+
+        if 'data_chamado' in data:
+            ch.data_chamado = _parse_datetime(data.get('data_chamado'))  # <- AQUI
+
+        db.session.commit()
+        return jsonify({
+            "numero_chamado": ch.numero_chamado, "projeto": ch.projeto,
+            "desenvolvedor": ch.desenvolvedor,
+            "data_chamado": ch.data_chamado.isoformat() if ch.data_chamado else None,
+            "descricao": ch.descricao, "solicitante": ch.solicitante,
+            "status": ch.status, "observacao": ch.observacao
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception("Erro ao atualizar chamado de sustentação")
+        return jsonify({'erro': str(e)}), 400
+
+
+# Excluir por número (opcional)
+@app.route('/api/sustentacao/<string:numero>', methods=['DELETE'])
+def deletar_chamado_sustentacao(numero):
+    ch = SustentacaoChamado.query.filter_by(numero_chamado=numero).first_or_404()
+    db.session.delete(ch)
+    db.session.commit()
+    return jsonify({'mensagem': 'Chamado excluído com sucesso'}), 200
 
 # Editar andamento
 @app.route('/api/andamentos/<int:andamento_id>', methods=['PUT'])

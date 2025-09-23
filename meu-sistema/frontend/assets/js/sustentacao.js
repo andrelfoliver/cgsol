@@ -11,6 +11,118 @@
     // cache de chamados (para abrir modal pelo número)
     let sustCache = [];
 
+    // ===== EDICAO =====
+    // ===== EDICAO =====
+    window.editarChamado = function (numero) {
+        const ch = sustCache.find(c => String(c.numero) === String(numero));
+        if (!ch) return;
+
+        // preenche o form
+        document.getElementById('editHiddenNumero').value = ch.numero ?? '';
+        document.getElementById('editProjeto').value = ch.projeto ?? '';
+        document.getElementById('editNumero').value = ch.numero ?? '';
+        document.getElementById('editStatus').value = ch.status ?? 'Pendente';
+        document.getElementById('editDev').value = ch.desenvolvedor ?? '';
+        document.getElementById('editSolic').value = ch.solicitante ?? '';
+        document.getElementById('editObs').value = ch.observacao ?? '';
+
+        window.showModal && window.showModal('editChamadoModal');
+    };
+
+    // garante que o submit será ligado quando o form existir
+    function attachEditHandler() {
+        const form = document.getElementById('editChamadoForm');
+        if (!form) return; // ainda não está no DOM
+
+        // evita listeners duplicados
+        if (form.__bound) return;
+        form.__bound = true;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const numero = document.getElementById('editHiddenNumero').value.trim();
+
+            const payload = {
+                projeto: document.getElementById('editProjeto').value.trim(),
+                status: document.getElementById('editStatus').value.trim(),
+                desenvolvedor: document.getElementById('editDev').value.trim(),
+                solicitante: document.getElementById('editSolic').value.trim(),
+                observacao: document.getElementById('editObs').value.trim(),
+                // se tiver campos extras:
+                // descricao: document.getElementById('editDesc').value.trim(),
+                // data_chamado: '2025-09-23T14:30'
+            };
+
+            try {
+                const resp = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(numero)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload) // <- usa o payload!
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.text();
+                    throw new Error(`HTTP ${resp.status} - ${err}`);
+                }
+
+                hideModal('editChamadoModal');
+                await loadSustentacao();
+            } catch (err) {
+                console.error('Falha ao salvar edição:', err);
+                alert('Não foi possível salvar o chamado.');
+            }
+        });
+    }
+
+    // liga quando o DOM estiver pronto
+    document.addEventListener('DOMContentLoaded', attachEditHandler);
+
+    // e tente de novo caso este arquivo carregue antes do modal ser renderizado
+    setTimeout(attachEditHandler, 0);
+    setTimeout(attachEditHandler, 300);
+
+    // submit do formulário
+    (function attachEditHandler() {
+        const form = document.getElementById('editChamadoForm');
+        if (!form) return;
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const numero = document.getElementById('editHiddenNumero').value.trim();
+
+            const payload = {
+                projeto: document.getElementById('editProjeto').value.trim(),
+                // numero NÃO vai no payload: ele é a chave da URL
+                status: document.getElementById('editStatus').value.trim(),
+                desenvolvedor: document.getElementById('editDev').value.trim(),
+                solicitante: document.getElementById('editSolic').value.trim(),
+                observacao: document.getElementById('editObs').value.trim()
+                // se quiser enviar descricao/data_chamado, inclua aqui
+                // descricao:  ...,
+                // data_chamado: '2025-09-23'
+            };
+
+
+            try {
+                const resp = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(numero)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        projeto, status, desenvolvedor, solicitante, observacao,
+                        // se tiver campo de data no modal:
+                        // data_chamado: '2025-09-23T14:30'
+                    })
+                });
+
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                hideModal('editChamadoModal');
+                await loadSustentacao(); // recarrega tabela e gráficos
+            } catch (err) {
+                console.error('Falha ao salvar edição:', err);
+                alert('Não foi possível salvar o chamado.');
+            }
+        });
+    })();
     const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[m]));

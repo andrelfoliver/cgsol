@@ -1860,6 +1860,65 @@
       </div>
     </div>
   </div>
+  <!-- Modal Editar Chamado -->
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="editChamadoModal">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-xl w-full">
+        <form id="editChamadoForm" class="p-6 space-y-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-lg font-semibold text-gray-900">Editar Chamado</h3>
+            <button type="button" class="text-gray-400 hover:text-gray-600"
+              onclick="hideModal('editChamadoModal')">✕</button>
+          </div>
+
+          <input type="hidden" id="editHiddenId">
+          <input type="hidden" id="editHiddenNumero">
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Projeto</label>
+              <input id="editProjeto" type="text" class="w-full border rounded px-3 py-2">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Número</label>
+              <input id="editNumero" type="text" class="w-full border rounded px-3 py-2" disabled>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Status</label>
+              <select id="editStatus" class="w-full border rounded px-3 py-2">
+                <option>A desenvolver</option>
+                <option>Em desenvolvimento</option>
+                <option>Em homologação</option>
+                <option>Pendente</option>
+                <option>Suspenso</option>
+                <option>Em testes</option>
+                <option>Aberto</option>
+                <option>Fechado</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Desenvolvedor</label>
+              <input id="editDev" type="text" class="w-full border rounded px-3 py-2">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Solicitante</label>
+              <input id="editSolic" type="text" class="w-full border rounded px-3 py-2">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Observações</label>
+              <textarea id="editObs" rows="3" class="w-full border rounded px-3 py-2"></textarea>
+            </div>
+          </div>
+
+          <div class="pt-4 flex justify-end gap-3">
+            <button type="button" class="px-4 py-2 border rounded-lg"
+              onclick="hideModal('editChamadoModal')">Cancelar</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
 
 </body>
