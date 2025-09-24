@@ -127,6 +127,12 @@
     const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[m]));
+    function pickAny(obj, patterns) {
+        for (const k in obj) {
+            if (patterns.some(rx => rx.test(k))) return obj[k];
+        }
+        return null;
+    }
 
     function normalizeChamado(r, projetosById) {
         const projetoId =
@@ -142,7 +148,20 @@
             numero: r.numero ?? r.numero_chamado ?? r.ticket ?? r.chamado ?? r.id ?? null,
             projeto: projetoNome ?? '—',
             desenvolvedor: r.desenvolvedor ?? r.dev ?? r.responsavel ?? '—',
-            data: r.data ?? r.data_abertura ?? r.created_at ?? r.abertura ?? null,
+            data_abertura: (
+                r.data_chamado ??
+                r.data_abertura ?? r.dt_registro ?? r.data_registro ?? r.dt_abertura ??
+                r.data ?? r.created_at ?? r.abertura ?? r.registro ??
+                r['DT REGISTRO'] ?? r['DT_REGISTRO'] ?? r['DT ABERTURA'] ?? r['DT_ABERTURA'] ??
+                r['DT REGISTRO '] ?? r['DATA REGISTRO'] ?? r['DATA ABERTURA'] ?? r['ABERTURA'] ??
+                pickAny(r, [/^dt.?reg/i, /^dt.?abert/i, /abertura/i, /registro/i]) ?? null
+            ),
+            data_fechamento: (
+                r.data_fechamento ?? r.dt_fechado ?? r.data_fechado ?? r.dt_fechamento ??
+                r.fechado ?? r.fechamento ??
+                r['DT FECHADO'] ?? r['DT_FECHADO'] ?? r['DT FECHAMENTO'] ?? r['DT_FECHAMENTO'] ??
+                pickAny(r, [/^dt.?fech/i, /fechamento/i, /fechado/i]) ?? null
+            ),
             solicitante: r.solicitante ?? r.aberto_por ?? r.solicitante_nome ?? '—',
             status: r.status ?? r.situacao ?? r.state ?? '—',
             observacao: r.observacao ?? r.observacoes ?? r.obs ?? ''
@@ -200,27 +219,32 @@
         }
 
         sustCache.forEach(ch => {
-            const badgeClass = badgeClassFor(ch.status);
 
 
             tbody.insertAdjacentHTML('beforeend', `
                 <tr class="hover:bg-gray-50">
                   <td class="px-6 py-4 text-sm font-medium text-gray-900">${esc(ch.projeto)}</td>
                   <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.numero)}</td>
-                  <td class="px-6 py-4 text-sm"><span class="badge ${badgeClass}">${esc(ch.status)}</span></td>
+
+                  <td class="px-6 py-4 text-sm">
+                     <span class="badge"
+                          style="background:${colorForStatus(ch.status)};color:#fff;border-radius:6px;">
+                         ${esc(ch.status)}  
+                     </span>
+                 </td>
                   <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.desenvolvedor)}</td>
                   <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.solicitante)}</td>
                   <td class="px-6 py-4 text-sm font-medium">
                     <div class="action-group">
-                      <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')" class="action-btn text-blue-600 hover:text-blue-800">
+                        <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')">
                         <span class="action-ico">👁️</span><span>Ver</span>
                       </a>
                       <a href="#" onclick="editarChamado('${esc(ch.numero)}')" class="action-btn text-green-600 hover:text-green-800">
                         <span class="action-ico">✏️</span><span>Editar</span>
                       </a>
-                      <a href="#" onclick="excluirChamado('${esc(ch.numero)}')" class="action-btn text-red-600 hover:text-red-800">
-                        <span class="action-ico">🗑️</span><span>Excluir</span>
-                      </a>
+                      <a href="#" onclick="concluirChamado('${esc(ch.numero)}')" class="action-btn text-emerald-600 hover:text-emerald-800">
+                        <span class="action-ico">✔️</span><span>Concluir</span>
+                        </a>
                     </div>
                   </td>
                 </tr>
@@ -228,55 +252,119 @@
 
         });
     }
+    window.concluirChamado = function (numero) {
+        const ch = sustCache.find(c => String(c.numero) === String(numero));
+        if (!ch) return;
+        window.verChamado(ch.numero, ch.projeto, ch.status, ch.desenvolvedor, ch.solicitante, ch.observacao, ch.data_abertura, ch.data_fechamento, /*forcarEdicaoFechamento*/true);
+    };
 
     // abrir modal por número usando o cache
     window.verChamadoByNumero = function (numero) {
         const ch = sustCache.find(c => String(c.numero) === String(numero));
         if (!ch) return;
-        window.verChamado(ch.numero, ch.projeto, ch.status, ch.desenvolvedor, ch.solicitante, ch.observacao);
+        window.verChamado(ch.numero, ch.projeto, ch.status, ch.desenvolvedor, ch.solicitante, ch.observacao, ch.data_abertura, ch.data_fechamento);
     };
-
-    window.verChamado = function (numero, projeto, status, dev, solicitante, obs) {
-        document.getElementById('verProjeto')?.replaceChildren(document.createTextNode(projeto || '—'));
-        document.getElementById('verNumero')?.replaceChildren(document.createTextNode(numero || '—'));
-        document.getElementById('verStatus')?.replaceChildren(document.createTextNode(status || '—'));
-        document.getElementById('verDev')?.replaceChildren(document.createTextNode(dev || '—'));
-        document.getElementById('verSolicitante')?.replaceChildren(document.createTextNode(solicitante || '—'));
-        document.getElementById('verObs')?.replaceChildren(document.createTextNode(obs || '—'));
-        window.showModal && window.showModal('verChamadoModal');
-    };
-    // mapeia status -> classes do "pill"
-    function classForStatusPill(status) {
-        const s = (status || '').toLowerCase();
-        if (s.includes('pendente')) return 'bg-yellow-100 text-yellow-800';
-        if (s.includes('em desenvolvimento')) return 'bg-green-100 text-green-800';
-        if (s.includes('suspens')) return 'bg-red-100 text-red-800';
-        if (s.includes('a desenvolver')) return 'bg-emerald-100 text-emerald-800';
-        if (s.includes('homolog')) return 'bg-indigo-100 text-indigo-800';
-        if (s.includes('teste')) return 'bg-blue-100 text-blue-800';
-        return 'bg-gray-100 text-gray-700';
+    function toDate(x) { try { return x ? new Date(x) : null; } catch { return null; } }
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function toLocalInputValue(d) {
+        if (!d) return '';
+        const y = d.getFullYear(), m = pad(d.getMonth() + 1), da = pad(d.getDate());
+        const h = pad(d.getHours()), mi = pad(d.getMinutes());
+        return `${y}-${m}-${da}T${h}:${mi}`;
     }
 
-    // melhora o verChamado para aplicar o "pill" bonito
-    const _oldVerChamado = window.verChamado;
-    window.verChamado = function (numero, projeto, status, dev, solicitante, obs) {
-        // preenche textos
+    window.verChamado = function (
+        numero, projeto, status, dev, solicitante, obs,
+        dtAbertura, dtFechamento, focoFechamento = false
+    ) {
+        // guardar para "Concluir"
+        window.__viewNumero = numero || null;
+
+        // textos
         document.getElementById('verProjeto')?.replaceChildren(document.createTextNode(projeto || '—'));
         document.getElementById('verNumero')?.replaceChildren(document.createTextNode(numero || '—'));
         document.getElementById('verDev')?.replaceChildren(document.createTextNode(dev || '—'));
         document.getElementById('verSolicitante')?.replaceChildren(document.createTextNode(solicitante || '—'));
         document.getElementById('verObs')?.replaceChildren(document.createTextNode(obs || '—'));
 
-        // status pill (mantém classes base e troca as cores)
+        // status (mesmas cores do gráfico)
         const st = document.getElementById('verStatus');
         if (st) {
             st.textContent = status || '—';
-            st.className = 'inline-flex items-center mt-2 text-sm font-semibold px-2.5 py-1 rounded-full ' + classForStatusPill(status);
+            st.className = 'badge mt-2';
+            st.setAttribute('style', `${statusPillStyle(status)}border-radius:6px;`);
         }
 
-        // abre
+        // datas
+        const openEl = document.getElementById('verAbertura');    // <div> texto
+        const closeEl = document.getElementById('verFechamento');  // <input datetime-local>
+
+        const dOpen = parseDateSmart(dtAbertura);
+        const dClose = parseDateSmart(dtFechamento);
+        // Dias em aberto: (fechamento - abertura) ou (agora - abertura) se ainda aberto
+        const daysEl = document.getElementById('verDiasAberto');
+        if (daysEl) {
+            let dias = '—';
+            if (dOpen instanceof Date && !isNaN(dOpen)) {
+                const end = (dClose instanceof Date && !isNaN(dClose)) ? dClose : new Date();
+                const ms = end - dOpen;
+                const oneDay = 24 * 60 * 60 * 1000;
+                // arredonda pra cima para contar dia corrente
+                dias = Math.max(0, Math.ceil(ms / oneDay));
+            }
+            daysEl.textContent = String(dias);
+        }
+
+        if (openEl) {
+            const raw = dtAbertura ?? '';
+            openEl.textContent = dOpen
+                ? dOpen.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : (String(raw).trim() || '—');
+        }
+        if (closeEl) {
+            closeEl.value = toLocalInputValue(dClose);
+            if (focoFechamento) closeEl.focus();
+        }
+
         window.showModal && window.showModal('verChamadoModal');
     };
+
+    // mapeia status -> classes do "pill"
+
+    function statusPillStyle(status) {
+        return `background:${colorForStatus(status)};color:#fff;`;
+    }
+
+
+    async function doConcluirChamado() {
+        const numero = window.__viewNumero;
+        const closeEl = document.getElementById('verFechamento');
+        if (!numero || !closeEl) return;
+
+        const dt = closeEl.value; // formato do input datetime-local
+        try {
+            const resp = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(numero)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'Concluído',
+                    data_fechamento: dt ? new Date(dt).toISOString() : new Date().toISOString()
+                })
+            });
+            if (!resp.ok) throw new Error(await resp.text());
+            hideModal && hideModal('verChamadoModal');
+            await loadSustentacao();
+        } catch (e) {
+            console.error(e);
+            alert('Não foi possível concluir o chamado.');
+        }
+    }
+
+    // ligar o botão do modal (uma vez)
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('btnConcluirChamado');
+        if (btn && !btn.__bound) { btn.__bound = true; btn.addEventListener('click', doConcluirChamado); }
+    });
 
     // UX: fecha ao clicar fora / ESC
     (function enhanceViewModalUX() {
@@ -311,6 +399,14 @@
         'suspenso': css.getPropertyValue('--st-suspenso').trim(),
         'em testes': css.getPropertyValue('--st-em-testes').trim()
     };
+    function normStatusKey(s) {
+        return String(s || '')
+            .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+            .toLowerCase().trim();
+    }
+    function colorForStatus(status) {
+        return statusColors[normStatusKey(status)] || '#6b7280'; // fallback cinza
+    }
 
     function drawStatusChart(list) {
         const el = document.getElementById('sustStatusChart');
@@ -324,27 +420,51 @@
 
         const labels = Object.keys(counts);
         const data = labels.map(l => counts[l]);
+
         const colors = labels.map(l => {
             const k = l.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
             return statusColors[k] || '#6b7280';
         });
 
         if (chartSustStatus) chartSustStatus.destroy();
+
         chartSustStatus = new Chart(el.getContext('2d'), {
-            type: 'doughnut',
-            data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#fff', borderWidth: 2 }] },
+            type: 'bar',                 // 👈 de rosca para colunas
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Chamados',
+                    data,
+                    backgroundColor: colors,
+                    borderColor: '#ffffff',
+                    borderWidth: 1,
+                    borderSkipped: false,
+                    borderRadius: 6,
+                    maxBarThickness: 36
+                }]
+            },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '60%',
-                plugins: { legend: { display: false } } // 👈 escondemos a legenda padrão
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, precision: 0 },
+                        grid: { drawBorder: false }
+                    },
+                    x: {
+                        ticks: { maxRotation: 0, minRotation: 0 },
+                        grid: { display: false }
+                    }
+                }
             }
         });
 
-        // 👇 legenda custom com bolinhas
+        // mantém a legenda customizada do card
         renderBulletsLegend('sustStatusLegend', labels, colors);
-
     }
+
 
     function drawProjetosChart(list) {
         const el = document.getElementById('sustProjetosChart');
@@ -386,7 +506,18 @@
             if (!resp.ok) throw new Error(`Erro ao buscar sustentação (${resp.status})`);
 
             const raw = await resp.json();
+            console.log('SUST row 0 =>', raw[0]);
+            console.log('CHAVES DISPONÍVEIS =>', Object.keys(raw[0]));
+            console.log('CAMPO DE REGISTRO =>', ['data_chamado', 'data_abertura', 'dt_registro', 'data_registro', 'created_at', 'abertura', 'registro']
+                .find(k => raw[0]?.[k] != null));
+
+            if (Array.isArray(raw) && raw.length) {
+                console.log('Sust RAW primeira linha:', raw[0]);
+                console.log('Keys:', Object.keys(raw[0]));
+            }
+
             const list = Array.isArray(raw) ? raw.map(r => normalizeChamado(r, projetosById)) : [];
+            console.table(list.slice(0, 5), ['numero', 'projeto', 'status', 'data_abertura', 'data_fechamento']);
 
             // ✅ atualiza somente coisas de sustentação
             const countEl = document.getElementById('sustChamadosCount');
@@ -419,6 +550,35 @@
             }
         }, 150);
     }
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function toLocalInputValue(d) {
+        if (!d) return '';
+        const y = d.getFullYear(), m = pad(d.getMonth() + 1), da = pad(d.getDate());
+        const h = pad(d.getHours()), mi = pad(d.getMinutes());
+        return `${y}-${m}-${da}T${h}:${mi}`;
+    }
+    function parseDateSmart(v) {
+        if (!v) return null;
+        if (v instanceof Date) return v;
+        if (typeof v === 'number') return new Date(v);
+        const s = String(v).trim();
+
+        // ISO
+        if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return new Date(s);
+
+        // aceita "dd/mm/aa(aa)[, ]hh:mm[:ss]"
+        const m = s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})[, ]\s*(\d{2}):(\d{2})(?::(\d{2}))?$/)
+            || s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+        if (m) {
+            let [, d, mo, y, h = '00', mi = '00', se = '00'] = m;
+            y = y.length === 2 ? (Number(y) >= 70 ? '19' + y : '20' + y) : y;
+            return new Date(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi), Number(se));
+        }
+
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
 
     window.loadSustentacao = loadSustentacao;
 })();

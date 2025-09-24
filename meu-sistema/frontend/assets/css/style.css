@@ -66,6 +66,18 @@ body {
 
 /* para “Em testes” */
 
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  padding: .25rem .5rem;
+  font-weight: 600;
+  font-size: .875rem;
+  line-height: 1.25rem;
+  border-radius: 6px;
+  /* 👈 deixa no padrão das outras páginas */
+  color: #fff;
+}
 
 /* Hover padrão para tabelas */
 .table-hover tbody tr:hover {

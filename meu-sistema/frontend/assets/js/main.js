@@ -81,7 +81,7 @@
     await loadProjetos();
 
     // 2) SEMPRE carrega Sustentação para atualizar o CARD já na Home
-    await loadSustentacao();
+    await loadSustKPI();     // só KPI/card na Home
 
     // 3) garante visibilidade dos wrappers das tabelas (ajuste os IDs se forem outros)
     document.getElementById('codesTableWrapper')?.classList.remove('hidden');
@@ -349,25 +349,31 @@
   }
 
   // === Ações da tabela de Sustentação ===
-  function sustActionLinksHtml(idArg) {
+  function sustActionLinksHtml(numeroArg) {
     return `
-      <a href="#" onclick="sustView(${idArg}); return false;" class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 mr-4">
+      <a href="#"
+         onclick="window.verChamadoByNumero && window.verChamadoByNumero(${numeroArg}); return false;"
+         class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 mr-4">
         <span>👁️</span><span>Ver</span>
       </a>
-      <a href="#" onclick="sustEdit(${idArg}); return false;" class="inline-flex items-center gap-1 text-green-600 hover:text-green-800 mr-4">
+      <a href="#"
+         onclick="window.editarChamado && window.editarChamado(${numeroArg}); return false;"
+         class="inline-flex items-center gap-1 text-green-600 hover:text-green-800 mr-4">
         <span>✏️</span><span>Editar</span>
       </a>
-      <a href="#" onclick="sustDelete(${idArg}); return false;" class="inline-flex items-center gap-1 text-red-600 hover:text-red-800">
-        <span>🗑️</span><span>Excluir</span>
+      <a href="#"
+         onclick="window.concluirChamado && window.concluirChamado(${numeroArg}); return false;"
+         class="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800">
+        <span>✔️</span><span>Concluir</span>
       </a>`;
   }
+
+
   // stubs mínimos:
-  window.sustView = id => console.log('ver chamado', id);
-  window.sustEdit = id => console.log('editar chamado', id);
-  window.sustDelete = id => showConfirm('Excluir este chamado?', async () => {
-    // await fetch(`${API_ROOT}/sustentacao/${id}`, { method: 'DELETE' });
-    loadSustentacao();
-  });
+  window.sustView = id => window.verChamadoByNumero && window.verChamadoByNumero(id);
+  window.sustEdit = id => window.editarChamado && window.editarChamado(id);
+  window.sustDelete = id => window.excluirChamado ? window.excluirChamado(id) : null;
+
 
 
 
@@ -387,7 +393,7 @@
         const r = await fetch(`${API_ROOT}/sustentacao/${id}`, { method: 'DELETE' });
         if (!r.ok) throw new Error(`Falha ao excluir (${r.status})`);
         toast('Sucesso', 'Chamado excluído', 'success');
-        await loadSustentacao(); // recarrega lista + gráfico + card
+        await loadSustKPI();
       } catch (e) {
         console.error(e);
         toast('Erro', e.message, 'error');
@@ -1202,9 +1208,11 @@
     // mostra a área de Sustentação
     document.getElementById('codesSustentacaoWrapper')?.classList.remove('hidden');
 
-    if (typeof loadSustentacao === 'function') {
-      loadSustentacao();
+    // chama o loader do arquivo assets/js/sustentacao.js
+    if (typeof window.loadSustentacao === 'function') {
+      window.loadSustentacao();
     }
+
   }
 
 
@@ -1354,24 +1362,24 @@
     const wrapper = el.closest('div');
     if (wrapper) wrapper.style.display = show ? '' : 'none';
   }
-  async function loadSustentacao() {
+  async function loadSustKPI() {
     try {
       const res = await fetch(`${API_ROOT}/sustentacao`);
       if (!res.ok) throw new Error(`Falha ao carregar Sustentação (${res.status})`);
       const itens = await res.json();
 
-      drawSustDistribChart(itens);
-      renderSustentacaoTable(itens);
+      // OK manter o gráfico do card e o total:
+      drawSustDistribChart(itens);                 // 🍩 do card
       applySustCard(Array.isArray(itens) ? itens.length : 0);
-      updateLastUpdateTime(); // 👈
+      updateLastUpdateTime();
     } catch (e) {
       console.error(e);
       drawSustDistribChart([]);
-      renderSustentacaoTable([]);
       applySustCard(0);
-      updateLastUpdateTime(); // 👈
+      updateLastUpdateTime();
     }
   }
+
 
 
 
@@ -1428,21 +1436,15 @@
     tbody.innerHTML = itens.map(x => {
       const id = pickSmart(x, [
         'id', 'chamadoId', 'idChamado', 'id_chamado',
-        'numero_chamado',      // 👈 adiciona aqui
-        'numero', 'número', 'numeroChamado', 'numChamado'
+        'numero_chamado', 'numero', 'número', 'numeroChamado', 'numChamado'
       ]) || Math.random();
-      const idArg = js(id);
 
-      const projeto = pickSmart(x, ['projeto', 'sistema', 'projetoNome', 'projeto_nome']) || '-';
-
-      // tente todas as variações possíveis que já vi em GLPI/Jira/planilhas
       const numero = pickSmart(x, [
-        'numero_chamado',      // 👈 adiciona aqui
-        'numero', 'número', 'chamado', 'ticket', 'protocolo',
+        'numero_chamado', 'numero', 'número', 'chamado', 'ticket', 'protocolo',
         'numeroChamado', 'numChamado', 'idChamado', 'id_ticket', 'id', 'glpi', 'glpi_id'
       ]) || '-';
-
-
+      const numArg = js(String(numero));
+      const projeto = pickSmart(x, ['projeto', 'sistema', 'projetoNome', 'projeto_nome']) || '-';
       const status = pickSmart(x, ['status', 'situacao', 'situação', 'etapa']) || '-';
       const dev = pickSmart(x, ['desenvolvedor', 'dev', 'responsavel', 'responsável']) || '-';
       const solicit = pickSmart(x, ['solicitante', 'requerente', 'demandante', 'cliente']) || '-';
@@ -1456,7 +1458,7 @@
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(dev)}</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(solicit)}</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            ${sustActionLinksHtml(idArg)}
+          ${sustActionLinksHtml(numArg)}
           </td>
         </tr>
       `;
