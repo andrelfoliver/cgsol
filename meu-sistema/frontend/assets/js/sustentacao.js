@@ -123,47 +123,7 @@
     setTimeout(attachEditHandler, 0);
     setTimeout(attachEditHandler, 300);
 
-    // submit do formulário
-    (function attachEditHandler() {
-        const form = document.getElementById('editChamadoForm');
-        if (!form) return;
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const numero = document.getElementById('editHiddenNumero').value.trim();
 
-            const payload = {
-                projeto: document.getElementById('editProjeto').value.trim(),
-                // numero NÃO vai no payload: ele é a chave da URL
-                status: document.getElementById('editStatus').value.trim(),
-                desenvolvedor: document.getElementById('editDev').value.trim(),
-                solicitante: document.getElementById('editSolic').value.trim(),
-                observacao: document.getElementById('editObs').value.trim()
-                // se quiser enviar descricao/data_chamado, inclua aqui
-                // descricao:  ...,
-                // data_chamado: '2025-09-23'
-            };
-
-
-            try {
-                const resp = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(numero)}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        projeto, status, desenvolvedor, solicitante, observacao,
-                        // se tiver campo de data no modal:
-                        // data_chamado: '2025-09-23T14:30'
-                    })
-                });
-
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                hideModal('editChamadoModal');
-                await loadSustentacao(); // recarrega tabela e gráficos
-            } catch (err) {
-                console.error('Falha ao salvar edição:', err);
-                alert('Não foi possível salvar o chamado.');
-            }
-        });
-    })();
     const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[m]));
@@ -424,27 +384,27 @@
             const projetosById = await fetchProjetosById();
             const resp = await fetch(`${API_ROOT}/sustentacao`);
             if (!resp.ok) throw new Error(`Erro ao buscar sustentação (${resp.status})`);
+
             const raw = await resp.json();
             const list = Array.isArray(raw) ? raw.map(r => normalizeChamado(r, projetosById)) : [];
 
-            // card (se existir)
+            // ✅ atualiza somente coisas de sustentação
             const countEl = document.getElementById('sustChamadosCount');
             if (countEl) countEl.textContent = String(list.length);
+            if (typeof window.applySustCard === 'function') window.applySustCard(list.length);
 
             renderTable(list);
-            //drawStatusChart(list);
-            //drawProjetosChart(list);
-            ensureCharts(list);  // <- use isso no lugar
+            ensureCharts(list);
 
         } catch (e) {
             console.error(e);
             const tbody = document.getElementById('sustentacaoTableBody');
             if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-red-600">Falha ao carregar: ${e.message}</td></tr>`;
-            // limpa gráficos se der erro
             try { chartSustStatus?.destroy(); chartSustStatus = null; } catch { }
             try { chartSustProjetos?.destroy(); chartSustProjetos = null; } catch { }
         }
     }
+
     // helper: tenta desenhar assim que o Chart estiver disponível
     function ensureCharts(list) {
         const draw = () => { drawStatusChart(list); drawProjetosChart(list); };

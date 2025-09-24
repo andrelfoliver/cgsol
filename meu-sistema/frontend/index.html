@@ -68,7 +68,7 @@
           </div>
           <div class="text-right">
             <p class="text-sm text-gray-500">Última atualização</p>
-            <p class="text-sm font-medium text-gray-700" id="lastUpdate"></p>
+            <p class="text-sm font-medium text-gray-700" id="lastUpdateTop"></p>
           </div>
         </div>
       </div>
@@ -1362,7 +1362,7 @@
           <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Status</h5>
           <p class="text-sm opacity-80">
             Última atualização:<br>
-            <span id="lastUpdate" class="font-semibold text-white">—</span>
+            <span id="lastUpdateFooter" class="font-semibold text-white">—</span>
           </p>
           <button type="button"
             class="mt-4 text-sm inline-flex items-center gap-2 px-3 py-2 rounded border border-blue-800/60 hover:border-blue-700 hover:bg-blue-900/30 transition"
@@ -1651,6 +1651,9 @@
     });
   </script>
 
+
+
+
   <script>
     // Garante que todas as páginas (#homePage, #codesPage, #cosetPage, #cgodPage, #pdtiPage)
     // sejam filhas diretas de <main>. Isso corrige casos de aninhamento acidental.
@@ -1685,21 +1688,11 @@
     })();
   </script>
 
-  <script>
-    if (window['chartjs-plugin-annotation']) {
-      Chart.register(window['chartjs-plugin-annotation']);
-    }
-  </script>
+
 
   <script>
-    /*
-      Filler compatível — preenche COSET / CGOD / PDTI a partir de window.cacheProjetos / window.pdtiData.
-      Cole ANTES de: <script src="assets/js/main.js?v=10" defer>
-    */
-
     (function () {
       try {
-        // dados de exemplo (usados somente se não existir cache)
         if (!Array.isArray(window.cacheProjetos)) {
           window.cacheProjetos = [
             { id: 1, nome: 'Portal Unificado', coordenacao: 'COSET', status: 'Em Andamento', rag: 'Verde', progresso: 45, responsavel: 'Ana', sprints: 6 },
@@ -1710,9 +1703,6 @@
           ];
         }
 
-
-
-        // renderiza tabelas por coordenação
         window.renderAllCoordTables = function (data) {
           try {
             var cosetTbody = document.getElementById('cosetTableBody');
@@ -1764,51 +1754,26 @@
             var el;
             el = document.getElementById('projetosCoset'); if (el) el.textContent = getCount('coset');
             el = document.getElementById('projetosCgod'); if (el) el.textContent = getCount('cgod');
-            el = document.getElementById('projetosCodes'); if (el) el.textContent = getCount('codes');
             el = document.getElementById('totalProjetos'); if (el) el.textContent = (data && data.length) ? data.length : 0;
+
+            // Somatório correto (base + sustentação) após render:
+            if (typeof window.updateCodesTotals === 'function') window.updateCodesTotals();
 
           } catch (err) {
             console.warn('renderAllCoordTables erro:', err);
           }
         };
 
-        // atualiza KPIs gerais
-        window.updateKPIs = function (data) {
-          try {
-            var concluido = 0, foraPrazo = 0, ativos = 0, soma = 0;
-            for (var i = 0; i < data.length; i++) {
-              var p = data[i];
-              var st = (p.status || '').toString().toLowerCase();
-              if (st.indexOf('concl') !== -1) concluido++;
-              if ((p.rag || '').toString().toLowerCase() === 'vermelho') foraPrazo++;
-              if (st.indexOf('concl') === -1) ativos++;
-              soma += (p.progresso || 0);
-            }
-            var progressoMedio = data.length ? Math.round(soma / data.length) : 0;
-
-            var el;
-            el = document.getElementById('kpiConcluidosMes'); if (el) el.textContent = concluido;
-            el = document.getElementById('kpiForaPrazo'); if (el) el.textContent = foraPrazo;
-            el = document.getElementById('kpiProjetosAtivos'); if (el) el.textContent = ativos;
-            el = document.getElementById('kpiProgressoMedio'); if (el) el.textContent = progressoMedio + '%';
-          } catch (e) {
-            console.warn('updateKPIs erro:', e);
-          }
-        };
-
-
-
         // inicializa
         if (typeof renderAllCoordTables === 'function') renderAllCoordTables(window.cacheProjetos || []);
         if (typeof updateKPIs === 'function') updateKPIs(window.cacheProjetos || []);
-        if (typeof filterPDTI === 'function') filterPDTI();
-        if (typeof updatePDTIProgress === 'function') updatePDTIProgress();
 
       } catch (outerErr) {
         console.error('filler geral erro:', outerErr);
       }
     })();
   </script>
+
 
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
@@ -1820,6 +1785,7 @@
       Chart.register(window['chartjs-plugin-annotation']);
     }
   </script>
+
   <!-- Lógica dinâmica (main.js) -->
   <script src="assets/js/main.js?v=10" defer></script>
   <script src="assets/js/sustentacao.js?v=2"></script>

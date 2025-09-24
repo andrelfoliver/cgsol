@@ -202,7 +202,6 @@
       const projetos = await res.json();
       cacheProjetos = Array.isArray(projetos) ? projetos : [];
 
-      // expõe para index.html/showPage
       window.cacheProjetos = cacheProjetos;
 
       renderRecentTable(cacheProjetos);
@@ -211,10 +210,14 @@
       drawCharts(cacheProjetos);
       drawCodesSprintsChart(cacheProjetos);
       drawCodesInternChart(cacheProjetos);
+
+      updateLastUpdateTime(); // 👈 atualiza timestamp
     } catch (err) {
       console.error(err);
+      updateLastUpdateTime(); // 👈 ainda atualiza (indica momento da última tentativa)
     }
   }
+
   function startEditAndamento(andamentoId, projetoId, descricaoRaw) {
     const item = document.getElementById(`andamento-${andamentoId}`);
     if (!item) return;
@@ -474,7 +477,7 @@
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const rows = list.filter(p => (p.coordenacao || '').toUpperCase() === String(coord).toUpperCase());
+    const rows = list.filter(p => norm(p.coordenacao) === norm(coord));
     const colCount = (tbodyId === 'codesTableBody') ? 7 : 6;
     const emptyMsg = `<tr><td colspan="${colCount}" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto encontrado.</td></tr>`;
     if (!rows.length) { tbody.innerHTML = emptyMsg; return; }
@@ -575,7 +578,7 @@
 
     // Totais Home
     setText('totalProjetos', list.length);
-    setText('projetosCodes', codes.length);
+    setText('projetosCodes', codes.length + (sustentacaoTotal ?? 0));
     setText('projetosCoset', coset.length);
     setText('projetosCgod', cgod.length);
 
@@ -608,8 +611,7 @@
     setCardCount('codes', 'planejado', codes.filter(p => norm(p.status) === 'planejado').length);
     setCardCount('codes', 'concluido', codes.filter(p => norm(p.status) === 'concluido').length);
     setCardCount('codes', 'pausado', codes.filter(p => norm(p.status) === 'pausado').length);
-    setCardCount('codes', 'total', codes.length);
-
+    setCardCount('codes', 'total', codes.length + (sustentacaoTotal ?? 0));
     // COSET page
     setCardCount('coset', 'sistemas-integrados', coset.filter(p => norm(p.tipo).includes('sistema integrado')).length);
     setCardCount('coset', 'modernizacao', coset.filter(p => norm(p.tipo).includes('modernizacao')).length);
@@ -1140,7 +1142,7 @@
 
     // Filtra os projetos
     let filtrados = cacheProjetos.filter(
-      p => (p.coordenacao || "").toUpperCase() === coordenacao.toUpperCase()
+      p => norm(p.coordenacao) === norm(coordenacao)
     );
 
     if (categoria && categoria !== "total") {
@@ -1358,16 +1360,19 @@
       if (!res.ok) throw new Error(`Falha ao carregar Sustentação (${res.status})`);
       const itens = await res.json();
 
-      drawSustDistribChart(itens);                 // gráfico vem antes da tabela
-      renderSustentacaoTable(itens);               // tabela estilizada
-      applySustCard(Array.isArray(itens) ? itens.length : 0); // atualiza card
+      drawSustDistribChart(itens);
+      renderSustentacaoTable(itens);
+      applySustCard(Array.isArray(itens) ? itens.length : 0);
+      updateLastUpdateTime(); // 👈
     } catch (e) {
       console.error(e);
-      drawSustDistribChart([]);    // limpa gráfico
-      renderSustentacaoTable([]);  // mostra “Nenhum chamado”
+      drawSustDistribChart([]);
+      renderSustentacaoTable([]);
       applySustCard(0);
+      updateLastUpdateTime(); // 👈
     }
   }
+
 
 
   function renderSustentacaoTable(itens) {
@@ -1633,17 +1638,22 @@
   }
   function updateLastUpdateTime() {
     const now = new Date();
-    document.querySelectorAll('#lastUpdate').forEach(el => {
-      el.textContent = `Hoje, ${now.toLocaleTimeString('pt-BR', {
-        timeZone: 'America/Sao_Paulo',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      })}`;
+    const ts = now.toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
     });
-    const yEl = byId('footerYear');
+
+    const topEl = document.getElementById('lastUpdateTop');
+    const footEl = document.getElementById('lastUpdateFooter');
+    if (topEl) topEl.textContent = ts;
+    if (footEl) footEl.textContent = ts;
+
+    const yEl = document.getElementById('footerYear');
     if (yEl) yEl.textContent = String(now.getFullYear());
   }
+
 
 
   // ========= Notificação simples =========
