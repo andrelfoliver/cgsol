@@ -28,14 +28,33 @@
 
   let sustentacaoTotal = null; // override do card "Em Sustentação"
 
-  window.showConfirm = function (msg, onConfirm, onCancel) {
+  // main.js
+  window.showConfirm = function (msg, onConfirm, onCancel, opts = {}) {
     const modal = document.getElementById('confirmModal');
     const msgEl = document.getElementById('confirmMessage');
+    const titleEl = document.getElementById('confirmTitle');     // novo
+    const iconEl = document.getElementById('confirmIcon');       // novo
+    const primaryBtn = document.getElementById('confirmPrimary'); // novo
+    const cancelBtn = document.getElementById('confirmCancel');   // opcional
+
     if (msgEl) msgEl.textContent = msg || 'Tem certeza?';
+    if (titleEl) titleEl.textContent = opts.title || 'Confirmar ação';
+    if (iconEl) iconEl.textContent = opts.icon || '❓';
+
+    if (primaryBtn) {
+      primaryBtn.textContent = opts.confirmText || 'Confirmar';
+      // classe base + cor opcional
+      primaryBtn.className =
+        'px-4 py-2 rounded text-white ' +
+        (opts.confirmClass || 'bg-blue-600 hover:bg-blue-700');
+    }
+    if (cancelBtn && opts.cancelText) cancelBtn.textContent = opts.cancelText;
+
     modal.classList.remove('hidden');
     confirmCallback = onConfirm;
     cancelCallback = onCancel;
   };
+
 
   window.confirmDelete = function () {
     const modal = document.getElementById('confirmModal');
@@ -351,22 +370,36 @@
   // === Ações da tabela de Sustentação ===
   function sustActionLinksHtml(numeroArg) {
     return `
-      <a href="#"
-         onclick="window.verChamadoByNumero && window.verChamadoByNumero(${numeroArg}); return false;"
-         class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 mr-4">
-        <span>👁️</span><span>Ver</span>
-      </a>
-      <a href="#"
-         onclick="window.editarChamado && window.editarChamado(${numeroArg}); return false;"
-         class="inline-flex items-center gap-1 text-green-600 hover:text-green-800 mr-4">
-        <span>✏️</span><span>Editar</span>
-      </a>
-      <a href="#"
-         onclick="window.concluirChamado && window.concluirChamado(${numeroArg}); return false;"
-         class="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800">
-        <span>✔️</span><span>Concluir</span>
-      </a>`;
+      <div class="flex items-center gap-3">
+        <a href="#"
+           onclick="window.verChamadoByNumero && window.verChamadoByNumero(${numeroArg}); return false;"
+           class="btn-ico bg-[#1555D6] text-white shadow-sm" aria-label="Ver" title="Ver">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </a>
+  
+        <a href="#"
+           onclick="window.editarChamado && window.editarChamado(${numeroArg}); return false;"
+           class="btn-ico bg-white text-[#1555D6] ring-2 ring-[#1555D6]" aria-label="Editar" title="Editar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5 20.5 7.5 7 21H3v-4L16.5 3.5z"/>
+          </svg>
+        </a>
+  
+        <a href="#"
+           onclick="window.concluirChamado && window.concluirChamado(${numeroArg}); return false;"
+           class="btn-ico bg-[#16a34a] text-white shadow-sm" aria-label="Concluir" title="Concluir">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6 9 17l-5-5"/>
+          </svg>
+        </a>
+      </div>
+    `;
   }
+
 
 
   // stubs mínimos:

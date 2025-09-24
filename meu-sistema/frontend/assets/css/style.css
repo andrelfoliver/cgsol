@@ -380,3 +380,23 @@ td.col-actions {
   display: inline-block;
   margin-right: .5rem;
 }
+
+/* ícone redondo padrão */
+.btn-ico {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.btn-ico:hover {
+  transform: translateY(-1px);
+}
+
+.btn-ico svg {
+  width: 18px;
+  height: 18px;
+}

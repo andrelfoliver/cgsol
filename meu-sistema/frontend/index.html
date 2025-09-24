@@ -516,6 +516,12 @@
             </div>
           </div>
 
+          <div id="sustFilters" class="flex flex-wrap gap-3 mb-4">
+            <input id="fProjeto" class="border rounded px-3 py-2 text-sm" placeholder="Filtrar por Projeto">
+            <input id="fDev" class="border rounded px-3 py-2 text-sm" placeholder="Filtrar por Desenvolvedor">
+            <input id="fSolic" class="border rounded px-3 py-2 text-sm" placeholder="Filtrar por Solicitante">
+            <button id="fClear" class="px-3 py-2 text-sm rounded bg-gray-200 hover:bg-gray-300">Limpar</button>
+          </div>
 
           <!-- LISTA: container independente dos gráficos -->
           <div class="bg-white rounded-lg shadow mt-6">
@@ -1279,33 +1285,38 @@
     </div>
   </div>
 
-  <!-- CONFIRM DELETE -->
+
+  <!-- 🔁 Modal genérico de confirmação (único!) -->
   <div id="confirmModal" class="fixed inset-0 z-[1000] hidden" role="dialog" aria-modal="true"
     aria-labelledby="confirmTitle">
     <div class="absolute inset-0 bg-black/50"></div>
     <div class="relative mx-auto max-w-md mt-24 bg-white rounded-xl shadow-2xl overflow-hidden">
-      <div class="h-1 bg-red-600"></div>
+      <!-- barra de topo: cor será ajustada via JS -->
+      <div id="confirmBar" class="h-1 bg-blue-600"></div>
+
       <div class="p-6">
         <div class="flex items-start gap-3">
-          <div class="text-2xl">🗑️</div>
+          <div id="confirmIcon" class="text-2xl">❓</div>
           <div class="flex-1">
-            <h4 id="confirmTitle" class="text-lg font-semibold text-gray-900">Confirmar exclusão</h4>
-            <p id="confirmMessage" class="text-sm text-gray-600 mt-1"></p>
-
+            <h4 id="confirmTitle" class="text-lg font-semibold text-gray-900">Confirmar ação</h4>
+            <p id="confirmMessage" class="text-sm text-gray-600 mt-1">Tem certeza?</p>
           </div>
           <button class="text-gray-400 hover:text-gray-600" onclick="window.cancelDelete()"
             aria-label="Fechar">✕</button>
         </div>
 
         <div class="mt-6 flex items-center justify-end gap-3">
-          <button type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+          <button id="confirmCancel" type="button"
+            class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
             onclick="window.cancelDelete()">Cancelar</button>
-          <button type="button" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
-            onclick="window.confirmDelete()">Excluir</button>
+          <button id="confirmPrimary" type="button"
+            class="px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+            onclick="window.confirmDelete()">Confirmar</button>
         </div>
       </div>
     </div>
   </div>
+
 
   <!-- FOOTER -->
   <footer class="mt-10 text-blue-100 bg-gradient-to-br from-blue-900 to-blue-950" role="contentinfo">

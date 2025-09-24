@@ -10,8 +10,12 @@
 
     // cache de chamados (para abrir modal pelo número)
     let sustCache = [];
+    // mantemos a lista "crua" e a filtrada
+    let sustRaw = []; // dados originais carregados
+    const norm = s => String(s ?? '')
+        .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+        .toLowerCase().trim();
 
-    // ===== EDICAO =====
     // ===== EDICAO =====
     window.editarChamado = function (numero) {
         const ch = sustCache.find(c => String(c.numero) === String(numero));
@@ -123,6 +127,22 @@
     setTimeout(attachEditHandler, 0);
     setTimeout(attachEditHandler, 300);
 
+    document.addEventListener('DOMContentLoaded', () => {
+        const proj = document.getElementById('fProjeto');
+        const dev = document.getElementById('fDev');
+        const solic = document.getElementById('fSolic');
+        const clear = document.getElementById('fClear');
+
+        const bind = el => el && el.addEventListener('input', applySustFilters);
+        bind(proj); bind(dev); bind(solic);
+
+        if (clear) clear.addEventListener('click', () => {
+            if (proj) proj.value = '';
+            if (dev) dev.value = '';
+            if (solic) solic.value = '';
+            applySustFilters();
+        });
+    });
 
     const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
@@ -235,28 +255,117 @@
                   <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.desenvolvedor)}</td>
                   <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.solicitante)}</td>
                   <td class="px-6 py-4 text-sm font-medium">
-                    <div class="action-group">
-                        <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')">
-                        <span class="action-ico">👁️</span><span>Ver</span>
-                      </a>
-                      <a href="#" onclick="editarChamado('${esc(ch.numero)}')" class="action-btn text-green-600 hover:text-green-800">
-                        <span class="action-ico">✏️</span><span>Editar</span>
-                      </a>
-                      <a href="#" onclick="concluirChamado('${esc(ch.numero)}')" class="action-btn text-emerald-600 hover:text-emerald-800">
-                        <span class="action-ico">✔️</span><span>Concluir</span>
-                        </a>
-                    </div>
-                  </td>
+  <div class="flex items-center gap-3">
+    <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')" class="btn-ico bg-[#1555D6] text-white shadow-sm" aria-label="Ver">
+      <!-- olho -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </a>
+
+    <a href="#" onclick="editarChamado('${esc(ch.numero)}')" class="btn-ico bg-white text-[#1555D6] ring-2 ring-[#1555D6]" aria-label="Editar">
+      <!-- lápis -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M12 20h9"/>
+        <path d="M16.5 3.5 20.5 7.5 7 21H3v-4L16.5 3.5z"/>
+      </svg>
+    </a>
+
+    <a href="#"
+   onclick="concluirChamado('${esc(ch.numero)}')"
+   class="btn-ico bg-[#16a34a] text-white shadow-sm"
+   aria-label="Concluir" title="Concluir">
+  <!-- check -->
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <path d="M20 6 9 17l-5-5"/>
+  </svg>
+</a>
+
+  </div>
+</td>
+
                 </tr>
               `);
 
         });
     }
+    // Concluir direto com confirmação (sem abrir o modal Ver)
     window.concluirChamado = function (numero) {
         const ch = sustCache.find(c => String(c.numero) === String(numero));
         if (!ch) return;
-        window.verChamado(ch.numero, ch.projeto, ch.status, ch.desenvolvedor, ch.solicitante, ch.observacao, ch.data_abertura, ch.data_fechamento, /*forcarEdicaoFechamento*/true);
+
+        const ask = `Concluir o chamado ${numero}?`;
+        const doFinish = async () => {
+            try {
+                const resp = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(numero)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'Concluído',
+                        data_fechamento: new Date().toISOString()
+                    })
+                });
+                if (!resp.ok) throw new Error(await resp.text());
+
+                // recarrega lista/gráficos e dá feedback
+                await loadSustentacao();
+                (typeof toast === 'function') && toast('Sucesso', `Chamado ${numero} concluído.`, 'success');
+            } catch (e) {
+                console.error(e);
+                (typeof toast === 'function') && toast('Erro', 'Não foi possível concluir o chamado.', 'error');
+            }
+        };
+
+        // usa o confirm modal global do main.js
+        if (typeof window.showConfirm === 'function') {
+            window.showConfirm(
+                `Concluir o chamado ${numero}?`,
+                doFinish,           // sua função que faz o PUT e recarrega
+                () => { },
+                {
+                    title: 'Concluir chamado',
+                    icon: '✅',
+                    confirmText: 'Concluir',
+                    confirmClass: 'bg-emerald-600 hover:bg-emerald-700',
+                    barClass: 'bg-emerald-600',   // fica verdinho no topo
+                    cancelText: 'Cancelar'
+                }
+            );
+
+        } else {
+            // fallback nativo
+            if (confirm(ask)) doFinish();
+        }
     };
+
+    function applySustFilters() {
+        const p = document.getElementById('fProjeto')?.value || '';
+        const d = document.getElementById('fDev')?.value || '';
+        const s = document.getElementById('fSolic')?.value || '';
+
+        const pN = norm(p), dN = norm(d), sN = norm(s);
+
+        const filtered = (sustRaw || []).filter(ch => {
+            const proj = norm(ch.projeto);
+            const dev = norm(ch.desenvolvedor);
+            const solic = norm(ch.solicitante);
+
+            // cada campo filtra sua coluna; vazio = ignora
+            const okProj = !pN || proj.includes(pN);
+            const okDev = !dN || dev.includes(dN);
+            const okSolic = !sN || solic.includes(sN);
+
+            return okProj && okDev && okSolic;
+        });
+
+        // atualiza cache atual e re-renderiza
+        sustCache = filtered;
+        renderTable(filtered);
+        // opcional: atualizar contagem do card da tela de Sustentação
+        const countEl = document.getElementById('sustChamadosCount');
+        if (countEl) countEl.textContent = String(filtered.length);
+    }
 
     // abrir modal por número usando o cache
     window.verChamadoByNumero = function (numero) {
@@ -524,8 +633,13 @@
             if (countEl) countEl.textContent = String(list.length);
             if (typeof window.applySustCard === 'function') window.applySustCard(list.length);
 
-            renderTable(list);
-            ensureCharts(list);
+            // guarda a lista crua e aplica filtros
+            sustRaw = list;
+            applySustFilters();     // renderiza com os filtros atuais (ou todos, se vazios)
+
+            // gráficos continuam usando a base completa
+            ensureCharts(sustRaw);
+
 
         } catch (e) {
             console.error(e);
