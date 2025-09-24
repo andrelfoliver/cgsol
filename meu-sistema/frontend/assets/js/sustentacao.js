@@ -591,6 +591,7 @@
                     },
                     x: {
                         ticks: { maxRotation: 0, minRotation: 0 },
+                        display: false,
                         grid: { display: false }
                     }
                 }

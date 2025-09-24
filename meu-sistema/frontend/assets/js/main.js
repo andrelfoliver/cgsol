@@ -127,6 +127,44 @@
       document.addEventListener('DOMContentLoaded', fn, { once: true });
     } else fn();
   }
+  // ========= destaque visual dos cards CODES (robusto, sem depender do Tailwind em runtime) =========
+  function setCodesCardHighlight(mode /* 'fabrica' | 'sust' | null */) {
+    // util: escolhe o candidato visível, preferindo o que está na aba CODES
+    const pickVisible = (selector) => {
+      const nodes = Array.from(document.querySelectorAll(selector));
+      // 1) prioriza o que está dentro de #codesPage e não está escondido
+      const inCodes = nodes.find(el => el.closest('#codesPage') && !el.closest('.hidden'));
+      if (inCodes) return inCodes;
+      // 2) qualquer visível na tela
+      const visible = nodes.find(el => el.offsetParent !== null);
+      if (visible) return visible;
+      // 3) fallback: primeiro
+      return nodes[0] || null;
+    };
+
+    // Na Fábrica (há 2 no DOM: Home e CODES) → escolha o visível/da aba CODES
+    const fabr = pickVisible('[data-card="codes:desenvolvimento"]');
+
+    // Sustentação (só existe na aba CODES, mas deixo robusto)
+    const sust = pickVisible('[data-card="codes:sustentacao"], [data-card="codes:sustentação"]');
+
+    const clear = el => el && el.classList.remove('card-hi', 'card-hi--fabrica', 'card-hi--sust');
+    const add = (el, cls) => el && (el.classList.add('card-hi'), el.classList.add(cls));
+
+    clear(fabr); clear(sust);
+
+    if (mode === 'fabrica') add(fabr, 'card-hi--fabrica');
+    else if (mode === 'sust') add(sust, 'card-hi--sust');
+    // se mode === null, fica tudo limpo
+  }
+
+
+  // expõe p/ showPage e outros pontos chamarem
+  window.setCodesCardHighlight = setCodesCardHighlight;
+
+  // 🔓 torna pública para ser chamada pelo showPage do HTML
+  window.setCodesCardHighlight = setCodesCardHighlight;
+
 
   // ========= helpers DOM =========
   function byId(id) { return document.getElementById(id); }
@@ -1154,7 +1192,7 @@
   function filterProjects(coordenacao, categoria) {
     console.log("Filtro acionado:", coordenacao, categoria);
 
-    // 👇 sempre que filtrar CODES (fábrica), volta o modo p/ 'fabrica'
+    // sempre que filtrar CODES (fábrica), volta o modo p/ 'fabrica'
     if ((coordenacao || '').toUpperCase() === 'CODES') {
       window.__codesView = 'fabrica';
     }
@@ -1162,21 +1200,20 @@
     // Esconde Sustentação ao aplicar filtros da fábrica
     document.getElementById("codesSustentacaoWrapper")?.classList.add("hidden");
 
-    // Mostra a tabela padrão
+    // Mostra a tabela padrão + gráficos da fábrica
     document.getElementById("tableView")?.classList.remove("hidden");
-    // 👇 se estou filtrando CODES (cards da fábrica), reexibe os gráficos
     if ((coordenacao || '').toUpperCase() === 'CODES') {
-      // mostra os wrappers dos gráficos
       document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
       document.getElementById('codesInternWrapper')?.classList.remove('hidden');
 
-      // (re)desenha os gráficos usando o cache atual
       if (typeof drawCodesSprintsChart === 'function') drawCodesSprintsChart(cacheProjetos);
       if (typeof drawCodesInternChart === 'function') drawCodesInternChart(cacheProjetos);
 
-      // se quiser, força um resize/update caso já existam instâncias
-      try { chartCodes?.resize?.(); chartCodes?.update?.(); } catch (e) { }
-      try { chartIntern?.resize?.(); chartIntern?.update?.(); } catch (e) { }
+      try { window._charts?.codes?.resize?.(); window._charts?.codes?.update?.(); } catch { }
+      try { window._charts?.intern?.resize?.(); window._charts?.intern?.update?.(); } catch { }
+
+      // ⭐ reforça o destaque “Na Fábrica” quando o usuário filtra pelos cards da fábrica
+      setCodesCardHighlight('fabrica');
     }
 
     // Filtra os projetos
@@ -1209,13 +1246,13 @@
       });
     }
 
-    // Renderiza usando o layout oficial (barra, RAG, sprints, etc.)
+    // Renderiza usando o layout oficial
     const mapTbody = {
       CODES: "codesTableBody",
       COSET: "cosetTableBody",
       CGOD: "cgodTableBody"
     };
-    if (mapTbody[coordenacao.toUpperCase()]) {
+    if (mapTbody[(coordenacao || '').toUpperCase()]) {
       renderCoordTable(coordenacao.toUpperCase(), mapTbody[coordenacao.toUpperCase()], filtrados);
     }
   }
@@ -1225,6 +1262,8 @@
   function showSustentacao() {
     // 👇 entra em modo Sustentação ANTES de navegar
     window.__codesView = 'sustentacao';
+    setCodesCardHighlight('sust');
+
 
     // vai para a aba CODES
     const btn = (typeof window.getNavButtonFor === 'function') ? getNavButtonFor('codes') : null;

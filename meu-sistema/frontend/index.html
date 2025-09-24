@@ -9,6 +9,47 @@
 
 
   <link rel="stylesheet" href="assets/css/style.css?v=2">
+  <style id="cardHiStyles">
+    /* base do destaque: glow suave + leve escala */
+    .card-hi {
+      position: relative;
+      transform: translateZ(0);
+      /* evita blur em textos */
+      transition: box-shadow .25s ease, transform .15s ease, background .25s ease;
+    }
+
+    .card-hi::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 0.75rem;
+      /* equivalente ao rounded-lg */
+      pointer-events: none;
+    }
+
+    /* variação FÁBRICA (azul): sombra suave + barra esquerda */
+    .card-hi--fabrica {
+      background: linear-gradient(180deg, #f8fbff, #ffffff);
+      box-shadow: 0 8px 28px rgba(21, 85, 214, .15);
+      transform: scale(1.005);
+    }
+
+    .card-hi--fabrica::before {
+      border-left: 6px solid #1555D6;
+    }
+
+    /* variação SUSTENTAÇÃO (âmbar/banana): sombra quente + barra esquerda */
+    .card-hi--sust {
+      background: linear-gradient(180deg, #fffaf0, #ffffff);
+      box-shadow: 0 8px 28px rgba(245, 158, 11, .18);
+      transform: scale(1.005);
+    }
+
+    .card-hi--sust::before {
+      border-left: 6px solid #f59e0b;
+    }
+  </style>
+
 
 
 </head>
@@ -1511,35 +1552,44 @@
           }
 
           // CODES
-          // CODES
           if (pageId === 'codes') {
             const isSust = window.__codesView === 'sustentacao';
 
             if (isSust) {
+              // 👇 modo Sustentação
               document.getElementById('codesSustentacaoWrapper')?.classList.remove('hidden');
+
+              // oculta tudo que é da fábrica
               document.getElementById('tableView')?.classList.add('hidden');
               document.getElementById('codesSprintsWrapper')?.classList.add('hidden');
               document.getElementById('codesInternWrapper')?.classList.add('hidden');
 
+              // mata gráficos da fábrica (evita “fantasmas”)
+              try { window._charts?.codes?.destroy?.(); } catch { }
+              try { window._charts?.intern?.destroy?.(); } catch { }
 
+              // carrega os chamados
+              if (typeof loadSustentacao === 'function') {
+                setTimeout(() => loadSustentacao(), 0);
+              }
             } else {
-              // 👇 Modo Fábrica: mostra tabela + gráficos
+              // 👇 modo Fábrica
               document.getElementById('codesSustentacaoWrapper')?.classList.add('hidden');
-
               document.getElementById('tableView')?.classList.remove('hidden');
               document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
               document.getElementById('codesInternWrapper')?.classList.remove('hidden');
 
+              // redesenha gráficos com o cache atual (se existir)
+              const data = Array.isArray(window.cacheProjetos) ? window.cacheProjetos : [];
               if (typeof drawCodesSprintsChart === 'function' && data.length) drawCodesSprintsChart(data);
               if (typeof drawCodesInternChart === 'function' && data.length) drawCodesInternChart(data);
 
-              try { chartCodes?.resize?.(); chartCodes?.update?.(); } catch (e) { }
-              try { chartIntern?.resize?.(); chartIntern?.update?.(); } catch (e) { }
+              try { window._charts?.codes?.resize?.(); window._charts?.codes?.update?.(); } catch { }
+              try { window._charts?.intern?.resize?.(); window._charts?.intern?.update?.(); } catch { }
             }
-            // 👇 força o desenho dos gráficos quando o container já está visível
-            if (typeof loadSustentacao === 'function') {
-              setTimeout(() => loadSustentacao(), 0);
-            }
+
+            // ⭐ destaque visual do card correto: “Na Fábrica” apenas quando NÃO é Sustentação
+            window.setCodesCardHighlight && window.setCodesCardHighlight(isSust ? 'sust' : 'fabrica');
           }
 
 
