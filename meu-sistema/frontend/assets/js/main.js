@@ -909,13 +909,20 @@
     }
 
     // Status (barras)
+    // --- Status (BARRAS HORIZONTAIS) ---
     const statusCanvas = byId('statusChart');
     if (statusCanvas && window.Chart) {
-      // Status dos Projetos (barras)
+      // calcula altura ideal (48px por categoria, mínimo 260px)
+      const statusLabels = Object.keys(statusData);
+      const wrapper = statusCanvas.closest('.chart-wrapper');
+      if (wrapper) wrapper.style.height = Math.max(260, statusLabels.length * 48) + 'px';
+
+      if (chartStatus) chartStatus.destroy();
+
       chartStatus = new Chart(statusCanvas.getContext('2d'), {
         type: 'bar',
         data: {
-          labels: Object.keys(statusData),
+          labels: statusLabels,
           datasets: [{
             data: Object.values(statusData),
             backgroundColor: ['#6b7280', '#16a34a', '#dc2626', '#2563eb', '#f59e0b'],
@@ -926,31 +933,31 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          indexAxis: 'y',              // 👈 horizontal
+          layout: { padding: { right: 8, left: 8, bottom: 4, top: 4 } },
           plugins: { legend: { display: false } },
           scales: {
-            x: {
-              ticks: {
-                maxRotation: 0,
-                minRotation: 0,
-                autoSkip: false,
-                align: 'center'
-              },
-              grid: {
-                display: false   // 🔴 remove grade vertical
-              }
-            },
             y: {
+              ticks: {
+                autoSkip: false,
+                padding: 6,
+                font: { size: 12 },   // rótulos legíveis
+                crossAlign: 'near'
+              },
+              grid: { display: false } // sem linhas verticais
+            },
+            x: {
               beginAtZero: true,
-              grid: {
-                color: '#f3f4f6' // mantém só grade horizontal clara
-              }
+              grid: { color: '#f3f4f6' },
+              ticks: { precision: 0 }
             }
-          }
+          },
+          categoryPercentage: 0.8,
+          barPercentage: 0.9
         }
       });
-
-
     }
+
   }
 
   // ========= Gráficos por aba =========

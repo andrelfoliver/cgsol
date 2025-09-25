@@ -66,16 +66,20 @@
 
   <!-- HEADER -->
   <header class="bg-blue-900 text-white shadow">
-    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-baseline space-x-3">
+    <div class="container mx-auto px-4 py-3 flex items-center gap-4">
+      <!-- 1) LOGO à ESQUERDA -->
+      <img src="assets/img/mte-logo-azul-transp.png" alt="Governo Federal"
+        class="h-10 md:h-16 w-auto object-contain shrink-0" />
+
+      <!-- 2) TÍTULO (ocupa o meio e alinha à direita) -->
+      <div class="flex-1 text-center">
         <span class="text-2xl font-extrabold tracking-tight">SIGSOL · Sistema de Gestão e Monitoramento</span>
       </div>
-      <div class="flex items-center space-x-4">
-        <span class="text-blue-200 hidden md:inline">👤 Admin</span>
-        <img src="assets/img/mte-logo-azul-transp.png" alt="Governo Federal"
-          class="h-9 md:h-14 w-auto object-contain" />
-      </div>
+
+      <!-- 3) ADMIN no CANTO MAIS À DIREITA -->
+      <span class="text-blue-200 hidden md:inline whitespace-nowrap">👤 Admin</span>
     </div>
+
 
     <!-- NAV -->
     <nav class="bg-white border-t border-blue-800/20">
@@ -218,10 +222,12 @@
         <!-- Barras -->
         <div class="bg-white rounded-lg shadow-md p-6">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">Status dos Projetos</h3>
-          <div class="chart-wrapper h-56">
+          <div class="chart-wrapper">
             <canvas id="statusChart"></canvas>
           </div>
         </div>
+
+
 
       </div>
 
@@ -1405,7 +1411,12 @@
         <section class="md:w-2/12 md:px-8 mb-8 md:mb-0">
           <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Contato</h5>
           <ul class="space-y-2 text-sm">
-            <li class="opacity-80">atendimento.cgsol@trabalho.gov.br</li>
+            <li class="opacity-80 block max-w-full truncate" title="atendimento.cgsol@trabalho.gov.br">
+              <a href="mailto:atendimento.cgsol@trabalho.gov.br" class="hover:underline">
+                atendimento.cgsol@trabalho.gov.br
+              </a>
+            </li>
+
             <li class="opacity-80">Seg–Sex • 9h–18h</li>
           </ul>
         </section>
