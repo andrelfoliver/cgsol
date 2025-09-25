@@ -654,7 +654,8 @@
 
 
     // Totais Home
-    setText('totalProjetos', list.length);
+    const totalVG = (codes.length + (sustentacaoTotal ?? 0)) + coset.length + cgod.length;
+    setText('totalProjetos', totalVG);
     setText('projetosCodes', codes.length + (sustentacaoTotal ?? 0));
     setText('projetosCoset', coset.length);
     setText('projetosCgod', cgod.length);

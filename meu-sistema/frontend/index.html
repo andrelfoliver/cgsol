@@ -1405,7 +1405,7 @@
         <section class="md:w-2/12 md:px-8 mb-8 md:mb-0">
           <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Contato</h5>
           <ul class="space-y-2 text-sm">
-            <li class="opacity-80">contato@mte.gov.br</li>
+            <li class="opacity-80">atendimento.cgsol@trabalho.gov.br</li>
             <li class="opacity-80">Seg–Sex • 9h–18h</li>
           </ul>
         </section>
@@ -1815,7 +1815,12 @@
             var el;
             el = document.getElementById('projetosCoset'); if (el) el.textContent = getCount('coset');
             el = document.getElementById('projetosCgod'); if (el) el.textContent = getCount('cgod');
-            el = document.getElementById('totalProjetos'); if (el) el.textContent = (data && data.length) ? data.length : 0;
+            const codesCount = getCount('codes');
+            const cosetCount = getCount('coset');
+            const cgodCount = getCount('cgod');
+            const totalVG = codesCount + cosetCount + cgodCount;
+            el = document.getElementById('totalProjetos');
+            if (el) el.textContent = totalVG;
 
             // Somatório correto (base + sustentação) após render:
             if (typeof window.updateCodesTotals === 'function') window.updateCodesTotals();
