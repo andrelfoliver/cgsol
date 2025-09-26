@@ -721,6 +721,129 @@
         return isNaN(d.getTime()) ? null : d;
     }
 
+    // ---------- EXPORTS E UTILITÁRIOS PARA main.js ----------
+    // expõe render da tabela e dos charts
+    window.renderSustentacaoTable = renderTable;
+    window.renderSustCharts = (items) => { drawStatusChart(items); drawProjetosChart(items); };
+
+    // filtra sustentacao por status (usa normalização interna)
+    window.filterSustByStatus = function (statusLike) {
+        if (!statusLike) {
+            sustCache = Array.from(sustRaw);
+            renderTable(sustCache);
+            ensureCharts(sustCache);
+            return;
+        }
+        const sN = String(statusLike || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+        const filtered = (sustRaw || []).filter(ch => {
+            const st = String(ch.status || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+            return st.includes(sN);
+        });
+        sustCache = filtered;
+        renderTable(filtered);
+        ensureCharts(filtered);
+        // atualiza contador do painel de sustentação
+        const countEl = document.getElementById('sustChamadosCount');
+        if (countEl) countEl.textContent = String(filtered.length);
+    };
+
+    // calcula e atualiza os 8 cards (IDs esperados — ajuste se seu HTML usar outros IDs)
+    function updateSustCards(list = sustRaw) {
+        const counters = {
+            foraDoPrazo: 0,
+            aDesenvolver: 0,
+            pendente: 0,
+            emDesenvolvimento: 0,
+            emHomologacao: 0,
+            suspenso: 0,
+            emTestes: 0,
+            concluido: 0
+        };
+
+        (list || []).forEach(ch => {
+            const s = normStatusKey(ch.status || '');
+            if (s.includes('fora')) counters.foraDoPrazo++;
+            else if (s.includes('a desenvolver') || s.startsWith('a desenvolv')) counters.aDesenvolver++;
+            else if (s.includes('pendente')) counters.pendente++;
+            else if (s.includes('em desenvolvimento') || s.includes('desenvolvimento')) counters.emDesenvolvimento++;
+            else if (s.includes('em homolog') || s.includes('homolog')) counters.emHomologacao++;
+            else if (s.includes('suspens')) counters.suspenso++;
+            else if (s.includes('em testes') || s.includes('testes')) counters.emTestes++;
+            else if (s.includes('conclu')) counters.concluido++;
+            else {
+                // fallback: conta como pendente se não souber
+                counters.pendente++;
+            }
+        });
+
+        // mapeie para os IDs do DOM (ajuste se necessário)
+        const idMap = {
+            foraDoPrazo: 'sust-count-fora-do-prazo',
+            aDesenvolver: 'sust-count-a-desenvolver',
+            pendente: 'sust-count-pendente',
+            emDesenvolvimento: 'sust-count-em-desenvolvimento',
+            emHomologacao: 'sust-count-em-homologacao',
+            suspenso: 'sust-count-suspenso',
+            emTestes: 'sust-count-em-testes',
+            concluido: 'sust-count-concluido'
+        };
+
+        for (const k in idMap) {
+            const el = document.getElementById(idMap[k]);
+            if (el) el.textContent = String(counters[k] || 0);
+        }
+
+        // atualiza o contador total do card principal
+        const totalEl = document.getElementById('home-count-codes-sustentacao') || document.getElementById('sustChamadosCount');
+        if (totalEl) totalEl.textContent = String((list || []).length);
+
+        return counters;
+    }
+
+    // expõe para que main.js possa chamar quando abrir a tela de sustentação
+    window.updateSustCards = updateSustCards;
+
+    // tenta ligar os handlers de clique dos sub-cards (se existirem no DOM)
+    function bindSustCardClicks() {
+        const map = {
+            'sust-count-fora-do-prazo': 'fora do prazo',
+            'sust-count-a-desenvolver': 'a desenvolver',
+            'sust-count-pendente': 'pendente',
+            'sust-count-em-desenvolvimento': 'em desenvolvimento',
+            'sust-count-em-homologacao': 'em homologacao',
+            'sust-count-suspenso': 'suspenso',
+            'sust-count-em-testes': 'em testes',
+            'sust-count-concluido': 'concluido'
+        };
+        for (const id in map) {
+            const el = document.getElementById(id);
+            if (!el) continue;
+            // evita múltiplos binds
+            if (el.__bound) continue;
+            el.__bound = true;
+            el.style.cursor = 'pointer';
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.filterSustByStatus(map[id]);
+            });
+        }
+    }
+
+    // tenta bind após o DOM estar pronto (e de novo em 300ms caso o HTML seja injetado dinamicamente)
+    document.addEventListener('DOMContentLoaded', bindSustCardClicks);
+    setTimeout(bindSustCardClicks, 300);
+    setTimeout(bindSustCardClicks, 800);
+
+    // quando os dados mudarem (após loadSustentacao), atualiza os cards automaticamente
+    const origEnsureCharts = ensureCharts;
+    ensureCharts = function (list) {
+        // atualiza cards mesmo se charts ainda não puderem ser desenhados
+        try { updateSustCards(list || sustRaw); } catch (e) { console.warn(e); }
+        origEnsureCharts(list);
+    };
+
+    // helper simples para main.js: mostra todos os chamados (sem filtro)
+    window.showAllSust = function () { window.filterSustByStatus(''); };
 
     window.loadSustentacao = loadSustentacao;
 })();
