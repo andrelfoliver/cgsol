@@ -24,6 +24,8 @@ class Projeto(db.Model):
     rag = db.Column(db.String(20))
     riscos = db.Column(db.Text)
     qualidade = db.Column(db.Integer)
+    internalizacao = db.Column(db.Boolean, default=False)
+
 
     def to_dict(self):
         return {
@@ -44,7 +46,9 @@ class Projeto(db.Model):
             'equipe': self.equipe,
             'rag': self.rag,
             'riscos': self.riscos,
-            'qualidade': self.qualidade
+            'qualidade': self.qualidade,
+            'internalizacao': self.internalizacao,
+
         }
 class Andamento(db.Model):
     __tablename__ = 'andamentos'
@@ -62,3 +66,35 @@ class Andamento(db.Model):
             'data': self.data.isoformat() if self.data else None,
             'descricao': self.descricao
         }
+class PDTIAction(db.Model):
+    __tablename__ = 'pdti_acoes'
+
+    id = db.Column(db.String(20), primary_key=True)   # Ex: AC.SDF.01
+    descricao = db.Column(db.Text, nullable=False)
+    situacao = db.Column(db.String(50), nullable=False, default="Não iniciada")
+    tipo = db.Column(db.String(10), nullable=False)   # SDF, SDD, SDS
+    data_conclusao = db.Column(db.Date, nullable=True)  # ✅ novo campo
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'descricao': self.descricao,
+            'situacao': self.situacao,
+            'tipo': self.tipo,
+            'data_conclusao': self.data_conclusao.isoformat() if self.data_conclusao else None
+        }
+
+class SustentacaoChamado(db.Model):
+    __tablename__ = "sustentacao_chamados"
+
+    id = db.Column(db.Integer, primary_key=True)
+    numero_chamado = db.Column(db.String(50), unique=True, nullable=False)
+    projeto = db.Column(db.String(100), nullable=False)
+    desenvolvedor = db.Column(db.String(100))
+    data_chamado = db.Column(db.DateTime)
+    descricao = db.Column(db.Text)
+    solicitante = db.Column(db.String(150))
+    status = db.Column(db.String(50))
+    observacao = db.Column(db.Text)
+    criado_em = db.Column(db.DateTime, default=db.func.now())
+    atualizado_em = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())

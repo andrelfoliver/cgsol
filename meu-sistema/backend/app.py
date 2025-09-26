@@ -7,6 +7,11 @@ from database import db, Projeto, Andamento
 app = Flask(__name__, static_url_path="/api")
 CORS(app)
 
+# modelo sustentacao_chamados (precisa estar definido em database.py)
+from database import SustentacaoChamado  
+
+
+
 # ====== CONFIG ======
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@db:5432/projetos_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -15,13 +20,108 @@ db.init_app(app)
 with app.app_context():
     print("Campos do modelo Projeto:", [c.name for c in Projeto.__table__.columns])
 
-def _parse_date(s):
+from datetime import date, datetime
+
+def _parse_date(s: str | None):
     try:
-        return date.fromisoformat(s) if s else None
+        return date.fromisoformat((s or '').split('T')[0]) if s else None
     except Exception:
         return None
 
+def _parse_datetime(s: str | None):
+    """Aceita '2025-09-23', '2025-09-23T14:30', ou '...Z'"""
+    try:
+        if not s:
+            return None
+        s = s.replace('Z', '+00:00')   # ISO com Z
+        dt = datetime.fromisoformat(s)
+        return dt.replace(tzinfo=None) # salva naive (sem tz)
+    except Exception:
+        return None
+
+
 # ====== ROTAS ======
+@app.route('/api/sustentacao', methods=['GET'])
+def listar_sustentacao():
+    chamados = SustentacaoChamado.query.order_by(SustentacaoChamado.data_chamado.desc()).all()
+    return jsonify([{
+        "numero_chamado": c.numero_chamado,
+        "projeto": c.projeto,
+        "desenvolvedor": c.desenvolvedor,
+        "data_chamado": c.data_chamado.isoformat() if c.data_chamado else None,
+        "descricao": c.descricao,
+        "solicitante": c.solicitante,
+        "status": c.status,
+        "observacao": c.observacao
+    } for c in chamados])
+
+# ========= SUSTENTAÇÃO: CRUD =========
+
+# Criar (opcional)
+@app.route('/api/sustentacao', methods=['POST'])
+def criar_chamado_sustentacao():
+    data = request.get_json() or {}
+    app.logger.info("POST /api/sustentacao payload=%s", data)
+
+    novo = SustentacaoChamado(
+        numero_chamado = data.get('numero_chamado'),
+        projeto        = data.get('projeto'),
+        desenvolvedor  = data.get('desenvolvedor'),
+        data_chamado   = _parse_datetime(data.get('data_chamado')),  # <- AQUI
+        descricao      = data.get('descricao'),
+        solicitante    = data.get('solicitante'),
+        status         = data.get('status'),
+        observacao     = data.get('observacao')
+    )
+    db.session.add(novo)
+    db.session.commit()
+    return jsonify({
+        "numero_chamado": novo.numero_chamado, "projeto": novo.projeto,
+        "desenvolvedor": novo.desenvolvedor,
+        "data_chamado": novo.data_chamado.isoformat() if novo.data_chamado else None,
+        "descricao": novo.descricao, "solicitante": novo.solicitante,
+        "status": novo.status, "observacao": novo.observacao
+    }), 201
+
+
+# Atualizar por número do chamado (é o que o front usa)
+@app.route('/api/sustentacao/<string:numero>', methods=['PUT'])
+def editar_chamado_sustentacao(numero):
+    data = request.get_json() or {}
+    app.logger.info("PUT /api/sustentacao/%s payload=%s", numero, data)
+
+    ch = SustentacaoChamado.query.filter_by(numero_chamado=numero).first_or_404()
+
+    try:
+        for fld in ('projeto','desenvolvedor','descricao','solicitante','status','observacao'):
+            if fld in data:
+                setattr(ch, fld, data[fld])
+
+        if 'data_chamado' in data:
+            ch.data_chamado = _parse_datetime(data.get('data_chamado'))  # <- AQUI
+
+        db.session.commit()
+        return jsonify({
+            "numero_chamado": ch.numero_chamado, "projeto": ch.projeto,
+            "desenvolvedor": ch.desenvolvedor,
+            "data_chamado": ch.data_chamado.isoformat() if ch.data_chamado else None,
+            "descricao": ch.descricao, "solicitante": ch.solicitante,
+            "status": ch.status, "observacao": ch.observacao
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception("Erro ao atualizar chamado de sustentação")
+        return jsonify({'erro': str(e)}), 400
+
+
+# Excluir por número (opcional)
+@app.route('/api/sustentacao/<string:numero>', methods=['DELETE'])
+def deletar_chamado_sustentacao(numero):
+    ch = SustentacaoChamado.query.filter_by(numero_chamado=numero).first_or_404()
+    db.session.delete(ch)
+    db.session.commit()
+    return jsonify({'mensagem': 'Chamado excluído com sucesso'}), 200
+
 # Editar andamento
 @app.route('/api/andamentos/<int:andamento_id>', methods=['PUT'])
 def editar_andamento(andamento_id):
@@ -38,6 +138,16 @@ def editar_andamento(andamento_id):
         db.session.rollback()
         app.logger.exception("Erro ao atualizar andamento")
         return jsonify({'erro': str(e)}), 400
+
+def _parse_bool(v):
+    if isinstance(v, bool):
+        return v
+    if v is None:
+        return False
+    if isinstance(v, (int, float)):
+        return bool(v)
+    s = str(v).strip().lower()
+    return s in ('1', 'true', 't', 'yes', 'y', 'on', 'sim')
 
 
 # Excluir andamento
@@ -87,6 +197,8 @@ def criar_projeto():
         'descricao':   data.get('descricao'),
         'inicio':      _parse_date(data.get('inicio')),
         'fim':         _parse_date(data.get('fim')),
+        'internalizacao': _parse_bool(data.get('internalizacao', False)),
+
 
         # extras
         'prioridade':        data.get('prioridade'),
@@ -126,6 +238,9 @@ def editar_projeto(id):
             if field in data:
                 setattr(p, field, data[field])
 
+        if 'internalizacao' in data:
+            p.internalizacao = _parse_bool(data['internalizacao'])
+
         if 'inicio' in data: p.inicio = _parse_date(data['inicio'])
         if 'fim' in data:    p.fim    = _parse_date(data['fim'])
 
@@ -148,6 +263,73 @@ def deletar_projeto(id):
         db.session.rollback()
         app.logger.exception("Erro ao deletar projeto")
         return jsonify({'erro': str(e)}), 400
+
+from database import db, PDTIAction
+
+# Listar
+@app.route("/api/pdti", methods=["GET"])
+def listar_pdti():
+    itens = PDTIAction.query.order_by(PDTIAction.id).all()
+    return jsonify([a.to_dict() for a in itens])
+
+# Criar
+@app.route("/api/pdti", methods=["POST"])
+def criar_pdti():
+    data = request.get_json() or {}
+    situacao = data.get("situacao", "Não iniciada")
+
+    novo = PDTIAction(
+        id=data.get("id"),
+        descricao=data.get("descricao"),
+        situacao=situacao,
+        tipo=data.get("tipo"),
+        data_conclusao=date.today() if situacao == "Concluída" else None
+    )
+
+    db.session.add(novo)
+    db.session.commit()
+    return jsonify(novo.to_dict()), 201
+
+    data = request.get_json() or {}
+    novo = PDTIAction(
+        id=data.get("id"),
+        descricao=data.get("descricao"),
+        situacao=data.get("situacao", "Não iniciada"),
+        tipo=data.get("tipo"),
+    )
+    db.session.add(novo)
+    db.session.commit()
+    return jsonify(novo.to_dict()), 201
+
+# Editar
+@app.route("/api/pdti/<string:acao_id>", methods=["PUT"])
+def editar_pdti(acao_id):
+    acao = PDTIAction.query.get_or_404(acao_id)
+    data = request.get_json() or {}
+
+    if "descricao" in data:
+        acao.descricao = data["descricao"]
+    if "tipo" in data:
+        acao.tipo = data["tipo"]
+
+    if "situacao" in data:
+        acao.situacao = data["situacao"]
+        if acao.situacao == "Concluída" and not acao.data_conclusao:
+            acao.data_conclusao = date.today()
+        elif acao.situacao != "Concluída":
+            acao.data_conclusao = None
+
+    db.session.commit()
+    return jsonify(acao.to_dict())
+
+
+# Excluir
+@app.route("/api/pdti/<string:acao_id>", methods=["DELETE"])
+def deletar_pdti(acao_id):
+    acao = PDTIAction.query.get_or_404(acao_id)
+    db.session.delete(acao)
+    db.session.commit()
+    return jsonify({"mensagem": "Ação excluída com sucesso"})
 
 if __name__ == '__main__':
     with app.app_context():
