@@ -227,127 +227,233 @@
   // ----------------- INJETAR / RESTAURAR TOP CARDS (SUSTENTACAO) -----------------
 
   // Mapa de ícones (SVG) por chave - evita repetição e facilita manutenção
+  // Mapa de ícones (SVG) exclusivos por status (linha fina, 24~28px)
   const SUST_ICONS = {
-    'fora-prazo': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M12 7v6l4 2" stroke="#ef4444" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="#ef4444" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    'concluido': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M20 6L9 17l-5-5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    'a-desenvolver': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M3 12h18" stroke="#3b82f6" stroke-width="1.6" stroke-linecap="round"/><path d="M12 3v18" stroke="#3b82f6" stroke-width="1.6" stroke-linecap="round"/></svg>`,
-    'pendente': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M12 2v10l3 3" stroke="#f59e0b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#f59e0b" stroke-width="1.6"/></svg>`,
-    'em-dev': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden><rect x="3" y="7" width="18" height="11" rx="2" stroke="#10b981" stroke-width="1.6"/><path d="M7 11h10" stroke="#10b981" stroke-width="1.6"/></svg>`,
-    'homologacao': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M3 12h18" stroke="#8b5cf6" stroke-width="1.6"/><path d="M12 3v18" stroke="#8b5cf6" stroke-width="1.6"/></svg>`,
-    'suspenso': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M6 6h12v12H6z" stroke="#6b7280" stroke-width="1.6"/></svg>`,
-    'em-testes': `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M4 7h16v10H4z" stroke="#6366f1" stroke-width="1.6"/><path d="M8 11h8" stroke="#6366f1" stroke-width="1.6"/></svg>`
+    'fora-prazo': `
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="#ef4444" stroke-width="1.8"/>
+      <path d="M12 7v5l3 2" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+
+    'a-desenvolver': `
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M12 5v14M5 12h14" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>`,
+
+    'pendente': `
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="#f59e0b" stroke-width="1.8"/>
+      <path d="M12 8v5" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="12" cy="16" r="1.2" fill="#f59e0b"/>
+    </svg>`,
+
+    'em-dev': `
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="6" width="18" height="12" rx="2" stroke="#10b981" stroke-width="1.8"/>
+      <path d="M8 12l-2 2 2 2M16 12l2 2-2 2" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+
+    'homologacao': `
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="4" y="4" width="16" height="16" rx="2" stroke="#8b5cf6" stroke-width="1.8"/>
+      <path d="M8 12l3 3 5-5" stroke="#8b5cf6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+
+    'suspenso': `
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="5" y="5" width="14" height="14" rx="2" stroke="#6b7280" stroke-width="1.8"/>
+      <path d="M9 8v8M15 8v8" stroke="#6b7280" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>`,
+
+    'em-testes': `
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M7 4h10M9 4v6l-2 3v3a4 4 0 0 0 4 4h2a4 4 0 0 0 4-4v-3l-2-3V4" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+
+    'concluido': `
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M20 6L9 17l-5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+
+    // fallback para chaves desconhecidas
+    'default': `
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="11" width="4" height="8" rx="1" stroke="#6b7280" stroke-width="1.6"/>
+      <rect x="10" y="7" width="4" height="12" rx="1" stroke="#6b7280" stroke-width="1.6"/>
+      <rect x="17" y="4" width="4" height="15" rx="1" stroke="#6b7280" stroke-width="1.6"/>
+    </svg>`
   };
+
+  // Usa as chaves do SUST_ICONS sem prefixo; aceita "sust-<chave>"
+  function setIconForCard(container, key) {
+    const k = String(key || '').replace(/^sust-/, '');
+    const svg = SUST_ICONS[k] || SUST_ICONS['default'];
+    if (!svg) return;
+
+    const left = container.querySelector('.flex.items-center > div');
+    if (!left) return;
+
+    left.innerHTML = '';
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'icon-wrap h-12 w-12 rounded-full flex items-center justify-center bg-gray-100 text-gray-600';
+    iconWrap.innerHTML = svg;
+    left.appendChild(iconWrap);
+  }
+
+
+
 
   // Re-usa o estado global existente (garante compatibilidade)
   window.__sustTopState = window.__sustTopState || { injected: false, clones: [], originals: {} };
 
   const SUST_TOP_ORDER = [
-    ['fora-prazo', 'Fora do Prazo'],
-    ['a-desenvolver', 'A Desenvolver'],
-    ['pendente', 'Pendente'],
-    ['em-dev', 'Em Dev.'],
-    ['homologacao', 'Em Homologação'],
-    ['suspenso', 'Suspenso'],
-    ['em-testes', 'Em Testes'],
-    ['concluido', 'Concluído']
+    ['sust-fora-prazo', 'Fora do Prazo'],
+    ['sust-a-desenvolver', 'A Desenvolver'],
+    ['sust-pendente', 'Pendente'],
+    ['sust-em-dev', 'Em Dev.'],
+    ['sust-homologacao', 'Em Homologação'],
+    ['sust-suspenso', 'Suspenso'],
+    ['sust-em-testes', 'Em Testes'],
+    ['sust-concluido', 'Concluído']
   ];
 
-  // injeta/ajusta os cards do topo para o modo Sustentação
+
   function injectSustTopCards(itens) {
     try {
-      const list = Array.isArray(itens) ? itens : [];
-      const parentTemplate = document.querySelector('#codesPage [data-card^="codes:"]') || document.querySelector('[data-card^="codes:"]');
-      const parent = parentTemplate ? parentTemplate.parentElement : document;
+      window.__sustTopState = window.__sustTopState || { injected: false, clones: [], originals: {} };
 
-      // helpers
+      const ORDER = (window.SUST_TOP_ORDER && Array.isArray(window.SUST_TOP_ORDER))
+        ? window.SUST_TOP_ORDER
+        : [
+          ['sust-fora-prazo', 'Fora do Prazo'],
+          ['sust-a-desenvolver', 'A Desenvolver'],
+          ['sust-pendente', 'Pendente'],
+          ['sust-em-dev', 'Em Dev.'],
+          ['sust-homologacao', 'Em Homologação'],
+          ['sust-suspenso', 'Suspenso'],
+          ['sust-em-testes', 'Em Testes'],
+          ['sust-concluido', 'Concluído']
+        ];
+
+      const list = Array.isArray(itens) ? itens : [];
+      window._lastSustItems = list;
+
       const normStr = s => (String(s || '')).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      const isOverdue = (it) => {
+      const isOverdue = it => {
         const now = Date.now();
         for (const k of Object.keys(it || {})) {
-          if (/(prazo|due|deadline|venc|date|data|termino|conclusao)/.test(String(k).toLowerCase())) {
-            const d = new Date(it[k]); if (!isNaN(d) && d.getTime() < now) return true;
+          const nk = String(k).toLowerCase();
+          if (/(prazo|due|deadline|venc|date|data|termino|conclusao)/.test(nk)) {
+            const d = new Date(it[k]);
+            if (!isNaN(d) && d.getTime() < now) return true;
           }
         }
         return /atras|vencid|vencido|atrasad/.test(normStr(it.status || it.situacao || it.etapa || ''));
       };
+
       const counts = {
-        'fora-prazo': list.filter(isOverdue).length,
-        'a-desenvolver': list.filter(x => /(a desenvolver|adesenvolver|a-desenvolver)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'pendente': list.filter(x => /pendente|pend\W/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'em-dev': list.filter(x => /(desenvolv|dev|em desenvolvimento|em dev)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'homologacao': list.filter(x => /homolog/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'suspenso': list.filter(x => /(suspens|suspend|bloquead)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'em-testes': list.filter(x => /(teste|qa|test)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'concluido': list.filter(x => /(conclu|fech|resolvid|done|closed)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length
+        'sust-fora-prazo': list.filter(isOverdue).length,
+        'sust-a-desenvolver': list.filter(x => /(a desenvolver|adesenvolver|a-desenvolver)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-pendente': list.filter(x => /pendente|pend\W/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-em-dev': list.filter(x => /(desenvolv|dev|em desenvolvimento|em dev)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-homologacao': list.filter(x => /homolog/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-suspenso': list.filter(x => /(suspens|suspend|bloquead)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-em-testes': list.filter(x => /(teste|qa|test)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-concluido': list.filter(x => /(conclu|fech|resolvid|done|closed)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length
       };
 
-      // 1) esconder APENAS os cards de desenvolvimento que não existem na Sustentação
-      const devOnly = ['planejado', 'pausado']; // ✅ só esses somem
-      devOnly.forEach(k => {
-        const el = parent.querySelector(`[data-card="codes:${k}"]`);
+      // Se já injetado, apenas atualiza contagens/ícones
+      if (window.__sustTopState.injected && window.__sustTopState.clones.length) {
+        window.__sustTopState.clones.forEach(cl => {
+          const key = (cl.dataset.card || '').split(':')[1]; // "sust-..."
+          const countEl = cl.querySelector('p.text-2xl.font-bold, p.text-2xl, .count, .sust-count');
+          if (countEl) countEl.textContent = String(counts[key] ?? 0);
+          setIconForCard(cl, key);
+        });
+        return;
+      }
+
+      const parentTemplate =
+        document.querySelector('#codesPage [data-card^="codes:"]') ||
+        document.querySelector('[data-card^="codes:"]');
+      const parent = parentTemplate ? parentTemplate.parentElement : null;
+
+      // Esconde cards da fábrica que conflitam
+      ['fora-prazo', 'planejado', 'pausado', 'concluido'].forEach(k => {
+        const el = (parent || document).querySelector(`[data-card="codes:${k}"]`);
         if (el) {
-          window.__sustTopState.originals[k] = el; // salva para restaurar depois
+          window.__sustTopState.originals[k] = el;
           el.classList.add('hidden');
         }
       });
 
-      // 2) para cada card da Sustentação, reutilize o existente (se houver) OU clone o template
-      const ensureIcon = (node, key) => {
-        const iconWrap = node.querySelector('.w-12.h-12, .icon, .icon-wrap, svg') || node.querySelector('svg') || null;
-        if (!iconWrap) return;
-        const svg = SUST_ICONS[key] || '';
-        if (!svg) return;
-        if (iconWrap.tagName && iconWrap.tagName.toLowerCase() === 'svg') iconWrap.outerHTML = svg;
-        else iconWrap.innerHTML = svg;
-      };
-      const bindClick = (node, key) => {
-        if (!node || node.dataset.sustBound === '1') return;
-        node.dataset.sustBound = '1';
-        node.addEventListener('click', () => {
-          (parent.querySelectorAll('[data-card^="codes:"]') || []).forEach(n => n.classList.remove('ring-2', 'ring-blue-500'));
-          node.classList.add('ring-2', 'ring-blue-500');
-          try { applyTopSustFilter(key); } catch (e) { /* ignore */ }
-        });
-      };
-      const setCount = (node, val) => {
-        let countEl =
-          node.querySelector('p.text-2xl.font-bold') ||
-          node.querySelector('p.text-2xl') ||
-          node.querySelector('.count') ||
-          node.querySelector('.sust-count');
-        if (!countEl) {
-          const cands = Array.from(node.querySelectorAll('p, span')).reverse();
-          countEl = cands.find(n => /\d+/.test(n.textContent || ''));
-        }
-        if (!countEl) {
-          const p = document.createElement('p'); p.className = 'text-2xl font-bold'; node.appendChild(p); countEl = p;
-        }
-        countEl.textContent = String(val ?? 0);
-      };
+      // Fallback grid local
+      const fallbackWrapper = document.createElement('div');
+      fallbackWrapper.id = 'sustTopFallback';
+      fallbackWrapper.className = 'grid grid-cols-2 md:grid-cols-4 gap-4 mb-6';
 
-      SUST_TOP_ORDER.forEach(([key, label]) => {
-        const selector = `[data-card="codes:${key}"]`;
-        let card = parent.querySelector(selector);
+      ORDER.forEach(([key, label]) => {
+        let node;
 
-        if (!card) {
-          // não existe no topo original → clona o primeiro card como base
-          const template = parentTemplate || document.querySelector('[data-card^="codes:"]');
-          if (!template) return;
-          card = template.cloneNode(true);
-          card.dataset.card = `codes:${key}`;
-          card.classList.remove('hidden');
-          // título/label
-          const tl = card.querySelector('.text-sm') || card.querySelector('h3') || card.querySelector('p');
-          if (tl) tl.textContent = label;
-          // injeta no final do grid
-          template.parentElement.appendChild(card);
-          window.__sustTopState.clones.push(card);
+        if (parent && parentTemplate) {
+          node = parentTemplate.cloneNode(true);
+          node.classList.add('sust-injected-top');
+          node.classList.remove('hidden');
+          node.dataset.card = `codes:${key}`; // ex.: codes:sust-concluido
+
+          const titleEl = node.querySelector('.text-sm') || node.querySelector('h3') || node.querySelector('p');
+          if (titleEl) titleEl.textContent = label;
+
+          let countEl =
+            node.querySelector('p.text-2xl.font-bold, p.text-2xl, .count, .sust-count') ||
+            Array.from(node.querySelectorAll('p,span')).reverse().find(n => /\d+/.test(n.textContent || ''));
+          if (!countEl) {
+            countEl = document.createElement('p');
+            countEl.className = 'text-2xl font-bold';
+            node.appendChild(countEl);
+          }
+          countEl.textContent = String(counts[key] ?? 0);
+
+          setIconForCard(node, key);
+
+          node.addEventListener('click', () => {
+            document.querySelectorAll('.sust-injected-top, [data-card^="codes:"]').forEach(n => n.classList.remove('ring-2', 'ring-blue-500'));
+            node.classList.add('ring-2', 'ring-blue-500');
+            try { (window.applyTopSustFilter || applyTopSustFilter)(key); } catch { }
+          });
+
+          parent.appendChild(node);
+        } else {
+          node = document.createElement('button');
+          node.type = 'button';
+          node.dataset.card = `codes:${key}`;
+          node.className = 'bg-white p-4 rounded shadow flex items-center justify-between hover:shadow-md sust-injected-top';
+          node.innerHTML = `
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm icon-wrap"></div>
+              <div class="text-left">
+                <div class="text-sm font-medium text-gray-700">${label}</div>
+                <div class="text-xs text-gray-500">Projetos / chamados</div>
+              </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-800">${counts[key] ?? 0}</p>
+          `;
+          setIconForCard(node, key);
+          node.addEventListener('click', () => {
+            Array.from(fallbackWrapper.children).forEach(n => n.classList.remove('ring-2', 'ring-blue-500'));
+            node.classList.add('ring-2', 'ring-blue-500');
+            try { (window.applyTopSustFilter || applyTopSustFilter)(key); } catch { }
+          });
+          fallbackWrapper.appendChild(node);
+
+          const sustWrap = document.getElementById('codesSustentacaoWrapper') || document.body;
+          if (!document.getElementById('sustTopFallback')) {
+            const first = sustWrap.querySelector(':scope > *');
+            if (first) sustWrap.insertBefore(fallbackWrapper, first); else sustWrap.prepend(fallbackWrapper);
+          }
         }
 
-        // para EXISTENTE ou CLONE: ícone, número e clique de filtro
-        ensureIcon(card, key);
-        setCount(card, counts[key] ?? 0);
-        bindClick(card, key);
+        window.__sustTopState.clones.push(node);
       });
 
       window.__sustTopState.injected = true;
@@ -355,6 +461,7 @@
       console.error('injectSustTopCards erro', e);
     }
   }
+
 
 
   // Restaura os cards originais da Fábrica/Desenvolvimento e remove clones
@@ -379,7 +486,6 @@
     } catch (e) { console.error('restoreDevTopCards erro', e); }
   }
 
-  // Atualiza contadores dos clones (usado quando for só atualizar contagens)
   function updateInjectedCounts(itens) {
     try {
       const lista = Array.isArray(itens) ? itens : (window._lastSustItems || []);
@@ -395,29 +501,29 @@
       };
 
       const counts = {
-        'fora-prazo': lista.filter(isOverdue).length,
-        'a-desenvolver': lista.filter(x => /(a desenvolver|adesenvolver|a-desenvolver)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'pendente': lista.filter(x => /pendente|pend\W/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'em-dev': lista.filter(x => /(desenvolv|dev|em desenvolvimento|em dev)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'homologacao': lista.filter(x => /homolog/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'suspenso': lista.filter(x => /(suspens|suspend|bloquead)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'em-testes': lista.filter(x => /(teste|qa|test)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-        'concluido': lista.filter(x => /(conclu|fech|resolvid|done|closed)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length
+        'sust-fora-prazo': lista.filter(isOverdue).length,
+        'sust-a-desenvolver': lista.filter(x => /(a desenvolver|adesenvolver|a-desenvolver)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-pendente': lista.filter(x => /pendente|pend\W/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-em-dev': lista.filter(x => /(desenvolv|dev|em desenvolvimento|em dev)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-homologacao': lista.filter(x => /homolog/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-suspenso': lista.filter(x => /(suspens|suspend|bloquead)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-em-testes': lista.filter(x => /(teste|qa|test)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+        'sust-concluido': lista.filter(x => /(conclu|fech|resolvid|done|closed)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length
       };
 
-      // atualiza clones no DOM
       (window.__sustTopState.clones || []).forEach(clone => {
-        const k = (clone.dataset.card || '').split(':')[1];
+        const k = (clone.dataset.card || '').split(':')[1]; // "sust-..."
         const p = clone.querySelector('p.text-2xl.font-bold, p.text-2xl, .count, .sust-count');
         if (p) p.textContent = String(counts[k] ?? 0);
+        setIconForCard(clone, k);
       });
 
-      // também atualiza quaisquer elementos já existentes com data-card
-      SUST_TOP_ORDER.forEach(([key, label]) => {
+      SUST_TOP_ORDER.forEach(([key]) => {
         const existing = document.querySelector(`[data-card="codes:${key}"]`);
         if (existing) {
           const p = existing.querySelector('p.text-2xl.font-bold, p.text-2xl, .count, .sust-count');
           if (p) p.textContent = String(counts[key] ?? 0);
+          setIconForCard(existing, key);
         }
       });
     } catch (e) {
@@ -431,29 +537,35 @@
   window.updateInjectedCounts = updateInjectedCounts;
 
 
-  // filtro local disparado ao clicar num top-card injetado
   function applyTopSustFilter(key) {
     const items = window._lastSustItems || [];
-    if (!key || key === 'todos') return renderSustentacaoTable(items);
+    const bare = String(key || '').replace(/^sust-/, '');
+    if (!bare || bare === 'todos') return renderSustentacaoTable(items);
+
     const filtered = items.filter(x => {
       const s = (x.status || x.etapa || x.situacao || '') + '';
-      const sn = (s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      try {
-        switch (key) {
-          case 'fora-prazo': {
-            const now = Date.now(); for (const k of Object.keys(x || {})) { if (/(prazo|due|deadline|venc|date|data|termino|conclusao)/.test(k.toLowerCase())) { const d = new Date(x[k]); if (!isNaN(d) && d.getTime() < now) return true; } } return /atras|vencid|vencido|atrasad/.test(sn);
+      const sn = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      switch (bare) {
+        case 'fora-prazo': {
+          const now = Date.now();
+          for (const k of Object.keys(x || {})) {
+            if (/(prazo|due|deadline|venc|date|data|termino|conclusao)/.test(k.toLowerCase())) {
+              const d = new Date(x[k]); if (!isNaN(d) && d.getTime() < now) return true;
+            }
           }
-          case 'a-desenvolver': return /(a desenvolver|adesenvolver|a-desenvolver)/.test(sn);
-          case 'pendente': return /pendente|pend\W/.test(sn);
-          case 'em-dev': return /(desenvolv|dev|em desenvolvimento|em dev)/.test(sn);
-          case 'homologacao': return /homolog/.test(sn);
-          case 'suspenso': return /(suspens|suspend|bloquead)/.test(sn);
-          case 'em-testes': return /(teste|qa|test)/.test(sn);
-          case 'concluido': return /(conclu|fech|resolvid|done|closed)/.test(sn);
+          return /atras|vencid|vencido|atrasad/.test(sn);
         }
-      } catch (e) { return false; }
-      return false;
+        case 'a-desenvolver': return /(a desenvolver|adesenvolver|a-desenvolver)/.test(sn);
+        case 'pendente': return /pendente|pend\W/.test(sn);
+        case 'em-dev': return /(desenvolv|dev|em desenvolvimento|em dev)/.test(sn);
+        case 'homologacao': return /homolog/.test(sn);
+        case 'suspenso': return /(suspens|suspend|bloquead)/.test(sn);
+        case 'em-testes': return /(teste|qa|test)/.test(sn);
+        case 'concluido': return /(conclu|fech|resolvid|done|closed)/.test(sn);
+        default: return false;
+      }
     });
+
     renderSustentacaoTable(filtered);
   }
 
@@ -985,17 +1097,18 @@
   window.applySustCard = applySustCard;
 
   function setCardCount(coordKey, cat, value) {
-    // 🔒 não deixe nada sobrescrever os cards da Sustentação
-    const isSust = window.__codesView === 'sustentacao';
-    if (isSust && String(coordKey).toLowerCase() === 'codes') {
-      const block = new Set([
-        'fora-prazo', 'a-desenvolver', 'pendente', 'em-dev',
-        'homologacao', 'suspenso', 'em-testes', 'concluido'
+    // Se estiver na tela de Sustentação, bloqueia updates dos cards de status da Sustentação
+    if (window.__codesView === 'sustentacao' && String(coordKey).toLowerCase() === 'codes') {
+      const catNorm = String(cat || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const sustSet = new Set([
+        'sust-fora-prazo', 'sust-a-desenvolver', 'sust-pendente', 'sust-em-dev',
+        'sust-homologacao', 'sust-suspenso', 'sust-em-testes', 'sust-concluido'
       ]);
-      const catNorm = String(cat || '')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      if (block.has(catNorm)) return; // 👉 evita overwrite em Sustentação
+      if (sustSet.has(catNorm)) return; // não sobrescreve Sustentação
     }
+
+    // Também evita sobrescrever cards de sustentação mesmo fora da view (defesa extra)
+    if (/^sust-/.test(String(cat))) return;
 
     const sel = `[data-card="${coordKey}:${cat}"]`;
     const containers = document.querySelectorAll(sel);
@@ -1010,13 +1123,16 @@
         container.querySelector('p.text-2xl') ||
         container.querySelector('span.text-lg.font-bold') ||
         container.querySelector('span.text-lg') ||
-        container.querySelector('.count');
+        container.querySelector('.count') ||
+        Array.from(container.querySelectorAll('span, p')).reverse().find(n => /\d+/.test(n.textContent || ''));
 
       if (!countEl) {
-        const cands = Array.from(container.querySelectorAll('span, p')).reverse();
-        countEl = cands.find(n => /\d+/.test(n.textContent || ''));
+        const p = document.createElement('p');
+        p.className = 'text-2xl font-bold';
+        container.appendChild(p);
+        countEl = p;
       }
-      if (countEl) countEl.textContent = value;
+      countEl.textContent = value;
     });
   }
 
@@ -1762,12 +1878,9 @@
       return;
     }
 
-    // limpa injeções antigas e wrapper antigo
     document.querySelectorAll('.sust-injected-card').forEach(n => n.remove());
-    const prevWrap = document.getElementById('sustCardsWrapper');
-    if (prevWrap) prevWrap.remove();
+    const prevWrap = document.getElementById('sustCardsWrapper'); if (prevWrap) prevWrap.remove();
 
-    // --- contagens e heurísticas (mesma lógica que no main.js) ---
     const normStr = s => (String(s || '')).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const isOverdue = (it) => {
       const now = Date.now();
@@ -1782,18 +1895,17 @@
     };
 
     const counts = {
-      todos: lista.length,
-      'fora-prazo': lista.filter(isOverdue).length,
-      'a-desenvolver': lista.filter(x => /(a desenvolver|adesenvolver|a-desenvolver)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'pendente': lista.filter(x => /pendente|pend\W/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'em-dev': lista.filter(x => /(desenvolv|dev|em desenvolvimento|em dev)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'homologacao': lista.filter(x => /homolog/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'suspenso': lista.filter(x => /(suspens|suspend|bloquead)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'em-testes': lista.filter(x => /(teste|qa|test)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'concluido': lista.filter(x => /(conclu|fech|resolvid|done|closed)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length
+      'sust-fora-prazo': lista.filter(isOverdue).length,
+      'sust-a-desenvolver': lista.filter(x => /(a desenvolver|adesenvolver|a-desenvolver)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+      'sust-pendente': lista.filter(x => /pendente|pend\W/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+      'sust-em-dev': lista.filter(x => /(desenvolv|dev|em desenvolvimento|em dev)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+      'sust-homologacao': lista.filter(x => /homolog/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+      'sust-suspenso': lista.filter(x => /(suspens|suspend|bloquead)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+      'sust-em-testes': lista.filter(x => /(teste|qa|test)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
+      'sust-concluido': lista.filter(x => /(conclu|fech|resolvid|done|closed)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length
     };
 
-    // helper: cria card no estilo "top" caso precise do fallback
+    // helper fallback card
     function makeTopStyleCard(key, label, value) {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -1801,8 +1913,7 @@
       btn.className = 'bg-white p-4 rounded shadow flex items-center justify-between hover:shadow-md sust-injected-card';
       btn.innerHTML = `
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm icon-wrap">
-          </div>
+          <div class="w-12 h-12 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm icon-wrap"></div>
           <div class="text-left">
             <div class="text-sm font-medium text-gray-700">${escapeHtml(label)}</div>
             <div class="text-xs text-gray-500">Projetos / chamados</div>
@@ -1810,79 +1921,59 @@
         </div>
         <p class="text-2xl font-bold text-gray-800">${value}</p>
       `;
+      setIconForCard(btn, key);
       btn.addEventListener('click', () => {
         Array.from(btn.parentElement.children).forEach(c => c.classList.remove('ring-2', 'ring-blue-500'));
         btn.classList.add('ring-2', 'ring-blue-500');
-        try { if (typeof window.applyTopSustFilter === 'function') window.applyTopSustFilter(key); else applyTopSustFilter(key); } catch (e) { /* ignora */ }
+        try { (window.applyTopSustFilter || applyTopSustFilter)(key); } catch { }
       });
       return btn;
     }
 
-    // --- tenta injetar no mesmo container dos top-cards (se possível) ---
     const topTemplate = document.querySelector('#codesPage [data-card^="codes:"]') || document.querySelector('[data-card^="codes:"]');
     const topParent = topTemplate ? topTemplate.parentElement : null;
     const order = [
-      ['fora-prazo', 'Fora do Prazo'],
-      ['a-desenvolver', 'A Desenvolver'],
-      ['pendente', 'Pendente'],
-      ['em-dev', 'Em Dev.'],
-      ['homologacao', 'Em Homologação'],
-      ['suspenso', 'Suspenso'],
-      ['em-testes', 'Em Testes'],
-      ['concluido', 'Concluído']
+      ['sust-fora-prazo', 'Fora do Prazo'],
+      ['sust-a-desenvolver', 'A Desenvolver'],
+      ['sust-pendente', 'Pendente'],
+      ['sust-em-dev', 'Em Dev.'],
+      ['sust-homologacao', 'Em Homologação'],
+      ['sust-suspenso', 'Suspenso'],
+      ['sust-em-testes', 'Em Testes'],
+      ['sust-concluido', 'Concluído']
     ];
 
     if (!topParent) {
-      // fallback: cria wrapper local (grid) e insere antes da tabela
       const cardsWrapper = document.createElement('div');
       cardsWrapper.id = 'sustCardsWrapper';
       cardsWrapper.className = 'grid grid-cols-2 md:grid-cols-4 gap-4 mb-6';
       order.forEach(([key, label]) => {
         const c = makeTopStyleCard(key, label, counts[key] ?? 0);
-        // ícones no fallback
-        const iconWrap = c.querySelector('.icon-wrap');
-        if (iconWrap) {
-          let svg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden><rect x="3" y="11" width="4" height="8" rx="1" stroke="#6b7280" stroke-width="1.6"/><rect x="10" y="7" width="4" height="12" rx="1" stroke="#6b7280" stroke-width="1.6"/><rect x="17" y="3" width="4" height="16" rx="1" stroke="#6b7280" stroke-width="1.6"/></svg>`;
-          if (key === 'fora-prazo') svg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 7v6l4 2" stroke="#ef4444" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="#ef4444" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-          if (key === 'concluido') svg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-          iconWrap.innerHTML = svg;
-        }
         cardsWrapper.appendChild(c);
       });
       const firstInside = wrapper.querySelector(':scope > *');
-      if (firstInside) wrapper.insertBefore(cardsWrapper, firstInside);
-      else wrapper.prepend(cardsWrapper);
+      if (firstInside) wrapper.insertBefore(cardsWrapper, firstInside); else wrapper.prepend(cardsWrapper);
     } else {
-      // insere clones no container do topo (mantém estilo)
       order.forEach(([key, label]) => {
         const dataCard = `codes:${key}`;
-
-        // se já existe um element com esse data-card, atualiza contador e segue
         const existing = topParent.querySelector(`[data-card="${dataCard}"]`);
         if (existing) {
-          // atualiza contador dentro do existente (se houver)
           const countEl = existing.querySelector('p.text-2xl.font-bold, p.text-2xl, .count, .sust-count');
           if (countEl) countEl.textContent = String(counts[key] ?? 0);
+          setIconForCard(existing, key);
           return;
         }
 
-        // clone do template visual (se houver)
         const clone = topTemplate.cloneNode(true);
         clone.classList.add('sust-injected-top');
         clone.dataset.card = dataCard;
         clone.classList.remove('hidden');
 
-        // atualiza label/título
         const titleEl = clone.querySelector('.text-sm') || clone.querySelector('h3') || clone.querySelector('p');
         if (titleEl) titleEl.textContent = label;
 
-        // atualiza contador/valor
-        let countEl = clone.querySelector('p.text-2xl.font-bold, p.text-2xl, .count, .sust-count');
-        if (!countEl) {
-          // tenta encontrar qualquer <p> ou <span> com dígito, senão cria um
-          const cands = Array.from(clone.querySelectorAll('p, span')).reverse();
-          countEl = cands.find(n => /\d+/.test(n.textContent || ''));
-        }
+        let countEl = clone.querySelector('p.text-2xl.font-bold, p.text-2xl, .count, .sust-count') ||
+          Array.from(clone.querySelectorAll('p, span')).reverse().find(n => /\d+/.test(n.textContent || ''));
         if (!countEl) {
           const p = document.createElement('p');
           p.className = 'text-2xl font-bold';
@@ -1891,40 +1982,18 @@
         }
         countEl.textContent = String(counts[key] ?? 0);
 
-        // atualiza ícone (procura container do ícone padrão)
-        const iconWrap = clone.querySelector('.w-12.h-12, .icon, .icon-wrap') || clone.querySelector('svg') || null;
-        if (iconWrap) {
-          let svg = '';
-          if (key === 'fora-prazo') {
-            svg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M12 7v6l4 2" stroke="#ef4444" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="#ef4444" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-          } else if (key === 'concluido') {
-            svg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M20 6L9 17l-5-5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-          } else if (key === 'a-desenvolver') {
-            svg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M3 12h18" stroke="#3b82f6" stroke-width="1.6" stroke-linecap="round"/><path d="M12 3v18" stroke="#3b82f6" stroke-width="1.6" stroke-linecap="round"/></svg>`;
-          } else {
-            svg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden><rect x="3" y="11" width="4" height="8" rx="1" stroke="#6b7280" stroke-width="1.6"/><rect x="10" y="7" width="4" height="12" rx="1" stroke="#6b7280" stroke-width="1.6"/><rect x="17" y="3" width="4" height="16" rx="1" stroke="#6b7280" stroke-width="1.6"/></svg>`;
-          }
-          // Se iconWrap for um SVG existente, substitui seu parentHTML adequado
-          if (iconWrap.tagName.toLowerCase() === 'svg') {
-            iconWrap.outerHTML = svg;
-          } else {
-            iconWrap.innerHTML = svg;
-          }
-        }
+        setIconForCard(clone, key);
 
-        // clique: destaca e aplica filtro local
         clone.addEventListener('click', () => {
           Array.from(topParent.querySelectorAll('.sust-injected-top')).forEach(n => n.classList.remove('ring-2', 'ring-blue-500'));
           clone.classList.add('ring-2', 'ring-blue-500');
-          try { if (typeof window.applyTopSustFilter === 'function') window.applyTopSustFilter(key); else applyTopSustFilter(key); } catch (e) { /* ignora */ }
+          try { (window.applyTopSustFilter || applyTopSustFilter)(key); } catch { }
         });
 
-        // adiciona ao container do topo (apende no final para manter ordem visual)
         topParent.appendChild(clone);
       });
     }
 
-    // --- monta o cabeçalho da tabela (padrão) ---
     const table = tbody.closest('table');
     if (table) {
       const thead = table.querySelector('thead') || table.createTHead();
@@ -1940,7 +2009,6 @@
       `;
     }
 
-    // helper para pegar campos com nomes variados
     function pickSmart(obj, aliases) {
       const map = {};
       for (const k of Object.keys(obj || {})) map[norm(k)] = k;
@@ -1954,36 +2022,26 @@
       return null;
     }
 
-    // renderiza tabela (linhas)
-    function internalRenderTable(rows) {
-      if (!Array.isArray(rows) || rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum chamado.</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = rows.map(x => {
-        const numero = pickSmart(x, ['numero_chamado', 'numero', 'número', 'chamado', 'ticket', 'protocolo']) || '-';
-        const proj = pickSmart(x, ['projeto', 'sistema', 'projetoNome', 'projeto_nome']) || '-';
-        const status = pickSmart(x, ['status', 'situacao', 'situação', 'etapa']) || '-';
-        const dev = pickSmart(x, ['desenvolvedor', 'dev', 'responsavel', 'responsável']) || '-';
-        const solicit = pickSmart(x, ['solicitante', 'requerente', 'demandante', 'cliente']) || '-';
-        const numArg = js(String(numero));
-        return `
-          <tr>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(proj)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(String(numero))}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(status)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(dev)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(solicit)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              ${sustActionLinksHtml(numArg)}
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    // exibe todos por padrão
-    internalRenderTable(lista);
+    tbody.innerHTML = (lista.length ? lista : []).map(x => {
+      const numero = pickSmart(x, ['numero_chamado', 'numero', 'número', 'chamado', 'ticket', 'protocolo']) || '-';
+      const proj = pickSmart(x, ['projeto', 'sistema', 'projetoNome', 'projeto_nome']) || '-';
+      const status = pickSmart(x, ['status', 'situacao', 'situação', 'etapa']) || '-';
+      const dev = pickSmart(x, ['desenvolvedor', 'dev', 'responsavel', 'responsável']) || '-';
+      const solicit = pickSmart(x, ['solicitante', 'requerente', 'demandante', 'cliente']) || '-';
+      const numArg = js(String(numero));
+      return `
+        <tr>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(proj)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(String(numero))}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(status)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(dev)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(solicit)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            ${sustActionLinksHtml(numArg)}
+          </td>
+        </tr>
+      `;
+    }).join('') || `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum chamado.</td></tr>`;
   }
 
 
