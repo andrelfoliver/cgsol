@@ -192,7 +192,51 @@
   // expõe p/ showPage e outros pontos chamarem
   window.setCodesCardHighlight = setCodesCardHighlight;
 
+  // Tenta achar um card base (Total / Ativos / Desenvolvimento / Sustentação)
+  function __findBaseCard() {
+    return (
+      document.querySelector('[data-card="codes:total"]') ||
+      document.querySelector('[data-card="codes:ativos"]') ||
+      document.querySelector('[data-card="codes:desenvolvimento"]') ||
+      document.querySelector('[data-card="codes:sustentacao"], [data-card="codes:sustentação"]')
+    );
+  }
 
+  // Pega a classe da "bolinha" (rounded-full) usada nos cards base, para replicar igual
+  function __getBaseBubbleClass() {
+    const base = __findBaseCard();
+    if (!base) return null;
+
+    // procura um nó com rounded-full dentro do bloco do ícone do card base
+    const left = base.querySelector('.flex.items-center > div') || base.querySelector('.rounded-full') || base;
+    const bubble = left.querySelector('.rounded-full') || left;
+    const cls = (bubble.className || '').toString();
+
+    // garante que tenha as classes essenciais
+    const essentials = ['rounded-full', 'flex', 'items-center', 'justify-center'];
+    let final = cls;
+    essentials.forEach(c => { if (!final.includes(c)) final += ` ${c}`; });
+
+    // se não houver tamanho na classe, coloca o default do seu layout
+    if (!/(^|\s)w-\d+/.test(final)) final += ' w-10';
+    if (!/(^|\s)h-\d+/.test(final)) final += ' h-10';
+
+    return final.trim();
+  }
+
+  // Cria uma bolinha idêntica à dos cards base, apenas trocando o emoji
+  function __makeBubble(emoji) {
+    const bubble = document.createElement('div');
+    bubble.className =
+      (__getBaseBubbleClass() || 'w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center');
+    // deixa o emoji na mesma proporção dos cards base
+    const span = document.createElement('span');
+    span.className = 'text-lg leading-none';       // mesmo “look” dos cards
+    span.textContent = emoji || '📌';
+    bubble.innerHTML = '';
+    bubble.appendChild(span);
+    return bubble;
+  }
 
   // ========= helpers DOM =========
   function byId(id) { return document.getElementById(id); }
@@ -224,81 +268,63 @@
     originals: {}   // map key->original node (clonados para restaurar)
   };
 
-  // ----------------- INJETAR / RESTAURAR TOP CARDS (SUSTENTACAO) -----------------
-
-  // Mapa de ícones (SVG) por chave - evita repetição e facilita manutenção
-  // Mapa de ícones (SVG) exclusivos por status (linha fina, 24~28px)
-  const SUST_ICONS = {
-    'fora-prazo': `
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="9" stroke="#ef4444" stroke-width="1.8"/>
-      <path d="M12 7v5l3 2" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`,
-
-    'a-desenvolver': `
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M12 5v14M5 12h14" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round"/>
-    </svg>`,
-
-    'pendente': `
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="9" stroke="#f59e0b" stroke-width="1.8"/>
-      <path d="M12 8v5" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round"/>
-      <circle cx="12" cy="16" r="1.2" fill="#f59e0b"/>
-    </svg>`,
-
-    'em-dev': `
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3" y="6" width="18" height="12" rx="2" stroke="#10b981" stroke-width="1.8"/>
-      <path d="M8 12l-2 2 2 2M16 12l2 2-2 2" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`,
-
-    'homologacao': `
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="4" y="4" width="16" height="16" rx="2" stroke="#8b5cf6" stroke-width="1.8"/>
-      <path d="M8 12l3 3 5-5" stroke="#8b5cf6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`,
-
-    'suspenso': `
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="5" y="5" width="14" height="14" rx="2" stroke="#6b7280" stroke-width="1.8"/>
-      <path d="M9 8v8M15 8v8" stroke="#6b7280" stroke-width="1.8" stroke-linecap="round"/>
-    </svg>`,
-
-    'em-testes': `
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M7 4h10M9 4v6l-2 3v3a4 4 0 0 0 4 4h2a4 4 0 0 0 4-4v-3l-2-3V4" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`,
-
-    'concluido': `
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M20 6L9 17l-5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`,
-
-    // fallback para chaves desconhecidas
-    'default': `
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3" y="11" width="4" height="8" rx="1" stroke="#6b7280" stroke-width="1.6"/>
-      <rect x="10" y="7" width="4" height="12" rx="1" stroke="#6b7280" stroke-width="1.6"/>
-      <rect x="17" y="4" width="4" height="15" rx="1" stroke="#6b7280" stroke-width="1.6"/>
-    </svg>`
+  // === ÍCONES PADRÃO (mesma lógica dos 4 primeiros cards: emoji dentro da bolinha) ===
+  const SUST_EMOJI = {
+    'fora-prazo': '⏱️',
+    'a-desenvolver': '➕',
+    'pendente': '⚠️',
+    'em-dev': '💻',
+    'homologacao': '☑️',
+    'suspenso': '⏸️',
+    'em-testes': '🧪',
+    'concluido': '✔️',
+    'default': '📌'
   };
 
-  // Usa as chaves do SUST_ICONS sem prefixo; aceita "sust-<chave>"
+  /// container: card alvo (clone ou existente)
+  // key: pode vir como "codes:sust-pendente", "sust-pendente", "pendente", "Em Dev.", etc.
   function setIconForCard(container, key) {
-    const k = String(key || '').replace(/^sust-/, '');
-    const svg = SUST_ICONS[k] || SUST_ICONS['default'];
-    if (!svg) return;
+    if (!container) return;
 
-    const left = container.querySelector('.flex.items-center > div');
+    // 🔧 normaliza a chave para bater no SUST_EMOJI
+    let normKey = String(key || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // sem acentos
+      .toLowerCase()
+      .replace(/^codes:/, '')
+      .replace(/^sust[-:]?/, '')       // remove prefixos "sust-" ou "sust:"
+      .replace(/\./g, '')
+      .replace(/\s+/g, '-');           // "Em Dev" -> "em-dev"
+
+    // sinônimos
+    if (normKey === 'em-dev' || normKey === 'em-desenvolvimento') normKey = 'em-dev';
+    if (normKey === 'homologacao' || normKey === 'em-homologacao') normKey = 'homologacao';
+    if (normKey === 'em-testes' || normKey === 'testes') normKey = 'em-testes';
+    if (normKey === 'fora-do-prazo' || normKey === 'fora-prazo') normKey = 'fora-prazo';
+
+    const emoji = (SUST_EMOJI[normKey] || SUST_EMOJI.default);
+
+    // área esquerda do card (onde fica a bolinha)
+    const left =
+      container.querySelector('.flex.items-center > div') ||
+      container.querySelector('.icon-wrap') ||
+      container.querySelector('.card-icon') ||
+      (function () {
+        const wrap = document.createElement('div');
+        wrap.className = 'flex items-center gap-4';
+        const head = container.querySelector('.flex.items-center');
+        if (head) head.prepend(wrap);
+        return wrap;
+      })();
+
     if (!left) return;
 
-    left.innerHTML = '';
-    const iconWrap = document.createElement('div');
-    iconWrap.className = 'icon-wrap h-12 w-12 rounded-full flex items-center justify-center bg-gray-100 text-gray-600';
-    iconWrap.innerHTML = svg;
-    left.appendChild(iconWrap);
+    // limpa qualquer ícone anterior
+    while (left.firstChild) left.removeChild(left.firstChild);
+
+    // cria a bolinha no mesmo padrão dos cards-base
+    left.appendChild(__makeBubble(emoji));
   }
+
 
 
 
@@ -322,18 +348,16 @@
     try {
       window.__sustTopState = window.__sustTopState || { injected: false, clones: [], originals: {} };
 
-      const ORDER = (window.SUST_TOP_ORDER && Array.isArray(window.SUST_TOP_ORDER))
-        ? window.SUST_TOP_ORDER
-        : [
-          ['sust-fora-prazo', 'Fora do Prazo'],
-          ['sust-a-desenvolver', 'A Desenvolver'],
-          ['sust-pendente', 'Pendente'],
-          ['sust-em-dev', 'Em Dev.'],
-          ['sust-homologacao', 'Em Homologação'],
-          ['sust-suspenso', 'Suspenso'],
-          ['sust-em-testes', 'Em Testes'],
-          ['sust-concluido', 'Concluído']
-        ];
+      const ORDER = [
+        ['sust-fora-prazo', 'Fora do Prazo'],
+        ['sust-a-desenvolver', 'A Desenvolver'],
+        ['sust-pendente', 'Pendente'],
+        ['sust-em-dev', 'Em Dev.'],
+        ['sust-homologacao', 'Em Homologação'],
+        ['sust-suspenso', 'Suspenso'],
+        ['sust-em-testes', 'Em Testes'],
+        ['sust-concluido', 'Concluído']
+      ];
 
       const list = Array.isArray(itens) ? itens : [];
       window._lastSustItems = list;
@@ -344,8 +368,7 @@
         for (const k of Object.keys(it || {})) {
           const nk = String(k).toLowerCase();
           if (/(prazo|due|deadline|venc|date|data|termino|conclusao)/.test(nk)) {
-            const d = new Date(it[k]);
-            if (!isNaN(d) && d.getTime() < now) return true;
+            const d = new Date(it[k]); if (!isNaN(d) && d.getTime() < now) return true;
           }
         }
         return /atras|vencid|vencido|atrasad/.test(normStr(it.status || it.situacao || it.etapa || ''));
@@ -362,10 +385,9 @@
         'sust-concluido': list.filter(x => /(conclu|fech|resolvid|done|closed)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length
       };
 
-      // Se já injetado, apenas atualiza contagens/ícones
       if (window.__sustTopState.injected && window.__sustTopState.clones.length) {
         window.__sustTopState.clones.forEach(cl => {
-          const key = (cl.dataset.card || '').split(':')[1]; // "sust-..."
+          const key = (cl.dataset.card || '').split(':')[1];
           const countEl = cl.querySelector('p.text-2xl.font-bold, p.text-2xl, .count, .sust-count');
           if (countEl) countEl.textContent = String(counts[key] ?? 0);
           setIconForCard(cl, key);
@@ -378,16 +400,12 @@
         document.querySelector('[data-card^="codes:"]');
       const parent = parentTemplate ? parentTemplate.parentElement : null;
 
-      // Esconde cards da fábrica que conflitam
+      // esconder cards da fábrica que conflitam
       ['fora-prazo', 'planejado', 'pausado', 'concluido'].forEach(k => {
         const el = (parent || document).querySelector(`[data-card="codes:${k}"]`);
-        if (el) {
-          window.__sustTopState.originals[k] = el;
-          el.classList.add('hidden');
-        }
+        if (el) { window.__sustTopState.originals[k] = el; el.classList.add('hidden'); }
       });
 
-      // Fallback grid local
       const fallbackWrapper = document.createElement('div');
       fallbackWrapper.id = 'sustTopFallback';
       fallbackWrapper.className = 'grid grid-cols-2 md:grid-cols-4 gap-4 mb-6';
@@ -399,14 +417,16 @@
           node = parentTemplate.cloneNode(true);
           node.classList.add('sust-injected-top');
           node.classList.remove('hidden');
-          node.dataset.card = `codes:${key}`; // ex.: codes:sust-concluido
+          node.dataset.card = `codes:${key}`;
+
+          sanitizeClonedCard(node); // ← remove comportamentos herdados
 
           const titleEl = node.querySelector('.text-sm') || node.querySelector('h3') || node.querySelector('p');
           if (titleEl) titleEl.textContent = label;
 
           let countEl =
             node.querySelector('p.text-2xl.font-bold, p.text-2xl, .count, .sust-count') ||
-            Array.from(node.querySelectorAll('p,span')).reverse().find(n => /\d+/.test(n.textContent || ''));
+            Array.from(node.querySelectorAll('p, span')).reverse().find(n => /\d+/.test(n.textContent || ''));
           if (!countEl) {
             countEl = document.createElement('p');
             countEl.className = 'text-2xl font-bold';
@@ -416,7 +436,8 @@
 
           setIconForCard(node, key);
 
-          node.addEventListener('click', () => {
+          node.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
             document.querySelectorAll('.sust-injected-top, [data-card^="codes:"]').forEach(n => n.classList.remove('ring-2', 'ring-blue-500'));
             node.classList.add('ring-2', 'ring-blue-500');
             try { (window.applyTopSustFilter || applyTopSustFilter)(key); } catch { }
@@ -430,7 +451,7 @@
           node.className = 'bg-white p-4 rounded shadow flex items-center justify-between hover:shadow-md sust-injected-top';
           node.innerHTML = `
             <div class="flex items-center gap-4">
-              <div class="w-12 h-12 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm icon-wrap"></div>
+              <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center icon-wrap"></div>
               <div class="text-left">
                 <div class="text-sm font-medium text-gray-700">${label}</div>
                 <div class="text-xs text-gray-500">Projetos / chamados</div>
@@ -439,18 +460,19 @@
             <p class="text-2xl font-bold text-gray-800">${counts[key] ?? 0}</p>
           `;
           setIconForCard(node, key);
-          node.addEventListener('click', () => {
+          node.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
             Array.from(fallbackWrapper.children).forEach(n => n.classList.remove('ring-2', 'ring-blue-500'));
             node.classList.add('ring-2', 'ring-blue-500');
             try { (window.applyTopSustFilter || applyTopSustFilter)(key); } catch { }
           });
-          fallbackWrapper.appendChild(node);
 
           const sustWrap = document.getElementById('codesSustentacaoWrapper') || document.body;
           if (!document.getElementById('sustTopFallback')) {
             const first = sustWrap.querySelector(':scope > *');
             if (first) sustWrap.insertBefore(fallbackWrapper, first); else sustWrap.prepend(fallbackWrapper);
           }
+          fallbackWrapper.appendChild(node);
         }
 
         window.__sustTopState.clones.push(node);
@@ -536,15 +558,23 @@
   window.restoreDevTopCards = restoreDevTopCards;
   window.updateInjectedCounts = updateInjectedCounts;
 
-
   function applyTopSustFilter(key) {
     const items = window._lastSustItems || [];
     const bare = String(key || '').replace(/^sust-/, '');
+
+    // garante que estamos na tela de Sustentação
+    window.__codesView = 'sustentacao';
+    setCodesCardHighlight('sust');
+    document.getElementById('codesSustentacaoWrapper')?.classList.remove('hidden');
+    document.getElementById('tableView')?.classList.add('hidden');
+    document.getElementById('codesSprintsWrapper')?.classList.add('hidden');
+    document.getElementById('codesInternWrapper')?.classList.add('hidden');
+
     if (!bare || bare === 'todos') return renderSustentacaoTable(items);
 
     const filtered = items.filter(x => {
-      const s = (x.status || x.etapa || x.situacao || '') + '';
-      const sn = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const sn = String(x.status || x.etapa || x.situacao || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
       switch (bare) {
         case 'fora-prazo': {
           const now = Date.now();
@@ -1601,6 +1631,10 @@
   // ================== FILTRO DE PROJETOS ==================
   function filterProjects(coordenacao, categoria) {
     console.log("Filtro acionado:", coordenacao, categoria);
+    // sempre que filtrar CODES (fábrica), garante que os clones de Sustentação foram removidos
+    if ((coordenacao || '').toUpperCase() === 'CODES') {
+      try { restoreDevTopCards(); } catch (e) { }
+    }
 
     // sempre que filtrar CODES (fábrica), volta o modo p/ 'fabrica'
     if ((coordenacao || '').toUpperCase() === 'CODES') {
