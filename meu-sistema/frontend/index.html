@@ -31,7 +31,7 @@
     .card-hi--fabrica {
       background: linear-gradient(180deg, #f8fbff, #ffffff);
       box-shadow: 0 8px 28px rgba(21, 85, 214, .15);
-      transform: scale(1.005);
+      transform: translateZ(0) scale(1.005);
     }
 
     .card-hi--fabrica::before {
@@ -42,7 +42,7 @@
     .card-hi--sust {
       background: linear-gradient(180deg, #fffaf0, #ffffff);
       box-shadow: 0 8px 28px rgba(245, 158, 11, .18);
-      transform: scale(1.005);
+      transform: translateZ(0) scale(1.005);
     }
 
     .card-hi--sust::before {
@@ -264,7 +264,7 @@
           <!-- CODES -->
           <div data-card="codes:desenvolvimento"
             class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-            onclick="filterProjects('CODES','desenvolvimento')">
+            onclick="showFabrica()">
 
             <div class="flex items-center mb-4">
               <div class="p-2 rounded-lg bg-blue-100 text-blue-600 mr-3">💻</div>
@@ -280,7 +280,7 @@
               </div>
               <div
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('CODES','sustentacao')">
+                onclick="filterProjects('CODES','sustentacao'); event.stopPropagation();">
                 <div>
                   <p class="font-medium text-gray-900">Sustentação</p>
                   <p class="text-xs text-gray-600">Sistemas em produção</p>
@@ -401,12 +401,12 @@
       </div>
 
       <!-- KPIs CODES -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-4">
-
+      <!-- GRID padrão (Na Fábrica / Desenvolvimento) -->
+      <!-- KPIs CODES -->
+      <!-- TOP (fixo): sempre visível -->
+      <div id="codesKpisTop" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-2 mt-4">
         <!-- Total de Projetos -->
-        <div data-card="codes:total"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','total')">
+        <div data-card="codes:total" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-gray-100 text-gray-600">📊</div>
             <div class="ml-4">
@@ -417,9 +417,7 @@
         </div>
 
         <!-- Ativos -->
-        <div data-card="codes:ativos"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','ativos')">
+        <div data-card="codes:ativos" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-blue-100 text-blue-600">🚀</div>
             <div class="ml-4">
@@ -429,10 +427,10 @@
           </div>
         </div>
 
-        <!-- Desenvolvimento -->
+        <!-- Desenvolvimento (CODES) -->
         <div data-card="codes:desenvolvimento"
           class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','desenvolvimento')">
+          onclick="showFabrica()">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">💻</div>
             <div class="ml-4">
@@ -443,12 +441,10 @@
         </div>
 
 
-
-        <!-- Sustentação -->
+        <!-- Sustentação (clique troca o bloco de baixo) -->
         <div data-card="codes:sustentacao"
           class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="showSustentacao()">
-
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🔧</div>
             <div class="ml-4">
@@ -457,11 +453,12 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Fora do Prazo -->
-        <div data-card="codes:fora-prazo"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','fora-prazo')">
+      <!-- EXTRA (muda conforme o modo) -->
+      <!-- Fábrica: 4 cards -->
+      <div id="codesKpisFabExtra" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div data-card="codes:fora-prazo" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
             <div class="ml-4">
@@ -471,10 +468,7 @@
           </div>
         </div>
 
-        <!-- Planejado -->
-        <div data-card="codes:planejado"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','planejado')">
+        <div data-card="codes:planejado" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-gray-100 text-gray-600">📅</div>
             <div class="ml-4">
@@ -484,10 +478,7 @@
           </div>
         </div>
 
-        <!-- Pausado -->
-        <div data-card="codes:pausado"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','pausado')">
+        <div data-card="codes:pausado" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-purple-100 text-purple-600">⏸️</div>
             <div class="ml-4">
@@ -497,10 +488,7 @@
           </div>
         </div>
 
-        <!-- Concluído -->
-        <div data-card="codes:concluido"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','concluido')">
+        <div data-card="codes:concluido" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-blue-100 text-blue-600">✅</div>
             <div class="ml-4">
@@ -509,10 +497,162 @@
             </div>
           </div>
         </div>
-
       </div>
 
+      <!-- Sustentação: 8 cards (começa oculto) -->
+      <div id="codesKpisSustExtra" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 hidden">
+        <div data-card="codes:sust:total" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">📋</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Total de Chamados</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustTotal">0</p>
+            </div>
+          </div>
+        </div>
 
+        <div data-card="codes:sust:adesenvolver" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">📝</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">A Desenvolver</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustADevs">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:emdesenv" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">⚙️</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Dev.</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustEmDev">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:homolog" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🧪</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Homologação</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustHomolog">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:testes" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🔍</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Testes</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustTestes">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:pendente" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">⏳</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Pendente</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustPendente">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:suspenso" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🛑</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Suspenso</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustSuspenso">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:fechados" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">✅</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Fechados</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustFechados">0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+        window.setCodesCardHighlight = function (mode) {
+          const scope = document.getElementById('codesPage');
+          const fabExtra = scope?.querySelector('#codesKpisFabExtra');
+          const sustExtra = scope?.querySelector('#codesKpisSustExtra');
+          const devCard = scope?.querySelector('[data-card="codes:desenvolvimento"]');
+          const sustCard = scope?.querySelector('[data-card="codes:sustentacao"]');
+          if (!fabExtra || !sustExtra || !devCard || !sustCard) return;
+
+          // limpa destaques dos cards principais
+          devCard.classList.remove('card-hi', 'card-hi--fabrica');
+          sustCard.classList.remove('card-hi', 'card-hi--sust');
+
+          if (mode === 'sust') {
+            fabExtra.classList.add('hidden');
+            sustExtra.classList.remove('hidden');
+
+            // garante exibição correta
+            sustExtra.style.removeProperty('display');
+            if (getComputedStyle(sustExtra).display === 'none') sustExtra.style.display = 'grid';
+            sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
+              el.classList.remove('hidden', 'invisible', 'sr-only');
+              el.style.removeProperty('display');
+              el.style.removeProperty('visibility');
+              el.style.removeProperty('opacity');
+            });
+
+            // destaca Sustentação (card principal)
+            sustCard.classList.add('card-hi', 'card-hi--sust');
+            return;
+          }
+
+          // volta para Fábrica
+          sustExtra.classList.add('hidden');
+          fabExtra.classList.remove('hidden');
+
+          fabExtra.style.removeProperty('display');
+          if (getComputedStyle(fabExtra).display === 'none') fabExtra.style.display = 'grid';
+          fabExtra.querySelectorAll('[data-card]').forEach(el => {
+            el.classList.remove('hidden', 'invisible', 'sr-only');
+            el.style.removeProperty('display');
+            el.style.removeProperty('visibility');
+            el.style.removeProperty('opacity');
+          });
+
+          // (opcional) remove classes hi dos cartões de Sustentação extra, caso tenha sido mexido via script
+          sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
+            el.classList.remove('card-hi', 'card-hi--sust');
+            // se quiser manter o “look” padrão, não precisa remover — o grid está hidden mesmo
+            // se quiser recolocar depois de novo, o bloco acima, em mode==='sust', volta a aplicar o visual normal do grid
+          });
+
+          // destaca Desenvolvimento (card principal)
+          devCard.classList.add('card-hi', 'card-hi--fabrica');
+        };
+
+      </script>
+
+
+      <script>
+        // alterna o modo e re-renderiza a página CODES
+        window.showSustentacao = function () {
+          window.__codesView = 'sustentacao';
+          showPage('codes', getNavButtonFor && getNavButtonFor('codes'));
+        };
+
+        // opcional: atalho pra voltar ao modo Fábrica
+        window.showFabrica = function () {
+          window.__codesView = 'fabrica';
+          showPage('codes', getNavButtonFor && getNavButtonFor('codes'));
+        };
+      </script>
 
 
       <!-- Gráficos CODES -->
@@ -1509,6 +1649,49 @@
       </form>
     </div>
   </div>
+  <script>
+    // ✅ Filtra por coordenação e (opcional) categoria do card
+    window.filterProjects = function (coord, sub) {
+      const goto = (pid) => showPage(pid, (typeof getNavButtonFor === 'function') && getNavButtonFor(pid));
+      const c = String(coord || '').toLowerCase();
+      const s = String(sub || '').toLowerCase();
+
+      // guarda filtro global que as tabelas vão usar
+      window.__tableFilter = { coord: c, categoria: s };
+
+      if (c === 'codes') {
+        // Alterna a visão da CODES
+        window.__codesView = (s === 'sustentacao') ? 'sustentacao' : 'fabrica';
+        goto('codes');
+
+        // destaca após a troca de página
+        setTimeout(() => {
+          if (typeof window.setCodesCardHighlight === 'function') {
+            window.setCodesCardHighlight(window.__codesView === 'sustentacao' ? 'sust' : 'fabrica');
+          }
+          // foca na tabela/grids
+          document.getElementById(window.__codesView === 'sustentacao' ? 'codesSustentacaoWrapper' : 'tableView')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0);
+        return;
+      }
+
+      if (c === 'coset') {
+        goto('coset'); setTimeout(() => {
+          document.getElementById('cosetPage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0); return;
+      }
+
+      if (c === 'cgod') {
+        goto('cgod'); setTimeout(() => {
+          document.getElementById('cgodPage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0); return;
+      }
+
+      goto('home'); // fallback
+    };
+  </script>
+
 
   <!-- HELPERS + NAV -->
   <script>
@@ -1521,167 +1704,157 @@
     }
 
     function showPage(pageId, el) {
-      // Esconde todas as páginas
-      document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+      // 1) Aceita 'home' ou 'homePage'
+      const pid = pageId?.endsWith('Page') ? pageId : (pageId + 'Page');
 
-      // Mostra apenas a página alvo
-      const target = document.getElementById(pageId + 'Page');
+      // 2) Esconde todas e mostra a alvo
+      document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+      const target = document.getElementById(pid);
       if (target) target.classList.remove('hidden');
 
-      // Atualiza visual dos botões de nav (somente os botões do nav)
-      document.querySelectorAll('nav .nav-btn').forEach(btn => {
+      // 3) Se não veio botão, deduz automaticamente
+      if (!el && typeof getNavButtonFor === 'function') {
+        const key = pageId?.replace(/Page$/, '');
+        el = getNavButtonFor(key);
+      }
+
+      // 4) Normaliza TODOS os botões do nav antes de ativar um
+      const navBtns = document.querySelectorAll('nav .nav-btn');
+      navBtns.forEach(btn => {
         btn.classList.remove('border-blue-500', 'text-blue-600');
-        btn.classList.add('border-transparent', 'text-gray-500');
+        btn.classList.add('border-transparent');
+
+        // remove cinzas possivelmente acumuladas
+        btn.classList.remove('text-gray-900', 'text-gray-800', 'text-gray-700', 'text-gray-600', 'text-gray-500', 'text-gray-400');
+        btn.classList.add('text-gray-600');
       });
+
+      // 5) Marca o ativo (se houver)
       if (el && el.classList) {
-        el.classList.remove('border-transparent', 'text-gray-500');
+        el.classList.remove('border-transparent', 'text-gray-600');
         el.classList.add('border-blue-500', 'text-blue-600');
       }
 
-      // Função auxiliar para tentar redesenhar charts/tabelas de forma segura
+      // 6) Redesenho seguro (seu código original, sem mudanças de lógica)
       const tryRedraw = () => {
         if (!window.__appsReady) window.__appsReady = { tries: 0 };
-
-        // limita tentativas
-        if (window.__appsReady.tries >= 4) {
-          window.__appsReady.tries = 0;
-        }
+        if (window.__appsReady.tries >= 4) window.__appsReady.tries = 0;
         window.__appsReady.tries++;
 
         try {
-          // fonte única de dados (se main.js preencher window.cacheProjetos)
           const data = Array.isArray(window.cacheProjetos) ? window.cacheProjetos : [];
 
+          const shortId = pid.replace(/Page$/, '');
+
           // HOME
-          if (pageId === 'home') {
+          if (shortId === 'home') {
             if (typeof drawCharts === 'function' && data.length) drawCharts(data);
-            try { chartCoordenacao?.resize?.(); chartCoordenacao?.update?.(); } catch (e) { }
-            try { chartStatus?.resize?.(); chartStatus?.update?.(); } catch (e) { }
-            try { chartStatusDistrib?.resize?.(); chartStatusDistrib?.update?.(); } catch (e) { }
-            try { chartRag?.resize?.(); chartRag?.update?.(); } catch (e) { }
-            try { chartTimeline?.resize?.(); chartTimeline?.update?.(); } catch (e) { }
+            try { chartCoordenacao?.resize?.(); chartCoordenacao?.update?.(); } catch { }
+            try { chartStatus?.resize?.(); chartStatus?.update?.(); } catch { }
+            try { chartStatusDistrib?.resize?.(); chartStatusDistrib?.update?.(); } catch { }
+            try { chartRag?.resize?.(); chartRag?.update?.(); } catch { }
+            try { chartTimeline?.resize?.(); chartTimeline?.update?.(); } catch { }
           }
 
           // CODES
-          if (pageId === 'codes') {
-            const isSust = window.__codesView === 'sustentacao';
+          if (shortId === 'codes') {
+            const isSust = (window.__codesView === 'sustentacao');
+            const sustWrap = document.getElementById('codesSustentacaoWrapper');
+            const tableView = document.getElementById('tableView');
+            const sprintsWrap = document.getElementById('codesSprintsWrapper');
+            const internWrap = document.getElementById('codesInternWrapper');
+            const fabExtra = document.getElementById('codesKpisFabExtra');
+            const sustExtra = document.getElementById('codesKpisSustExtra');
 
             if (isSust) {
-              // 👇 modo Sustentação
-              document.getElementById('codesSustentacaoWrapper')?.classList.remove('hidden');
-
-              // oculta tudo que é da fábrica
-              document.getElementById('tableView')?.classList.add('hidden');
-              document.getElementById('codesSprintsWrapper')?.classList.add('hidden');
-              document.getElementById('codesInternWrapper')?.classList.add('hidden');
-
-              // mata gráficos da fábrica (evita “fantasmas”)
-              try { window._charts?.codes?.destroy?.(); } catch { }
-              try { window._charts?.intern?.destroy?.(); } catch { }
-
-              // carrega os chamados
-              if (typeof loadSustentacao === 'function') {
-                setTimeout(() => loadSustentacao(), 0);
-              }
+              sustWrap?.classList.remove('hidden');
+              tableView?.classList.add('hidden');
+              sprintsWrap?.classList.add('hidden');
+              internWrap?.classList.add('hidden');
+              fabExtra?.classList.add('hidden');
+              sustExtra?.classList.remove('hidden');
+              if (typeof loadSustentacao === 'function') setTimeout(() => loadSustentacao(), 0);
             } else {
-              // 👇 modo Fábrica
-              document.getElementById('codesSustentacaoWrapper')?.classList.add('hidden');
-              document.getElementById('tableView')?.classList.remove('hidden');
-              document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
-              document.getElementById('codesInternWrapper')?.classList.remove('hidden');
-
-              // redesenha gráficos com o cache atual (se existir)
-              const data = Array.isArray(window.cacheProjetos) ? window.cacheProjetos : [];
+              sustWrap?.classList.add('hidden');
+              tableView?.classList.remove('hidden');
+              sprintsWrap?.classList.remove('hidden');
+              internWrap?.classList.remove('hidden');
+              sustExtra?.classList.add('hidden');
+              fabExtra?.classList.remove('hidden');
               if (typeof drawCodesSprintsChart === 'function' && data.length) drawCodesSprintsChart(data);
               if (typeof drawCodesInternChart === 'function' && data.length) drawCodesInternChart(data);
-
-              try { window._charts?.codes?.resize?.(); window._charts?.codes?.update?.(); } catch { }
-              try { window._charts?.intern?.resize?.(); window._charts?.intern?.update?.(); } catch { }
             }
 
-            // ⭐ destaque visual do card correto: “Na Fábrica” apenas quando NÃO é Sustentação
-            window.setCodesCardHighlight && window.setCodesCardHighlight(isSust ? 'sust' : 'fabrica');
+            if (typeof window.setCodesCardHighlight === 'function') {
+              window.setCodesCardHighlight(isSust ? 'sust' : 'fabrica');
+            }
           }
 
-
-
           // COSET
-          if (pageId === 'coset') {
-            if (typeof renderAllCoordTables === 'function') {
-              renderAllCoordTables(data);
-            } else {
+          if (shortId === 'coset') {
+            if (typeof renderAllCoordTables === 'function') renderAllCoordTables(data);
+            else {
               const tbody = document.getElementById('cosetTableBody');
               if (tbody && data.length) {
                 tbody.innerHTML = data
                   .filter(p => (p.coordenacao || '').toString().toLowerCase().includes('coset'))
                   .map(p => `<tr>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
-                    </tr>`).join('');
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
+                </tr>`).join('');
               }
             }
-
             if (typeof drawCosetTiposChart === 'function') drawCosetTiposChart(data);
-            try { chartCoset?.resize?.(); chartCoset?.update?.(); } catch (e) { }
+            try { chartCoset?.resize?.(); chartCoset?.update?.(); } catch { }
           }
 
           // CGOD
-          if (pageId === 'cgod') {
-            if (typeof renderAllCoordTables === 'function') {
-              renderAllCoordTables(data);
-            } else {
+          if (shortId === 'cgod') {
+            if (typeof renderAllCoordTables === 'function') renderAllCoordTables(data);
+            else {
               const tbody = document.getElementById('cgodTableBody');
               if (tbody && data.length) {
                 tbody.innerHTML = data
                   .filter(p => (p.coordenacao || '').toString().toLowerCase().includes('cgod'))
                   .map(p => `<tr>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
-                    </tr>`).join('');
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
+                </tr>`).join('');
               }
             }
-
             if (typeof drawCgodChart === 'function') drawCgodChart(data);
-            try { chartCgod?.resize?.(); chartCgod?.update?.(); } catch (e) { }
+            try { chartCgod?.resize?.(); chartCgod?.update?.(); } catch { }
           }
 
           // PDTI
-          if (pageId === 'pdti') {
-            if (typeof loadPDTITable === 'function') loadPDTITable();   // busca API e atualiza tudo
+          if (shortId === 'pdti') {
+            if (typeof loadPDTITable === 'function') loadPDTITable();
             if (typeof filterPDTI === 'function') filterPDTI();
             if (typeof renderPDTICharts === 'function') renderPDTICharts();
             if (typeof updatePDTIProgress === 'function') updatePDTIProgress();
-
-
-            try { chartPdtiTipo?.resize?.(); chartPdtiTipo?.update?.(); } catch (e) { }
-            try { chartPdtiTimeline?.resize?.(); chartPdtiTimeline?.update?.(); } catch (e) { }
+            try { chartPdtiTipo?.resize?.(); chartPdtiTipo?.update?.(); } catch { }
+            try { chartPdtiTimeline?.resize?.(); chartPdtiTimeline?.update?.(); } catch { }
           }
 
-          // Atualiza KPIs e tabela recente se existirem funções
           if (typeof updateKPIs === 'function') updateKPIs(data);
           if (typeof renderRecentTable === 'function') renderRecentTable(data);
 
-          // zera tentativas quando deu certo
           window.__appsReady.tries = 0;
-
         } catch (err) {
           console.warn('Erro ao redesenhar charts em showPage:', err);
           if (window.__appsReady.tries < 4) setTimeout(tryRedraw, 150);
         }
       };
-
-      // Pequeno atraso para garantir que o canvas esteja visível
       setTimeout(tryRedraw, 80);
     }
-
     function hideModal(id) { const el = document.getElementById(id); if (el) el.classList.add('hidden'); }
     window.showModal = function (id) { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); };
     window.hideNotify = function () { const el = document.getElementById('notifyModal'); if (el) el.classList.add('hidden'); };
@@ -1720,6 +1893,11 @@
     document.addEventListener('DOMContentLoaded', () => {
       const firstBtn = document.querySelector('nav .nav-btn:first-child');
       showPage('home', firstBtn);
+
+      // garante o visual correto na primeira ida à CODES
+      if (typeof window.setCodesCardHighlight === 'function') {
+        window.setCodesCardHighlight(window.__codesView === 'sustentacao' ? 'sust' : 'fabrica');
+      }
     });
   </script>
 
@@ -1730,7 +1908,7 @@
     // Garante que todas as páginas (#homePage, #codesPage, #cosetPage, #cgodPage, #pdtiPage)
     // sejam filhas diretas de <main>. Isso corrige casos de aninhamento acidental.
     (function ensurePageSiblings() {
-      const main = document.querySelector('main.container, main.container.mx-auto, main.container.mx-auto.px-4.py-6') || document.querySelector('main');
+      const main = document.querySelector('main.container') || document.querySelector('main');
       if (!main) return;
       ['home', 'codes', 'coset', 'cgod', 'pdti'].forEach(id => {
         const page = document.getElementById(id + 'Page');
@@ -1748,7 +1926,7 @@
       window.showPage = function (pageId, el) {
         // garante estrutura correta antes de mostrar
         (function ensurePageSiblings() {
-          const main = document.querySelector('main.container, main.container.mx-auto, main.container.mx-auto.px-4.py-6') || document.querySelector('main');
+          const main = document.querySelector('main.container') || document.querySelector('main');
           if (!main) return;
           ['home', 'codes', 'coset', 'cgod', 'pdti'].forEach(id => {
             const page = document.getElementById(id + 'Page');
@@ -1761,6 +1939,56 @@
   </script>
 
 
+  <script>
+    // Mapeia "sub" dos cards para tipos/padrões de busca
+    function matchesCategoria(p, coord, sub) {
+      if (!sub) return true; // sem subcategoria = somente coordenação
+      const nome = (p.nome || p.projeto || '').toLowerCase();
+      const desc = (p.descricao || '').toLowerCase();
+      const tipo = (p.tipo || p.projectTipo || p['tipo do projeto'] || '').toLowerCase();
+      const txt = nome + ' ' + desc + ' ' + tipo;
+
+      if (coord === 'coset') {
+        if (sub === 'infraestrutura') return /infraestrutura/.test(txt);
+        if (sub === 'integracao' || sub === 'sistemas-integrados') return /(integra(ç|c)ão|integrad[oa])/.test(txt) || /sistema\s+integrado/.test(txt);
+        if (sub === 'modernizacao') return /moderniza/.test(txt);
+        if (sub === 'compliance') return /(compliance|conformidade|lgpd)/.test(txt);
+        return true;
+      }
+
+      if (coord === 'cgod') {
+        if (sub === 'catalogos') return /(cat[aá]logo|cat[aá]logos|metadado|sistema de dados)/.test(txt);
+        if (sub === 'analytics') return /(analytics|bi\b|dashboard)/.test(txt);
+        if (sub === 'qualidade') return /(qualidade|qualidade de dado[s]?)/.test(txt);
+        if (sub === 'governanca') return /(governan[çc]a|lgpd|seguran[çc]a)/.test(txt);
+        return true;
+      }
+
+      // CODES (extra, caso queira usar no futuro)
+      if (coord === 'codes') {
+        if (sub === 'desenvolvimento') return !/sustenta(ç|c)[aã]o/.test(txt);
+        if (sub === 'sustentacao') return /sustenta(ç|c)[aã]o/.test(txt);
+        return true;
+      }
+
+      return true;
+    }
+
+    // Mostra um "badge" de filtro ativo (opcional)
+    function renderFiltroBadge(tbodyEl, label) {
+      if (!tbodyEl || !label) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+      <td colspan="6" class="px-6 py-3 bg-blue-50 text-sm text-blue-800">
+        Filtro ativo: <strong>${label}</strong>
+        <button class="ml-2 text-blue-700 underline" onclick="(function(){
+          window.__tableFilter = { coord: (window.__tableFilter?.coord || ''), categoria: '' };
+          if (typeof renderAllCoordTables === 'function') renderAllCoordTables(window.cacheProjetos || []);
+        })()">limpar</button>
+      </td>`;
+      tbodyEl.prepend(tr);
+    }
+  </script>
 
   <script>
     (function () {
@@ -1777,63 +2005,94 @@
 
         window.renderAllCoordTables = function (data) {
           try {
-            var cosetTbody = document.getElementById('cosetTableBody');
-            var cgodTbody = document.getElementById('cgodTableBody');
-            var recentTbody = document.getElementById('projectsTableBody');
-            var codesTbody = document.getElementById('codesTableBody');
+            const cosetTbody = document.getElementById('cosetTableBody');
+            const cgodTbody = document.getElementById('cgodTableBody');
+            const recentTbody = document.getElementById('projectsTableBody');
+            const codesTbody = document.getElementById('codesTableBody');
 
             if (cosetTbody) cosetTbody.innerHTML = '';
             if (cgodTbody) cgodTbody.innerHTML = '';
             if (recentTbody) recentTbody.innerHTML = '';
             if (codesTbody) codesTbody.innerHTML = '';
 
-            for (var i = 0; i < data.length; i++) {
-              var p = data[i];
-              var nome = p.nome || p.projeto || '—';
-              var status = p.status || '—';
-              var rag = p.rag || '—';
-              var progresso = (typeof p.progresso !== 'undefined') ? p.progresso : 0;
-              var responsavel = p.responsavel || '—';
+            // Filtro global vindo dos cards
+            const f = window.__tableFilter || { coord: '', categoria: '' };
+            const coordFiltra = (p) => {
+              const c = (p.coordenacao || '').toString().toLowerCase();
+              if (!f.coord) return true;
+              return c.indexOf(f.coord) !== -1;
+            };
+            const catFiltra = (p) => matchesCategoria(p, f.coord, f.categoria);
 
-              var row = ''
-                + '<tr>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + nome + '</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + status + '</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + rag + '</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + progresso + '%</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + responsavel + '</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>'
-                + '</tr>';
+            // Render base + aplica filtro por coord/categoria nas páginas específicas
+            data.forEach(p => {
+              const nome = p.nome || p.projeto || '—';
+              const status = p.status || '—';
+              const rag = p.rag || '—';
+              const progresso = (typeof p.progresso !== 'undefined') ? p.progresso : 0;
+              const responsavel = p.responsavel || '—';
+              const coord = (p.coordenacao || '').toString().toLowerCase();
 
-              var coord = (p.coordenacao || '').toString().toLowerCase();
-              if (coord.indexOf('coset') !== -1 && cosetTbody) cosetTbody.innerHTML += row;
-              else if (coord.indexOf('cgod') !== -1 && cgodTbody) cgodTbody.innerHTML += row;
-              else if (coord.indexOf('codes') !== -1 && codesTbody) codesTbody.innerHTML += row;
+              const row = `
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${nome}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${status}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${rag}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${progresso}%</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${responsavel}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
+          </tr>`;
 
-              if (recentTbody) recentTbody.innerHTML += row;
-            }
+              // COSET
+              if (coord.indexOf('coset') !== -1 && cosetTbody) {
+                if (!f.coord || f.coord === 'coset') {
+                  if (catFiltra(p)) cosetTbody.insertAdjacentHTML('beforeend', row);
+                } else {
+                  cosetTbody.insertAdjacentHTML('beforeend', row);
+                }
+              }
+
+              // CGOD
+              if (coord.indexOf('cgod') !== -1 && cgodTbody) {
+                if (!f.coord || f.coord === 'cgod') {
+                  if (catFiltra(p)) cgodTbody.insertAdjacentHTML('beforeend', row);
+                } else {
+                  cgodTbody.insertAdjacentHTML('beforeend', row);
+                }
+              }
+
+              // CODES
+              if (coord.indexOf('codes') !== -1 && codesTbody) {
+                // Mantém CODES sem subfiltro aqui; o modo Fábrica/Sustentação já é tratado em showPage
+                codesTbody.insertAdjacentHTML('beforeend', row);
+              }
+
+              // Projetos Recentes sempre listam tudo
+              if (recentTbody) recentTbody.insertAdjacentHTML('beforeend', row);
+            });
 
             // KPIs simples
-            var getCount = function (needle) {
+            const getCount = (needle) => {
               needle = (needle || '').toString().toLowerCase();
-              var count = 0;
-              for (var j = 0; j < data.length; j++) {
+              let count = 0;
+              for (let j = 0; j < data.length; j++) {
                 if ((data[j].coordenacao || '').toString().toLowerCase().indexOf(needle) !== -1) count++;
               }
               return count;
             };
-
-            var el;
+            let el;
             el = document.getElementById('projetosCoset'); if (el) el.textContent = getCount('coset');
             el = document.getElementById('projetosCgod'); if (el) el.textContent = getCount('cgod');
-            const codesCount = getCount('codes');
-            const cosetCount = getCount('coset');
-            const cgodCount = getCount('cgod');
-            const totalVG = codesCount + cosetCount + cgodCount;
-            el = document.getElementById('totalProjetos');
-            if (el) el.textContent = totalVG;
+            const totalVG = getCount('codes') + getCount('coset') + getCount('cgod');
+            el = document.getElementById('totalProjetos'); if (el) el.textContent = totalVG;
 
-            // Somatório correto (base + sustentação) após render:
+            // Badge do filtro nas páginas (opcional e só quando há categoria)
+            if (f.categoria) {
+              if (f.coord === 'coset') renderFiltroBadge(cosetTbody, `COSET • ${f.categoria}`);
+              if (f.coord === 'cgod') renderFiltroBadge(cgodTbody, `CGOD • ${f.categoria}`);
+            }
+
+            // Após render, se existir, atualiza somatórios da CODES
             if (typeof window.updateCodesTotals === 'function') window.updateCodesTotals();
 
           } catch (err) {

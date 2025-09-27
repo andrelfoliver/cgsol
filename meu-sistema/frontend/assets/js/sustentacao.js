@@ -657,9 +657,11 @@
             console.table(list.slice(0, 5), ['numero', 'projeto', 'status', 'data_abertura', 'data_fechamento']);
 
             // ✅ atualiza somente coisas de sustentação
-            const countEl = document.getElementById('sustChamadosCount');
-            if (countEl) countEl.textContent = String(list.length);
-            if (typeof window.applySustCard === 'function') window.applySustCard(list.length);
+            const tot = String(list.length);
+            const elTotal = document.getElementById('sustTotal');
+            if (elTotal) elTotal.textContent = tot;
+            const elTopo = document.getElementById('sustentacaoCount');
+            if (elTopo) elTopo.textContent = tot;
 
             // guarda a lista crua e aplica filtros
             sustRaw = list;
@@ -743,8 +745,11 @@
         renderTable(filtered);
         ensureCharts(filtered);
         // atualiza contador do painel de sustentação
-        const countEl = document.getElementById('sustChamadosCount');
-        if (countEl) countEl.textContent = String(filtered.length);
+        const tot = String(filtered.length);
+        const elTotal = document.getElementById('sustTotal');
+        if (elTotal) elTotal.textContent = tot;
+        const elTopo = document.getElementById('sustentacaoCount');
+        if (elTopo) elTopo.textContent = tot;
     };
 
     // calcula e atualiza os 8 cards (IDs esperados — ajuste se seu HTML usar outros IDs)
@@ -778,26 +783,30 @@
 
         // mapeie para os IDs do DOM (ajuste se necessário)
         const idMap = {
-            foraDoPrazo: 'sust-count-fora-do-prazo',
-            aDesenvolver: 'sust-count-a-desenvolver',
-            pendente: 'sust-count-pendente',
-            emDesenvolvimento: 'sust-count-em-desenvolvimento',
-            emHomologacao: 'sust-count-em-homologacao',
-            suspenso: 'sust-count-suspenso',
-            emTestes: 'sust-count-em-testes',
-            concluido: 'sust-count-concluido'
+            aDesenvolver: 'sustADevs',
+            emDesenvolvimento: 'sustEmDev',
+            emHomologacao: 'sustHomolog',
+            emTestes: 'sustTestes',
+            pendente: 'sustPendente',
+            suspenso: 'sustSuspenso',
+            concluido: 'sustFechados'
         };
 
+        // escreve nos cards individuais
         for (const k in idMap) {
             const el = document.getElementById(idMap[k]);
             if (el) el.textContent = String(counters[k] || 0);
         }
 
-        // atualiza o contador total do card principal
-        const totalEl = document.getElementById('home-count-codes-sustentacao') || document.getElementById('sustChamadosCount');
-        if (totalEl) totalEl.textContent = String((list || []).length);
+        // total (card “Total de Chamados” e KPI do topo CODES)
+        const totalTxt = String((list || []).length);
+        const elTotal = document.getElementById('sustTotal');
+        if (elTotal) elTotal.textContent = totalTxt;
+        const elTopo = document.getElementById('sustentacaoCount');
+        if (elTopo) elTopo.textContent = totalTxt;
 
         return counters;
+
     }
 
     // expõe para que main.js possa chamar quando abrir a tela de sustentação
@@ -806,15 +815,15 @@
     // tenta ligar os handlers de clique dos sub-cards (se existirem no DOM)
     function bindSustCardClicks() {
         const map = {
-            'sust-count-fora-do-prazo': 'fora do prazo',
-            'sust-count-a-desenvolver': 'a desenvolver',
-            'sust-count-pendente': 'pendente',
-            'sust-count-em-desenvolvimento': 'em desenvolvimento',
-            'sust-count-em-homologacao': 'em homologacao',
-            'sust-count-suspenso': 'suspenso',
-            'sust-count-em-testes': 'em testes',
-            'sust-count-concluido': 'concluido'
+            'sustADevs': 'a desenvolver',
+            'sustEmDev': 'em desenvolvimento',
+            'sustHomolog': 'em homologacao',
+            'sustTestes': 'em testes',
+            'sustPendente': 'pendente',
+            'sustSuspenso': 'suspenso',
+            'sustFechados': 'concluido'
         };
+
         for (const id in map) {
             const el = document.getElementById(id);
             if (!el) continue;

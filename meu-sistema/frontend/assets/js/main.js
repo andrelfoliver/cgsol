@@ -8,6 +8,7 @@
 
   const API = 'http://localhost:5001/api/projetos';
   const API_ROOT = 'http://localhost:5001/api';
+  const SUST_TOP_ENABLED = false; // <- desliga os cards injetados de Sustentação
 
   // Cache em memória
   let cacheProjetos = [];
@@ -96,33 +97,69 @@
     window.openNewProject = openNewProject;
     window.showSustentacao = showSustentacao;
 
-    // ── bind: clique nos cards da CODES ──
-    // Desenvolvimento (pode haver 2 instâncias no DOM: home + aba CODES)
     document.querySelectorAll('[data-card="codes:desenvolvimento"]').forEach(el => {
+      // 👉 deixe o mouse de “link”
+      el.style.cursor = 'pointer';
       el.addEventListener('click', (e) => {
         e.preventDefault();
-        // mostra a view de fábrica/desenvolvimento
+
+        window.__codesView = 'fabrica';      // 🔥 garante a view correta
+        toggleCodesDevStatus(true);          // mostra cards da fábrica
+        toggleCodesSustCards(false);         // esconde os de sustentação
+
         document.getElementById('codesSustentacaoWrapper')?.classList.add('hidden');
         document.getElementById('tableView')?.classList.remove('hidden');
-        // restaura charts da fábrica
         document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
         document.getElementById('codesInternWrapper')?.classList.remove('hidden');
-        // destaca o card correto
-        setCodesCardHighlight('fabrica');
-        // restaura clones/top-cards (remove clones e mostra originais)
-        try { restoreDevTopCards(); } catch (e) { /* ignora */ }
 
-        // aplica filtro (opcional) para exibir apenas "desenvolvimento"
-        if (typeof filterProjects === 'function') filterProjects('CODES', 'desenvolvimento');
+        setCodesCardHighlight('fabrica');
+        try { restoreDevTopCards(); } catch { }
+
+        if (typeof filterProjects === 'function')
+          filterProjects('CODES', 'desenvolvimento');
+
+        const data = Array.isArray(window.cacheProjetos) ? window.cacheProjetos : [];
+        if (typeof drawCodesSprintsChart === 'function' && data.length) drawCodesSprintsChart(data);
+        if (typeof drawCodesInternChart === 'function' && data.length) drawCodesInternChart(data);
       });
     });
 
-    // Sustentação (pode ter acento ou não)
+    // Sustentação
     document.querySelectorAll('[data-card="codes:sustentacao"], [data-card="codes:sustentação"]').forEach(el => {
+      // 👉 deixe o mouse de “link”
+      el.style.cursor = 'pointer';
       el.addEventListener('click', (e) => {
         e.preventDefault();
-        // função central que já cuida da navegação e carregamento
+        window.__codesView = 'sustentacao';   // 👈 CORRIGIDO
         if (typeof showSustentacao === 'function') showSustentacao();
+      });
+    });
+    attachStatusCardFilters();
+    // Cards de Sustentação → filtram a tabela conforme o status clicado
+    document.querySelectorAll('[data-card^="codes:sust-"]').forEach(el => {
+      el.style.cursor = 'pointer';
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+
+      const runFilter = () => {
+        const key = (el.dataset.card || '').split(':')[1]; // ex.: "sust-em-dev"
+        // garante estar na view de Sustentação e só então aplica o filtro
+        if (typeof showSustentacao === 'function') {
+          const p = showSustentacao();
+          if (p && typeof p.then === 'function') {
+            p.then(() => (typeof applyTopSustFilter === 'function') && applyTopSustFilter(key));
+          } else {
+            (typeof applyTopSustFilter === 'function') && applyTopSustFilter(key);
+          }
+        } else {
+          (typeof applyTopSustFilter === 'function') && applyTopSustFilter(key);
+        }
+      };
+
+      el.addEventListener('click', (e) => { e.preventDefault(); runFilter(); });
+      // acessibilidade: Enter/Espaço também acionam
+      el.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); runFilter(); }
       });
     });
 
@@ -202,41 +239,104 @@
     );
   }
 
-  // Pega a classe da "bolinha" (rounded-full) usada nos cards base, para replicar igual
+  // cache para não recalcular toda hora
+  let __baseBubbleClassCache = null;
+
   function __getBaseBubbleClass() {
-    const base = __findBaseCard();
-    if (!base) return null;
+    if (__baseBubbleClassCache) return __baseBubbleClassCache;
 
-    // procura um nó com rounded-full dentro do bloco do ícone do card base
-    const left = base.querySelector('.flex.items-center > div') || base.querySelector('.rounded-full') || base;
-    const bubble = left.querySelector('.rounded-full') || left;
-    const cls = (bubble.className || '').toString();
+    // procura a PRIMEIRA bolinha dos 4 cards base (Total, Ativos, Desenvolvimento, Sustentação)
+    const base =
+      document.querySelector('[data-card="codes:total"] .rounded-full') ||
+      document.querySelector('[data-card="codes:ativos"] .rounded-full') ||
+      document.querySelector('[data-card="codes:desenvolvimento"] .rounded-full') ||
+      document.querySelector('[data-card="codes:sustentacao"] .rounded-full, [data-card="codes:sustentação"] .rounded-full');
 
-    // garante que tenha as classes essenciais
-    const essentials = ['rounded-full', 'flex', 'items-center', 'justify-center'];
-    let final = cls;
-    essentials.forEach(c => { if (!final.includes(c)) final += ` ${c}`; });
+    // se achou, clona as classes exatamente como estão
+    if (base) {
+      __baseBubbleClassCache = base.className; // exatamente igual ao card base
+      return __baseBubbleClassCache;
+    }
 
-    // se não houver tamanho na classe, coloca o default do seu layout
-    if (!/(^|\s)w-\d+/.test(final)) final += ' w-10';
-    if (!/(^|\s)h-\d+/.test(final)) final += ' h-10';
-
-    return final.trim();
+    // fallback (não deve acontecer; tamanho igual aos 4 primeiros)
+    __baseBubbleClassCache = 'w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center';
+    return __baseBubbleClassCache;
   }
 
-  // Cria uma bolinha idêntica à dos cards base, apenas trocando o emoji
   function __makeBubble(emoji) {
     const bubble = document.createElement('div');
-    bubble.className =
-      (__getBaseBubbleClass() || 'w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center');
-    // deixa o emoji na mesma proporção dos cards base
+    bubble.className = __getBaseBubbleClass(); // usa a classe real do card base
     const span = document.createElement('span');
-    span.className = 'text-lg leading-none';       // mesmo “look” dos cards
+    span.className = 'text-base leading-none'; // igual aos 4 primeiros
     span.textContent = emoji || '📌';
     bubble.innerHTML = '';
     bubble.appendChild(span);
     return bubble;
   }
+
+  // helpers de visibilidade
+  function toggleCodesDevStatus(show) {
+    ['fora-prazo', 'planejado', 'pausado', 'concluido'].forEach(k => {
+      document.querySelectorAll(`[data-card="codes:${k}"]`)
+        .forEach(el => el.classList.toggle('hidden', !show));
+    });
+  }
+  function toggleCodesSustCards(show) {
+    document.querySelectorAll('[data-card^="codes:sust-"]')
+      .forEach(el => el.classList.toggle('hidden', !show));
+  }
+  function attachStatusCardFilters() {
+    // chaves de status que o filterProjects já entende
+    const STATUS_KEYS = new Set([
+      'ativos', 'desenvolvimento', 'fora-prazo', 'planejado', 'pausado', 'concluido'
+    ]);
+
+    document.querySelectorAll('[data-card]').forEach(el => {
+      const raw = (el.dataset.card || '').toLowerCase().trim();
+
+      // esperamos "<coord>:<chave>", ex: "codes:pausado"
+      const m = raw.match(/^(\w+):([\w-çãíóú]+)$/i);
+      if (!m) return;
+
+      const coord = m[1];   // codes | coset | cgod
+      const key = m[2];   // pausado | planejado | fora-prazo | concluido | ...
+
+      // ignora os 2 já tratados acima
+      if (raw === 'codes:desenvolvimento' || raw === 'codes:sustentacao' || raw === 'codes:sustentação') return;
+
+      // só instala handler se for um card de STATUS que o filterProjects entende
+      const normKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace('ç', 'c');
+      if (!STATUS_KEYS.has(normKey)) return;
+      el.style.cursor = 'pointer';            // 👈 cursor de link
+      el.setAttribute('role', 'button');      // (acessibilidade)
+      el.setAttribute('tabindex', '0');       // (acessibilidade)
+
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        // quando for CODES + status, garantimos a visão da Fábrica
+        if (coord.toLowerCase() === 'codes') {
+          window.__codesView = 'fabrica';
+          setCodesCardHighlight('fabrica');
+          toggleCodesDevStatus(true);
+          toggleCodesSustCards(false);
+          document.getElementById('codesSustentacaoWrapper')?.classList.add('hidden');
+          document.getElementById('tableView')?.classList.remove('hidden');
+          document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
+          document.getElementById('codesInternWrapper')?.classList.remove('hidden');
+        }
+
+        // dispara o filtro oficial (já faz o match de status com a tabela)
+        filterProjects(coord.toUpperCase(), normKey);
+      });
+    });
+  }
+
+  // estado inicial (Fábrica)
+  onReady(() => {
+    toggleCodesDevStatus(true);
+    toggleCodesSustCards(false);
+  });
 
   // ========= helpers DOM =========
   function byId(id) { return document.getElementById(id); }
@@ -268,7 +368,36 @@
     originals: {}   // map key->original node (clonados para restaurar)
   };
 
-  // === ÍCONES PADRÃO (mesma lógica dos 4 primeiros cards: emoji dentro da bolinha) ===
+  // cache do DOM da bolinha base (clonável)
+  let __baseBubbleNodeCache = null;
+
+  function __getBaseBubbleNode() {
+    if (__baseBubbleNodeCache) return __baseBubbleNodeCache.cloneNode(true);
+
+    // pega a primeira bolinha real dos 4 primeiros cards
+    const base =
+      document.querySelector('[data-card="codes:total"] .rounded-full') ||
+      document.querySelector('[data-card="codes:ativos"] .rounded-full') ||
+      document.querySelector('[data-card="codes:desenvolvimento"] .rounded-full') ||
+      document.querySelector('[data-card="codes:sustentacao"] .rounded-full, [data-card="codes:sustentação"] .rounded-full');
+
+    if (base) {
+      __baseBubbleNodeCache = base.cloneNode(true); // guarda o DOM com as mesmas classes e estilos
+      return __baseBubbleNodeCache.cloneNode(true);
+    }
+
+    // fallback mínimo se não achar (não deve ocorrer)
+    const div = document.createElement('div');
+    div.className = 'w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center';
+    const span = document.createElement('span');
+    span.className = 'text-base leading-none';
+    span.textContent = '•';
+    div.appendChild(span);
+    __baseBubbleNodeCache = div;
+    return __baseBubbleNodeCache.cloneNode(true);
+  }
+
+  // mapeamento dos emojis por status
   const SUST_EMOJI = {
     'fora-prazo': '⏱️',
     'a-desenvolver': '➕',
@@ -281,49 +410,81 @@
     'default': '📌'
   };
 
-  /// container: card alvo (clone ou existente)
-  // key: pode vir como "codes:sust-pendente", "sust-pendente", "pendente", "Em Dev.", etc.
+  // substitui o lookup direto por algo mais tolerante a variações
+  function getEmojiForKey(rawKey) {
+    const k = String(rawKey || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    // aceita "codes:sust-...", "sust-..." ou só o nome
+    const naked = k.replace(/^codes:/, '').replace(/^sust-/, '');
+
+    const map = {
+      'fora-prazo': '⏱️',
+      'a-desenvolver': '➕',
+      'pendente': '⚠️',
+      'em-dev': '💻',
+      'homologacao': '☑️',
+      'suspenso': '⏸️',
+      'em-testes': '🧪',
+      'concluido': '✔️'
+    };
+
+    // tenta match exato
+    if (map[naked]) return map[naked];
+
+    // tenta por “contém”
+    if (naked.includes('fora')) return '⏱️';
+    if (naked.includes('desenvolver')) return '➕';
+    if (naked.includes('pend')) return '⚠️';
+    if (naked.includes('dev')) return '💻';
+    if (naked.includes('homolog')) return '☑️';
+    if (naked.includes('suspens')) return '⏸️';
+    if (naked.includes('test')) return '🧪';
+    if (naked.includes('conclu')) return '✔️';
+
+    return '📌';
+  }
+
   function setIconForCard(container, key) {
     if (!container) return;
 
-    // 🔧 normaliza a chave para bater no SUST_EMOJI
-    let normKey = String(key || '')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // sem acentos
-      .toLowerCase()
-      .replace(/^codes:/, '')
-      .replace(/^sust[-:]?/, '')       // remove prefixos "sust-" ou "sust:"
-      .replace(/\./g, '')
-      .replace(/\s+/g, '-');           // "Em Dev" -> "em-dev"
-
-    // sinônimos
-    if (normKey === 'em-dev' || normKey === 'em-desenvolvimento') normKey = 'em-dev';
-    if (normKey === 'homologacao' || normKey === 'em-homologacao') normKey = 'homologacao';
-    if (normKey === 'em-testes' || normKey === 'testes') normKey = 'em-testes';
-    if (normKey === 'fora-do-prazo' || normKey === 'fora-prazo') normKey = 'fora-prazo';
-
-    const emoji = (SUST_EMOJI[normKey] || SUST_EMOJI.default);
-
-    // área esquerda do card (onde fica a bolinha)
+    // área da esquerda (onde a bolinha fica)
     const left =
       container.querySelector('.flex.items-center > div') ||
       container.querySelector('.icon-wrap') ||
-      container.querySelector('.card-icon') ||
-      (function () {
-        const wrap = document.createElement('div');
-        wrap.className = 'flex items-center gap-4';
-        const head = container.querySelector('.flex.items-center');
-        if (head) head.prepend(wrap);
-        return wrap;
-      })();
+      container.querySelector('.card-icon');
 
     if (!left) return;
 
-    // limpa qualquer ícone anterior
+    // 2. remove QUALQUER coisa antiga (inclui SVGs grandes, w-12/h-12, bg cinza, etc.)
     while (left.firstChild) left.removeChild(left.firstChild);
 
-    // cria a bolinha no mesmo padrão dos cards-base
-    left.appendChild(__makeBubble(emoji));
+    // remove classes que mexem no tamanho/cor do wrapper do ícone
+    left.className = (left.className || '')
+      // remove larguras/alturas tailwind (w-*, h-*)
+      .replace(/\bw-(\d+|full)\b/g, '')
+      .replace(/\bh-(\d+|full)\b/g, '')
+      // remove fundos forçados
+      .replace(/\bbg-[^\s]+\b/g, '')
+      // garante layout horizontal padrão
+      .trim() || 'flex items-center';
+
+    // 3. clona a BOLINHA base (mesmas classes e cor do card original)
+    const bubble = __getBaseBubbleNode();
+
+    // substitui o conteúdo interno da bolinha por nosso emoji
+    const emoji = getEmojiForKey(key);
+    bubble.innerHTML = ''; // limpa o que vier
+    const span = document.createElement('span');
+    span.className = 'text-base leading-none';
+    span.textContent = emoji;
+    bubble.appendChild(span);
+
+    // 4. insere a bolinha no lugar
+    left.appendChild(bubble);
   }
+
 
 
 
@@ -450,15 +611,17 @@
           node.dataset.card = `codes:${key}`;
           node.className = 'bg-white p-4 rounded shadow flex items-center justify-between hover:shadow-md sust-injected-top';
           node.innerHTML = `
-            <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center icon-wrap"></div>
-              <div class="text-left">
-                <div class="text-sm font-medium text-gray-700">${label}</div>
-                <div class="text-xs text-gray-500">Projetos / chamados</div>
-              </div>
+          <div class="flex items-center gap-4">
+            <div class="icon-wrap"></div>
+            <div class="text-left">
+              <div class="text-sm font-medium text-gray-700">${label}</div>
+              <div class="text-xs text-gray-500">Projetos / chamados</div>
             </div>
-            <p class="text-2xl font-bold text-gray-800">${counts[key] ?? 0}</p>
-          `;
+          </div>
+          <p class="text-2xl font-bold text-gray-800">${counts[key] ?? 0}</p>
+        `;
+
+
           setIconForCard(node, key);
           node.addEventListener('click', (e) => {
             e.preventDefault(); e.stopPropagation();
@@ -554,9 +717,9 @@
   }
 
   // expose para debug/uso externo
-  window.injectSustTopCards = injectSustTopCards;
-  window.restoreDevTopCards = restoreDevTopCards;
-  window.updateInjectedCounts = updateInjectedCounts;
+  window.injectSustTopCards = function () { /* desativado */ };
+  window.restoreDevTopCards = function () { /* desativado */ };
+  window.updateInjectedCounts = function () { /* desativado */ };
 
   function applyTopSustFilter(key) {
     const items = window._lastSustItems || [];
@@ -1123,8 +1286,97 @@
     setCardCount('codes', 'sustentacao', sustentacaoTotal);
     setCardCount('codes', 'sustentação', sustentacaoTotal);
   }
-  // (opcional p/ debugar no console)
-  window.applySustCard = applySustCard;
+  // --- Sustentação: mapa de rótulo -> chave padrão ---
+  const SUST_LABEL_TO_KEY = [
+    [/fora.*prazo/i, 'sust-fora-prazo'],
+    [/a\s*desenvolver/i, 'sust-a-desenvolver'],
+    [/pendente/i, 'sust-pendente'],
+    [/(em\s*dev|desenv)/i, 'sust-em-dev'],
+    [/homolog/i, 'sust-homologacao'],
+    [/suspens/i, 'sust-suspenso'],
+    [/test(es)?/i, 'sust-em-testes'],
+    [/conclu/i, 'sust-concluido'],
+  ];
+
+  function normalizeSustCardsSelectors(root = document) {
+    // pegue os blocos que visualmente são os cards de Sustentação
+    const cards = Array.from(
+      root.querySelectorAll('#codesSustentacaoWrapper [data-card^="codes:"], #codesSustentacaoWrapper .card, #codesSustentacaoWrapper .bg-white')
+    );
+
+    cards.forEach(el => {
+      // pega um texto de título do card
+      const labelEl = el.querySelector('.text-sm, .text-xs, h3, h4, .card-title, .font-medium');
+      const label = (labelEl?.textContent || '').trim();
+      if (!label) return;
+
+      for (const [re, key] of SUST_LABEL_TO_KEY) {
+        if (re.test(label)) {
+          el.dataset.card = `codes:${key}`; // 🔑 padroniza!
+          break;
+        }
+      }
+    });
+  }
+
+
+  // === Sustentação: contagem por status e atualização dos cards ===
+  function computeSustCounts(items) {
+    const list = Array.isArray(items) ? items : [];
+    const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+    const isOverdue = (it) => {
+      const now = Date.now();
+      for (const k of Object.keys(it || {})) {
+        if (/(prazo|due|deadline|venc|date|data|termino|conclusao)/.test(String(k).toLowerCase())) {
+          const d = new Date(it[k]);
+          if (!isNaN(d) && d.getTime() < now) return true;
+        }
+      }
+      return /atras|vencid|vencido|atrasad/.test(norm(it.status || it.situacao || it.etapa));
+    };
+
+    const getStatus = it => norm(it.status || it.situacao || it.etapa || '');
+
+    return {
+      'sust-fora-prazo': list.filter(isOverdue).length,
+      'sust-a-desenvolver': list.filter(x => /(a desenvolver|adesenvolver|a-desenvolver)/.test(getStatus(x))).length,
+      'sust-pendente': list.filter(x => /pendente|pend\W/.test(getStatus(x))).length,
+      'sust-em-dev': list.filter(x => /(desenvolv|dev|em desenvolvimento|em dev)/.test(getStatus(x))).length,
+      'sust-homologacao': list.filter(x => /homolog/.test(getStatus(x))).length,
+      'sust-suspenso': list.filter(x => /(suspens|suspend|bloquead)/.test(getStatus(x))).length,
+      'sust-em-testes': list.filter(x => /(teste|qa|test)/.test(getStatus(x))).length,
+      'sust-concluido': list.filter(x => /(conclu|fech|resolvid|done|closed)/.test(getStatus(x))).length,
+      'sust-total': list.length
+    };
+  }
+
+  // Atualiza o número exibido dentro de cada card de Sustentação
+  function setSustCardCount(key, value) {
+    document.querySelectorAll(`[data-card="codes:${key}"]`).forEach(container => {
+      let countEl =
+        container.querySelector('p.text-2xl.font-bold') ||
+        container.querySelector('p.text-2xl') ||
+        container.querySelector('.count') ||
+        Array.from(container.querySelectorAll('span, p')).reverse().find(n => /\d+/.test(n.textContent || ''));
+
+      if (!countEl) {
+        countEl = document.createElement('p');
+        countEl.className = 'text-2xl font-bold';
+        container.appendChild(countEl);
+      }
+      countEl.textContent = String(value ?? 0);
+    });
+  }
+
+  // Aplica todas as contagens aos cards [data-card="codes:sust-*"]
+  function updateSustCards(items) {
+    const counts = computeSustCounts(items);
+    Object.entries(counts).forEach(([k, v]) => setSustCardCount(k, v));
+    // mantém o card "Sustentação" (total grande) sincronizado
+    applySustCard(counts['sust-total'] || 0);
+  }
+
 
   function setCardCount(coordKey, cat, value) {
     // Se estiver na tela de Sustentação, bloqueia updates dos cards de status da Sustentação
@@ -1631,6 +1883,12 @@
   // ================== FILTRO DE PROJETOS ==================
   function filterProjects(coordenacao, categoria) {
     console.log("Filtro acionado:", coordenacao, categoria);
+    window.__codesView = 'fabrica';
+    setCodesCardHighlight('fabrica');
+
+    toggleCodesDevStatus(true);   // mostra 4 da Fábrica
+    toggleCodesSustCards(false);  // esconde 8 da Sustentação
+
     // sempre que filtrar CODES (fábrica), garante que os clones de Sustentação foram removidos
     if ((coordenacao || '').toUpperCase() === 'CODES') {
       try { restoreDevTopCards(); } catch (e) { }
@@ -1649,6 +1907,7 @@
     if ((coordenacao || '').toUpperCase() === 'CODES') {
       document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
       document.getElementById('codesInternWrapper')?.classList.remove('hidden');
+      document.getElementById('codesChartsRow')?.classList.remove('hidden');
 
       if (typeof drawCodesSprintsChart === 'function') drawCodesSprintsChart(cacheProjetos);
       if (typeof drawCodesInternChart === 'function') drawCodesInternChart(cacheProjetos);
@@ -1708,7 +1967,8 @@
     // entra em modo Sustentação ANTES de navegar
     window.__codesView = 'sustentacao';
     setCodesCardHighlight('sust');
-
+    toggleCodesDevStatus(false);   // esconde os 4 da Fábrica
+    toggleCodesSustCards(true);    // mostra os 8 da Sustentação
     // vai para a aba CODES
     const btn = (typeof window.getNavButtonFor === 'function') ? getNavButtonFor('codes') : null;
     showPage('codes', btn);
@@ -1725,8 +1985,7 @@
     document.getElementById('codesSustentacaoWrapper')?.classList.remove('hidden');
 
     // CARREGA e RENDERIZA: cards + tabela (essa função faz o fetch e atualiza tudo)
-    loadSustentacaoView();
-
+    return loadSustentacaoView();
     // chama o loader adicional do arquivo assets/js/sustentacao.js (se existir) —
     // mantemos chamada para compatibilidade, mas agora não dependemos exclusivamente dela.
     if (typeof window.loadSustentacao === 'function') {
@@ -1888,6 +2147,9 @@
       const res = await fetch(`${API_ROOT}/sustentacao`);
       if (!res.ok) throw new Error(`Falha ao carregar Sustentação (${res.status})`);
       const itens = await res.json();
+      normalizeSustCardsSelectors();   // <— garante os data-card corretos
+      updateSustCards(itens);
+
 
       // OK manter o gráfico do card e o total:
       drawSustDistribChart(itens);                 // 🍩 do card
@@ -1912,122 +2174,8 @@
       return;
     }
 
-    document.querySelectorAll('.sust-injected-card').forEach(n => n.remove());
-    const prevWrap = document.getElementById('sustCardsWrapper'); if (prevWrap) prevWrap.remove();
-
-    const normStr = s => (String(s || '')).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const isOverdue = (it) => {
-      const now = Date.now();
-      for (const k of Object.keys(it || {})) {
-        const nk = String(k).toLowerCase();
-        if (/(prazo|due|deadline|venc|date|data|termino|conclusao)/.test(nk)) {
-          const d = new Date(it[k]);
-          if (!isNaN(d) && d.getTime() < now) return true;
-        }
-      }
-      return /atras|vencid|vencido|atrasad/.test(normStr(it.status || it.situacao || it.etapa || ''));
-    };
-
-    const counts = {
-      'sust-fora-prazo': lista.filter(isOverdue).length,
-      'sust-a-desenvolver': lista.filter(x => /(a desenvolver|adesenvolver|a-desenvolver)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'sust-pendente': lista.filter(x => /pendente|pend\W/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'sust-em-dev': lista.filter(x => /(desenvolv|dev|em desenvolvimento|em dev)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'sust-homologacao': lista.filter(x => /homolog/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'sust-suspenso': lista.filter(x => /(suspens|suspend|bloquead)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'sust-em-testes': lista.filter(x => /(teste|qa|test)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length,
-      'sust-concluido': lista.filter(x => /(conclu|fech|resolvid|done|closed)/.test(normStr(x.status || x.etapa || x.situacao || ''))).length
-    };
-
-    // helper fallback card
-    function makeTopStyleCard(key, label, value) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.dataset.sustKey = key;
-      btn.className = 'bg-white p-4 rounded shadow flex items-center justify-between hover:shadow-md sust-injected-card';
-      btn.innerHTML = `
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm icon-wrap"></div>
-          <div class="text-left">
-            <div class="text-sm font-medium text-gray-700">${escapeHtml(label)}</div>
-            <div class="text-xs text-gray-500">Projetos / chamados</div>
-          </div>
-        </div>
-        <p class="text-2xl font-bold text-gray-800">${value}</p>
-      `;
-      setIconForCard(btn, key);
-      btn.addEventListener('click', () => {
-        Array.from(btn.parentElement.children).forEach(c => c.classList.remove('ring-2', 'ring-blue-500'));
-        btn.classList.add('ring-2', 'ring-blue-500');
-        try { (window.applyTopSustFilter || applyTopSustFilter)(key); } catch { }
-      });
-      return btn;
-    }
-
-    const topTemplate = document.querySelector('#codesPage [data-card^="codes:"]') || document.querySelector('[data-card^="codes:"]');
-    const topParent = topTemplate ? topTemplate.parentElement : null;
-    const order = [
-      ['sust-fora-prazo', 'Fora do Prazo'],
-      ['sust-a-desenvolver', 'A Desenvolver'],
-      ['sust-pendente', 'Pendente'],
-      ['sust-em-dev', 'Em Dev.'],
-      ['sust-homologacao', 'Em Homologação'],
-      ['sust-suspenso', 'Suspenso'],
-      ['sust-em-testes', 'Em Testes'],
-      ['sust-concluido', 'Concluído']
-    ];
-
-    if (!topParent) {
-      const cardsWrapper = document.createElement('div');
-      cardsWrapper.id = 'sustCardsWrapper';
-      cardsWrapper.className = 'grid grid-cols-2 md:grid-cols-4 gap-4 mb-6';
-      order.forEach(([key, label]) => {
-        const c = makeTopStyleCard(key, label, counts[key] ?? 0);
-        cardsWrapper.appendChild(c);
-      });
-      const firstInside = wrapper.querySelector(':scope > *');
-      if (firstInside) wrapper.insertBefore(cardsWrapper, firstInside); else wrapper.prepend(cardsWrapper);
-    } else {
-      order.forEach(([key, label]) => {
-        const dataCard = `codes:${key}`;
-        const existing = topParent.querySelector(`[data-card="${dataCard}"]`);
-        if (existing) {
-          const countEl = existing.querySelector('p.text-2xl.font-bold, p.text-2xl, .count, .sust-count');
-          if (countEl) countEl.textContent = String(counts[key] ?? 0);
-          setIconForCard(existing, key);
-          return;
-        }
-
-        const clone = topTemplate.cloneNode(true);
-        clone.classList.add('sust-injected-top');
-        clone.dataset.card = dataCard;
-        clone.classList.remove('hidden');
-
-        const titleEl = clone.querySelector('.text-sm') || clone.querySelector('h3') || clone.querySelector('p');
-        if (titleEl) titleEl.textContent = label;
-
-        let countEl = clone.querySelector('p.text-2xl.font-bold, p.text-2xl, .count, .sust-count') ||
-          Array.from(clone.querySelectorAll('p, span')).reverse().find(n => /\d+/.test(n.textContent || ''));
-        if (!countEl) {
-          const p = document.createElement('p');
-          p.className = 'text-2xl font-bold';
-          clone.appendChild(p);
-          countEl = p;
-        }
-        countEl.textContent = String(counts[key] ?? 0);
-
-        setIconForCard(clone, key);
-
-        clone.addEventListener('click', () => {
-          Array.from(topParent.querySelectorAll('.sust-injected-top')).forEach(n => n.classList.remove('ring-2', 'ring-blue-500'));
-          clone.classList.add('ring-2', 'ring-blue-500');
-          try { (window.applyTopSustFilter || applyTopSustFilter)(key); } catch { }
-        });
-
-        topParent.appendChild(clone);
-      });
-    }
-
+    // (REMOVIDO) qualquer criação/clone de cards aqui
+    // Mantemos só o cabeçalho da tabela:
     const table = tbody.closest('table');
     if (table) {
       const thead = table.querySelector('thead') || table.createTHead();
@@ -2043,11 +2191,12 @@
       `;
     }
 
+    function normKey(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
     function pickSmart(obj, aliases) {
       const map = {};
-      for (const k of Object.keys(obj || {})) map[norm(k)] = k;
+      for (const k of Object.keys(obj || {})) map[normKey(k)] = k;
       for (const a of aliases) {
-        const nk = norm(a);
+        const nk = normKey(a);
         if (map[nk] != null) {
           const v = obj[map[nk]];
           if (v !== undefined && v !== null && String(v).trim() !== '') return v;
@@ -2062,7 +2211,7 @@
       const status = pickSmart(x, ['status', 'situacao', 'situação', 'etapa']) || '-';
       const dev = pickSmart(x, ['desenvolvedor', 'dev', 'responsavel', 'responsável']) || '-';
       const solicit = pickSmart(x, ['solicitante', 'requerente', 'demandante', 'cliente']) || '-';
-      const numArg = js(String(numero));
+      const numArg = JSON.stringify(String(numero));
       return `
         <tr>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(proj)}</td>
@@ -2082,25 +2231,21 @@
 
 
 
-  // Loader da view de Sustentação (cards + gráfico + tabela)
   async function loadSustentacaoView() {
     try {
       const res = await fetch(`${API_ROOT}/sustentacao`);
       if (!res.ok) throw new Error(`Falha ao carregar sustentação (${res.status})`);
       const itens = await res.json();
+      normalizeSustCardsSelectors();   // <— idem na tela de Sustentação
+      updateSustCards(itens);
 
-      // 1) garante que estamos em modo Sustentação visualmente
       setCodesCardHighlight('sust');
 
-      // 2) injeta/ajusta os TOP CARDS (esconde Planejado/Pausado, atualiza números e ícones, liga o clique)
-      injectSustTopCards(itens);
+      // (REMOVIDO) if (SUST_TOP_ENABLED) injectSustTopCards(itens);
 
-      // 3) gráfico do card "Sustentação" + total override
-      drawSustDistribChart(itens);
-      applySustCard(Array.isArray(itens) ? itens.length : 0);
-
-      // 4) tabela + filtros (o click nos cards chama applyTopSustFilter)
-      renderSustentacaoTable(itens);
+      drawSustDistribChart(itens);                    // gráfico do card “Sustentação”
+      applySustCard(Array.isArray(itens) ? itens.length : 0); // total no card
+      renderSustentacaoTable(itens);                  // só tabela (sem topo injetado)
 
       updateLastUpdateTime();
     } catch (err) {
@@ -2111,6 +2256,7 @@
       updateLastUpdateTime();
     }
   }
+
 
 
   // ========= Criar / Atualizar =========
