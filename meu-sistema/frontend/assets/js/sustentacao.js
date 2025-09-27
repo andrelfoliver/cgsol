@@ -369,9 +369,7 @@
         // atualiza cache atual e re-renderiza
         sustCache = filtered;
         renderTable(filtered);
-        // opcional: atualizar contagem do card da tela de Sustentação
-        const countEl = document.getElementById('sustChamadosCount');
-        if (countEl) countEl.textContent = String(filtered.length);
+
     }
 
     // abrir modal por número usando o cache
@@ -665,7 +663,7 @@
             // guarda a lista crua e aplica filtros
             sustRaw = list;
             applySustFilters();     // renderiza com os filtros atuais (ou todos, se vazios)
-
+            updateSustCards(sustRaw);
             // gráficos continuam usando a base completa
             ensureCharts(sustRaw);
 
@@ -729,59 +727,60 @@
 
     // filtra sustentacao por status (usa normalização interna)
     window.filterSustByStatus = function (statusLike) {
-        if (!statusLike) {
+        const norm = v => String(v || '')
+            .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+            .toLowerCase().trim();
+
+        const wanted = norm(statusLike);
+        // toggle: clicar no mesmo card limpa o filtro
+        if (window.__sustActiveFilter === wanted) {
+            window.__sustActiveFilter = '';
+            sustCache = Array.from(sustRaw);
+            renderTable(sustCache);
+            ensureCharts(sustCache); // gráficos seguem o filtro atual
+            return;
+        }
+        window.__sustActiveFilter = wanted;
+
+        if (!wanted) {
             sustCache = Array.from(sustRaw);
             renderTable(sustCache);
             ensureCharts(sustCache);
             return;
         }
-        const sN = String(statusLike || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
-        const filtered = (sustRaw || []).filter(ch => {
-            const st = String(ch.status || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
-            return st.includes(sN);
-        });
+
+        const filtered = (sustRaw || []).filter(ch => norm(ch.status).includes(wanted));
         sustCache = filtered;
         renderTable(filtered);
-        ensureCharts(filtered);
-        // atualiza contador do painel de sustentação
-        const tot = String(filtered.length);
-        const elTopo = document.getElementById('sustentacaoCount');
-        if (elTopo) elTopo.textContent = tot;
-
+        ensureCharts(filtered);     // ⚠️ só gráficos/tabela, cards NÃO mudam
     };
+
 
     // calcula e atualiza os 8 cards (IDs esperados — ajuste se seu HTML usar outros IDs)
     function updateSustCards(list = sustRaw) {
         const counters = {
-            foraDoPrazo: 0,
             aDesenvolver: 0,
-            pendente: 0,
             emDesenvolvimento: 0,
             emHomologacao: 0,
-            suspenso: 0,
             emTestes: 0,
+            pendente: 0,
+            suspenso: 0,
             concluido: 0
         };
 
         (list || []).forEach(ch => {
             const s = normStatusKey(ch.status || '');
-            if (s.includes('fora')) counters.foraDoPrazo++;
-            else if (s.includes('a desenvolver') || s.startsWith('a desenvolv')) counters.aDesenvolver++;
-            else if (s.includes('pendente')) counters.pendente++;
+            if (s.includes('a desenvolver') || s.startsWith('a desenvolv')) counters.aDesenvolver++;
             else if (s.includes('em desenvolvimento') || s.includes('desenvolvimento')) counters.emDesenvolvimento++;
             else if (s.includes('em homolog') || s.includes('homolog')) counters.emHomologacao++;
-            else if (s.includes('suspens')) counters.suspenso++;
             else if (s.includes('em testes') || s.includes('testes')) counters.emTestes++;
+            else if (s.includes('suspens')) counters.suspenso++;
             else if (s.includes('conclu')) counters.concluido++;
-            else {
-                // fallback: conta como pendente se não souber
-                counters.pendente++;
-            }
+            else if (s.includes('pendente')) counters.pendente++;
+            else counters.pendente++; // fallback
         });
 
-        // mapeie para os IDs do DOM (ajuste se necessário)
         const idMap = {
-            foraDoPrazo: 'sustForaPrazo',
             aDesenvolver: 'sustADevs',
             emDesenvolvimento: 'sustEmDev',
             emHomologacao: 'sustHomolog',
@@ -791,22 +790,22 @@
             concluido: 'sustFechados'
         };
 
+        // escreve cada card
         for (const k in idMap) {
             const el = document.getElementById(idMap[k]);
             if (el) el.textContent = String(counters[k] || 0);
         }
 
-
-        // total (card “Total de Chamados” e KPI do topo CODES)
-        const totalTxt = String((list || []).length);
+        // total (card “Sustentação”)
+        const total = String((list || []).length);
         const elTotal = document.getElementById('sustTotal');
-        if (elTotal) elTotal.textContent = totalTxt;
+        if (elTotal) elTotal.textContent = total;
         const elTopo = document.getElementById('sustentacaoCount');
-        if (elTopo) elTopo.textContent = totalTxt;
+        if (elTopo) elTopo.textContent = total;
 
         return counters;
-
     }
+
 
     // expõe para que main.js possa chamar quando abrir a tela de sustentação
     window.updateSustCards = updateSustCards;
@@ -848,7 +847,7 @@
     const origEnsureCharts = ensureCharts;
     ensureCharts = function (list) {
         // atualiza cards mesmo se charts ainda não puderem ser desenhados
-        try { updateSustCards(list || sustRaw); } catch (e) { console.warn(e); }
+        try { updateSustCards(sustRaw); } catch (e) { console.warn(e); }
         origEnsureCharts(list);
     };
 
