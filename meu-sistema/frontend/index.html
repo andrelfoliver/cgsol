@@ -11,38 +11,51 @@
   <link rel="stylesheet" href="assets/css/style.css?v=2">
   <style id="cardHiStyles">
     /* base do destaque: glow suave + leve escala */
+    /* base do destaque: glow suave + leve escala */
     .card-hi {
       position: relative;
       transform: translateZ(0);
-      /* evita blur em textos */
       transition: box-shadow .25s ease, transform .15s ease, background .25s ease;
+      z-index: 0;
+      /* garante plano base */
     }
 
     .card-hi::before {
       content: "";
       position: absolute;
       inset: 0;
-      border-radius: 0.75rem;
-      /* equivalente ao rounded-lg */
+      border-radius: .75rem;
       pointer-events: none;
+      z-index: -1;
+      /* 👈 fica atrás do card */
     }
 
-    /* variação FÁBRICA (azul): sombra suave + barra esquerda */
+    /* Fábrica */
     .card-hi--fabrica {
-      background: linear-gradient(180deg, #f8fbff, #ffffff);
+      background: linear-gradient(180deg, #f8fbff, #fff);
       box-shadow: 0 8px 28px rgba(21, 85, 214, .15);
       transform: translateZ(0) scale(1.005);
     }
 
-    .card-hi--fabrica::before {
-      border-left: 6px solid #1555D6;
+    .card-hi--fabrica:hover {
+      box-shadow: 0 14px 40px rgba(21, 85, 214, .22);
+      /* sombra mais forte no hover */
     }
 
-    /* variação SUSTENTAÇÃO (âmbar/banana): sombra quente + barra esquerda */
+    /* Sustentação */
     .card-hi--sust {
-      background: linear-gradient(180deg, #fffaf0, #ffffff);
+      background: linear-gradient(180deg, #fffaf0, #fff);
       box-shadow: 0 8px 28px rgba(245, 158, 11, .18);
       transform: translateZ(0) scale(1.005);
+    }
+
+    .card-hi--sust:hover {
+      box-shadow: 0 14px 40px rgba(245, 158, 11, .26);
+    }
+
+    /* barra lateral */
+    .card-hi--fabrica::before {
+      border-left: 6px solid #1555D6;
     }
 
     .card-hi--sust::before {
@@ -400,8 +413,7 @@
         </div>
       </div>
 
-      <!-- KPIs CODES -->
-      <!-- GRID padrão (Na Fábrica / Desenvolvimento) -->
+
       <!-- KPIs CODES -->
       <!-- TOP (fixo): sempre visível -->
       <div id="codesKpisTop" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-2 mt-4">
@@ -501,7 +513,8 @@
 
       <!-- Sustentação: 8 cards (começa oculto) -->
       <div id="codesKpisSustExtra" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 hidden">
-        <div data-card="codes:sust:total" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+        <div data-card="codes:sust:total"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">📋</div>
             <div class="ml-4">
@@ -511,7 +524,8 @@
           </div>
         </div>
 
-        <div data-card="codes:sust:adesenvolver" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+        <div data-card="codes:sust:adesenvolver"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">📝</div>
             <div class="ml-4">
@@ -521,7 +535,8 @@
           </div>
         </div>
 
-        <div data-card="codes:sust:emdesenv" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+        <div data-card="codes:sust:emdesenv"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">⚙️</div>
             <div class="ml-4">
@@ -531,7 +546,8 @@
           </div>
         </div>
 
-        <div data-card="codes:sust:homolog" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+        <div data-card="codes:sust:homolog"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🧪</div>
             <div class="ml-4">
@@ -541,7 +557,8 @@
           </div>
         </div>
 
-        <div data-card="codes:sust:testes" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+        <div data-card="codes:sust:testes"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🔍</div>
             <div class="ml-4">
@@ -551,7 +568,8 @@
           </div>
         </div>
 
-        <div data-card="codes:sust:pendente" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+        <div data-card="codes:sust:pendente"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">⏳</div>
             <div class="ml-4">
@@ -561,7 +579,8 @@
           </div>
         </div>
 
-        <div data-card="codes:sust:suspenso" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+        <div data-card="codes:sust:suspenso"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🛑</div>
             <div class="ml-4">
@@ -571,7 +590,8 @@
           </div>
         </div>
 
-        <div data-card="codes:sust:fechados" class="card-hi card-hi--sust bg-white rounded-lg p-6">
+        <div data-card="codes:sust:fechados"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">✅</div>
             <div class="ml-4">
@@ -598,17 +618,15 @@
             fabExtra.classList.add('hidden');
             sustExtra.classList.remove('hidden');
 
-            // garante exibição correta
-            sustExtra.style.removeProperty('display');
-            if (getComputedStyle(sustExtra).display === 'none') sustExtra.style.display = 'grid';
+            // não destacar subcards de Sustentação
             sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
-              el.classList.remove('hidden', 'invisible', 'sr-only');
+              el.classList.remove('card-hi', 'card-hi--sust');
               el.style.removeProperty('display');
               el.style.removeProperty('visibility');
               el.style.removeProperty('opacity');
             });
 
-            // destaca Sustentação (card principal)
+            // destacar somente o card principal "Sustentação"
             sustCard.classList.add('card-hi', 'card-hi--sust');
             return;
           }
