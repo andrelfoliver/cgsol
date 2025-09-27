@@ -513,16 +513,18 @@
 
       <!-- Sustentação: 8 cards (começa oculto) -->
       <div id="codesKpisSustExtra" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 hidden">
-        <div data-card="codes:sust:total"
-          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+        <!-- Fora do Prazo (substitui o antigo "Total de Chamados") -->
+        <div data-card="codes:sust:fora-prazo"
+          class="bg-white rounded-lg shadow-md  p-6 cursor-pointer hover:shadow-lg transition-shadow">
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">📋</div>
+            <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Total de Chamados</p>
-              <p class="text-2xl font-bold text-gray-900" id="sustTotal">0</p>
+              <p class="text-sm font-medium text-gray-600">Fora do Prazo</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustForaPrazo">0</p>
             </div>
           </div>
         </div>
+
 
         <div data-card="codes:sust:adesenvolver"
           class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">

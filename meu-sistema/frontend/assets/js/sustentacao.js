@@ -658,10 +658,9 @@
 
             // ✅ atualiza somente coisas de sustentação
             const tot = String(list.length);
-            const elTotal = document.getElementById('sustTotal');
-            if (elTotal) elTotal.textContent = tot;
             const elTopo = document.getElementById('sustentacaoCount');
             if (elTopo) elTopo.textContent = tot;
+
 
             // guarda a lista crua e aplica filtros
             sustRaw = list;
@@ -746,10 +745,9 @@
         ensureCharts(filtered);
         // atualiza contador do painel de sustentação
         const tot = String(filtered.length);
-        const elTotal = document.getElementById('sustTotal');
-        if (elTotal) elTotal.textContent = tot;
         const elTopo = document.getElementById('sustentacaoCount');
         if (elTopo) elTopo.textContent = tot;
+
     };
 
     // calcula e atualiza os 8 cards (IDs esperados — ajuste se seu HTML usar outros IDs)
@@ -783,6 +781,7 @@
 
         // mapeie para os IDs do DOM (ajuste se necessário)
         const idMap = {
+            foraDoPrazo: 'sustForaPrazo',
             aDesenvolver: 'sustADevs',
             emDesenvolvimento: 'sustEmDev',
             emHomologacao: 'sustHomolog',
@@ -792,11 +791,11 @@
             concluido: 'sustFechados'
         };
 
-        // escreve nos cards individuais
         for (const k in idMap) {
             const el = document.getElementById(idMap[k]);
             if (el) el.textContent = String(counters[k] || 0);
         }
+
 
         // total (card “Total de Chamados” e KPI do topo CODES)
         const totalTxt = String((list || []).length);
@@ -815,6 +814,7 @@
     // tenta ligar os handlers de clique dos sub-cards (se existirem no DOM)
     function bindSustCardClicks() {
         const map = {
+            'sustForaPrazo': 'fora do prazo',
             'sustADevs': 'a desenvolver',
             'sustEmDev': 'em desenvolvimento',
             'sustHomolog': 'em homologacao',
@@ -823,6 +823,7 @@
             'sustSuspenso': 'suspenso',
             'sustFechados': 'concluido'
         };
+
 
         for (const id in map) {
             const el = document.getElementById(id);
