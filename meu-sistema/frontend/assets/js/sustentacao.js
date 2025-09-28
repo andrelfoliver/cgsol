@@ -813,7 +813,6 @@
     // tenta ligar os handlers de clique dos sub-cards (se existirem no DOM)
     function bindSustCardClicks() {
         const map = {
-            'sustForaPrazo': 'fora do prazo',
             'sustADevs': 'a desenvolver',
             'sustEmDev': 'em desenvolvimento',
             'sustHomolog': 'em homologacao',
@@ -823,20 +822,36 @@
             'sustFechados': 'concluido'
         };
 
-
         for (const id in map) {
-            const el = document.getElementById(id);
-            if (!el) continue;
+            const numEl = document.getElementById(id);
+            if (!numEl) continue;
+
+            // sobe para o container do card (aquele com data-card="codes:sust:*")
+            const card = numEl.closest('[data-card^="codes:sust:"]') || numEl.parentElement;
+            if (!card) continue;
+
             // evita múltiplos binds
-            if (el.__bound) continue;
-            el.__bound = true;
-            el.style.cursor = 'pointer';
-            el.addEventListener('click', (e) => {
+            if (card.__bound) continue;
+            card.__bound = true;
+
+            // acessibilidade + UX
+            card.style.cursor = 'pointer';
+            card.setAttribute('role', 'button');
+            card.setAttribute('tabindex', '0');
+
+            const run = (e) => {
                 e.preventDefault();
                 window.filterSustByStatus(map[id]);
+            };
+
+            card.addEventListener('click', run);
+            // permite Enter/Espaço ativarem também
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); run(e); }
             });
         }
     }
+
 
     // tenta bind após o DOM estar pronto (e de novo em 300ms caso o HTML seja injetado dinamicamente)
     document.addEventListener('DOMContentLoaded', bindSustCardClicks);
