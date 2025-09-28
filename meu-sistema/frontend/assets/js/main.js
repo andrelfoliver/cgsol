@@ -1031,22 +1031,27 @@
     }
   }
   // ========= Ações (links com ícones) =========
+  // === Ações (bolinhas) para projetos ===
   function actionLinksHtml(idArg) {
     return `
-      <a href="#" onclick="showProjectDetail(${idArg}); return false;"
-         class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 mr-4" role="button">
-        <span>👁️</span><span>Ver</span>
-      </a>
-      <a href="#" onclick="editProject(${idArg}); return false;"
-         class="inline-flex items-center gap-1 text-green-600 hover:text-green-800 mr-4" role="button">
-        <span>✏️</span><span>Editar</span>
-      </a>
-      <a href="#" onclick="deleteProject(${idArg}); return false;"
-         class="inline-flex items-center gap-1 text-red-600 hover:text-red-800" role="button">
-        <span>🗑️</span><span>Excluir</span>
-      </a>
+      <div class="flex items-center justify-center gap-2">
+        <a href="#" onclick="showProjectDetail(${idArg}); return false;"
+           class="btn-ico btn-ico-sm bg-[#1555D6] hover:bg-[#0f42a8] text-white shadow-sm" title="Ver" aria-label="Ver">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+        </a>
+        <a href="#" onclick="editProject(${idArg}); return false;"
+           class="btn-ico btn-ico-sm bg-white text-[#1555D6] ring-2 ring-[#1555D6]" title="Editar" aria-label="Editar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5 20.5 7.5 7 21H3v-4L16.5 3.5z"/></svg>
+        </a>
+        <a href="#" onclick="deleteProject(${idArg}); return false;"
+           class="btn-ico btn-ico-sm bg-[#16a34a] hover:bg-[#15803d] text-white shadow-sm" title="Concluir" aria-label="Concluir">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+        </a>
+      </div>
     `;
   }
+
+
   // 🧩 NOVA — AÇÕES CODES no padrão Sustentação (Ver / Editar / Concluir)
   function actionLinksCodesHtml(p) {
     const idStr = JSON.stringify(p.id);
@@ -1170,64 +1175,149 @@
   function renderRecentTable(list) {
     const tbody = byId('projectsTableBody');
     if (!tbody) return;
+
+    // CSS (uma vez)
+    if (!document.getElementById('recent-table-css')) {
+      const style = document.createElement('style');
+      style.id = 'recent-table-css';
+      style.textContent = `
+        #projectsRecentTable{table-layout:fixed;width:100%}
+        #projectsRecentTable th{white-space:nowrap;text-align:center}
+        .btn-ico{display:inline-flex;align-items:center;justify-content:center;border-radius:9999px}
+        .btn-ico.btn-ico-sm{width:2rem;height:2rem}
+        .btn-ico svg{width:1rem;height:1rem}
+        .progress-bar{width:100%;height:8px;background:#e5e7eb;border-radius:9999px;overflow:hidden}
+        .progress-fill{height:8px;background:#2563eb;border-radius:9999px}
+        @media (max-width:1140px){.col-projeto{max-width:140px}}
+      `;
+      document.head.appendChild(style);
+    }
+
+    // THEAD (sem Sprints)
+    const table = tbody.closest('table');
+    if (table) {
+      table.id = 'projectsRecentTable';
+      let cg = table.querySelector('colgroup');
+      if (!cg) { cg = document.createElement('colgroup'); table.prepend(cg); }
+      cg.innerHTML = `
+        <col style="width:16%"><!-- Projeto -->
+        <col style="width:12%"><!-- Coordenação -->
+        <col style="width:14%"><!-- Status -->
+        <col style="width:26%"><!-- Progresso -->
+        <col style="width:14%"><!-- Responsável -->
+        <col style="width:160px"><!-- Ações -->
+      `;
+      const thead = table.querySelector('thead') || table.createTHead();
+      thead.innerHTML = `
+        <tr>
+          <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Coordenação</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Progresso</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+        </tr>
+      `;
+    }
+
     tbody.innerHTML = '';
 
-    if (!list.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto cadastrado.</td></tr>`;
+    if (!list || !list.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum projeto cadastrado.</td></tr>`;
       return;
     }
 
-    // 🔽 Ordena pelos mais recentes (data início ou fim)
-    const sorted = [...list].sort((a, b) => {
+    // Ordena e pega 5 recentes
+    const recent = [...list].sort((a, b) => {
       const da = new Date(a.inicio || a.fim || 0);
       const db = new Date(b.inicio || b.fim || 0);
       return db - da;
-    });
-
-    // 🔽 Pega só os 5 primeiros
-    const recent = sorted.slice(0, 5);
+    }).slice(0, 5);
 
     recent.forEach(p => {
       const idArg = js(p.id ?? p.nome);
-      const progresso = (p.progresso != null) ? Number(p.progresso) : null;
-      const sprints = (p.sprintsConcluidas != null && p.totalSprints != null)
-        ? `${p.sprintsConcluidas} de ${p.totalSprints}` : '—';
+      const progresso = (p.progresso != null) ? Number(p.progresso) : 0;
+      const concluded = /conclu/i.test(String(p.status || ''));
+
+      // botão concluir (verde ativo ou cinza desabilitado)
+      const concluirBtn = concluded
+        ? `
+          <span class="btn-ico btn-ico-sm bg-gray-300 text-white opacity-70 cursor-not-allowed"
+                aria-disabled="true" title="Concluído">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+          </span>`
+        : `
+          <a href="#" onclick="concluirProjeto(${idArg}); return false;"
+             class="btn-ico btn-ico-sm bg-[#16a34a] hover:bg-[#15803d] text-white shadow-sm" aria-label="Concluir" title="Concluir">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+          </a>`;
 
       tbody.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td class="px-6 py-4 whitespace-nowrap">
-          <div class="text-sm font-medium text-gray-900">${escapeHtml(p.nome) || '-'}</div>
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap">
-          <div class="text-sm text-gray-900">${escapeHtml(p.coordenacao) || '-'}</div>
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap">
-          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">
-            ${escapeHtml(p.status) || '-'}
-          </span>
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap">
-          <div class="flex items-center">
-            <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-              <div class="h-2 rounded-full bg-blue-600" style="width:${progresso != null ? progresso : 0}%"></div>
+        <tr class="align-middle">
+          <!-- Projeto -->
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900 col-projeto max-w-[180px] truncate" title="${escapeHtml(p.nome || '-')}">
+              ${escapeHtml(p.nome) || '-'}
             </div>
-            <span class="text-sm text-gray-900">${progresso != null ? progresso + '%' : '—'}</span>
-          </div>
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sprints}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-          <button onclick="showProjectDetail(${idArg})" class="text-blue-600 hover:text-blue-900 mr-3">👁️ Ver</button>
-          <button onclick="editProject(${idArg})" class="text-green-600 hover:text-green-900 mr-3">✏️ Editar</button>
-          <button onclick="deleteProject(${idArg})" class="text-red-600 hover:text-red-900">🗑️ Excluir</button>
-        </td>
-      </tr>
-    `);
+          </td>
+  
+          <!-- Coordenação -->
+          <td class="px-6 py-4 text-center whitespace-nowrap">
+            <div class="text-sm text-gray-900">${escapeHtml(p.coordenacao) || '-'}</div>
+          </td>
+  
+          <!-- Status -->
+          <td class="px-6 py-4 text-center whitespace-nowrap">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass(p.status)}">
+              ${escapeHtml(p.status) || '-'}
+            </span>
+          </td>
+  
+          <!-- Progresso -->
+          <td class="px-6 py-4 text-sm text-gray-900">
+            <div class="flex items-center">
+              <div class="progress-bar">
+                <div class="progress-fill" style="width:${Math.max(0, Math.min(100, progresso))}%"></div>
+              </div>
+              <span class="ml-2 whitespace-nowrap">${isNaN(progresso) ? '—' : progresso + '%'}</span>
+            </div>
+          </td>
+  
+          <!-- Responsável -->
+          <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">
+            ${escapeHtml(p.responsavel) || '—'}
+          </td>
+  
+          <!-- Ações -->
+          <td class="px-4 py-4 whitespace-nowrap">
+            <div class="flex items-center justify-center gap-3">
+              <a href="#" onclick="showProjectDetail(${idArg}); return false;"
+                 class="btn-ico btn-ico-sm bg-[#1555D6] hover:bg-[#0f42a8] text-white shadow-sm" aria-label="Ver" title="Ver">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </a>
+  
+              <a href="#" onclick="editProject(${idArg}); return false;"
+                 class="btn-ico btn-ico-sm bg-white text-[#1555D6] ring-2 ring-[#1555D6]" aria-label="Editar" title="Editar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5 20.5 7.5 7 21H3v-4L16.5 3.5z"/>
+                </svg>
+              </a>
+  
+              ${concluirBtn}
+            </div>
+          </td>
+        </tr>
+      `);
     });
   }
-
-
-
 
 
 
@@ -1296,9 +1386,6 @@
       tbody.insertAdjacentHTML('beforeend', rowHtml);
     });
   }
-
-
-
 
   // ========= KPIs =========
   function updateKPIs(list) {
@@ -2585,7 +2672,84 @@
   }
 
   // deixa global (como as outras)
-  window.concluirProjeto = concluirProjeto;
+  // torna global
+  window.concluirProjeto = async function concluirProjeto(idOrName) {
+    const p = findProjeto(idOrName);
+    if (!p || !p.id) {
+      toast('Ação inválida', 'Projeto não identificado.', 'warn');
+      return;
+    }
+
+    // já concluído? só feedback
+    if (/(conclu)/i.test(String(p.status || ''))) {
+      toast('Info', 'Este projeto já está concluído.', 'info');
+      return;
+    }
+
+    const doFinish = async () => {
+      try {
+        const resp = await fetch(`${API}/${p.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'Concluído',
+            fim: new Date().toISOString(),
+            // se quiser marcar 100%:
+            progresso: 100
+          })
+        });
+        if (!resp.ok) {
+          const j = await safeJsonOrNull(resp);
+          throw new Error((j && (j.erro || j.message)) || `Falha ao concluir (${resp.status})`);
+        }
+
+        // atualiza cache local “ao vivo”
+        const idx = cacheProjetos.findIndex(x => String(x.id) === String(p.id));
+        if (idx >= 0) {
+          cacheProjetos[idx] = {
+            ...cacheProjetos[idx],
+            status: 'Concluído',
+            fim: new Date().toISOString(),
+            progresso: 100
+          };
+        }
+
+        // re-render nas áreas que usam esses dados
+        renderRecentTable(cacheProjetos);
+        renderAllCoordTables(cacheProjetos);
+        updateKPIs(cacheProjetos);
+        // se estiver na aba CODES, atualize gráficos
+        try {
+          drawCodesSprintsChart(cacheProjetos);
+          drawCodesInternChart(cacheProjetos);
+        } catch { }
+
+        toast('Sucesso', `Projeto "${p.nome}" concluído.`, 'success');
+      } catch (e) {
+        console.error(e);
+        toast('Erro', e.message || 'Não foi possível concluir o projeto.', 'error');
+      }
+    };
+
+    // mesmo confirm modal usado no app
+    if (typeof window.showConfirm === 'function') {
+      window.showConfirm(
+        `Concluir o projeto "${p.nome}"?`,
+        doFinish,
+        () => { },
+        {
+          title: 'Concluir projeto',
+          icon: '✅',
+          confirmText: 'Concluir',
+          confirmClass: 'bg-emerald-600 hover:bg-emerald-700',
+          barClass: 'bg-emerald-600',
+          cancelText: 'Cancelar'
+        }
+      );
+    } else {
+      if (confirm(`Concluir o projeto "${p.nome}"?`)) doFinish();
+    }
+  };
 
   // Excluir projeto
   async function deleteProject(idOrName) {
