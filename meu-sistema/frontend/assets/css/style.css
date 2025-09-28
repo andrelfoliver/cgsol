@@ -401,14 +401,3 @@ td.col-actions {
   width: 20px;
   height: 20px;
 }
-
-/* neutraliza qualquer card-hi no card grande da Home */
-#homePage [data-card="codes:desenvolvimento-home"].card-hi {
-  box-shadow: none !important;
-  background: #fff !important;
-  transform: none !important;
-}
-
-#homePage [data-card="codes:desenvolvimento-home"].card-hi::before {
-  border-left: 0 !important;
-}

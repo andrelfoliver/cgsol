@@ -1047,7 +1047,53 @@
       </a>
     `;
   }
+  // 🧩 NOVA — AÇÕES CODES no padrão Sustentação (Ver / Editar / Concluir)
+  function actionLinksCodesHtml(p) {
+    const idStr = JSON.stringify(p.id);
+    const concluded = /conclu/i.test(String(p.status || ''));
 
+    const btnVer = `
+    <a href="#"
+       onclick="showProjectDetail(${idStr}); return false;"
+       class="btn-ico bg-[#1555D6] hover:bg-[#0f42a8] text-white shadow-sm"
+       aria-label="Ver" title="Ver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </a>`;
+
+    const btnEditar = `
+    <a href="#"
+       onclick="editProject(${idStr}); return false;"
+       class="btn-ico bg-white text-[#1555D6] ring-2 ring-[#1555D6]"
+       aria-label="Editar" title="Editar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M12 20h9"/>
+        <path d="M16.5 3.5 20.5 7.5 7 21H3v-4L16.5 3.5z"/>
+      </svg>
+    </a>`;
+
+    const btnConcluir = concluded
+      ? `
+      <span class="btn-ico bg-gray-300 text-white opacity-70 cursor-not-allowed"
+            aria-disabled="true" title="Concluído">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      </span>`
+      : `
+      <a href="#"
+         onclick="concluirProjeto(${idStr}); return false;"
+         class="btn-ico bg-[#16a34a] hover:bg-[#15803d] text-white shadow-sm"
+         aria-label="Concluir" title="Concluir">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      </a>`;
+
+    return `<div class="flex items-center gap-3">${btnVer}${btnEditar}${btnConcluir}</div>`;
+  }
   // === Ações da tabela de Sustentação ===
   function sustActionLinksHtml(numeroArg) {
     return `
@@ -1222,7 +1268,6 @@
             <span class="px-2 py-1 text-xs font-semibold rounded text-white ${ragClass(p.rag || p.farol)}">
               ${escapeHtml(p.rag || p.farol) || '—'}
             </span>
-
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
             <div class="progress-bar">
@@ -1231,22 +1276,27 @@
             <span class="ml-2">${progresso}%</span>
           </td>`;
 
-      // 👇 Só CODES mostra a coluna de Sprints
       if (tbodyId === 'codesTableBody') {
         rowHtml += `
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sprints}</td>`;
       }
 
+      // 🎯 AQUI trocamos o bloco de ações dependendo da coordenação
+      const actionsHtml = (String(coord).toUpperCase() === 'CODES')
+        ? actionLinksCodesHtml(p)        // Ver / Editar / Concluir (padrão Sustentação)
+        : actionLinksHtml(idArg);        // COSET/CGOD mantêm o antigo
+
       rowHtml += `
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(p.responsavel) || '—'}</td>
           <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            ${actionLinksHtml(idArg)}
+            ${actionsHtml}
           </td>
         </tr>`;
 
       tbody.insertAdjacentHTML('beforeend', rowHtml);
     });
   }
+
 
 
 
@@ -2389,22 +2439,25 @@
     }).join('') || `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum chamado.</td></tr>`;
   }
 
+
+
+
+
   async function loadSustentacaoView() {
     try {
       const res = await fetch(`${API_ROOT}/sustentacao`);
       if (!res.ok) throw new Error(`Falha ao carregar sustentação (${res.status})`);
       const itens = await res.json();
-
-      normalizeSustCardsSelectors();
+      normalizeSustCardsSelectors();   // <— idem na tela de Sustentação
       updateSustCards(itens);
 
       setCodesCardHighlight('sust');
-      drawSustDistribChart(itens);
-      applySustCard(Array.isArray(itens) ? itens.length : 0);
-      renderSustentacaoTable(itens);
 
-      // 🔁 mantém Home em sincronia com o total de Sustentação
-      updateKPIs(window.cacheProjetos || []);
+      // (REMOVIDO) if (SUST_TOP_ENABLED) injectSustTopCards(itens);
+
+      drawSustDistribChart(itens);                    // gráfico do card “Sustentação”
+      applySustCard(Array.isArray(itens) ? itens.length : 0); // total no card
+      renderSustentacaoTable(itens);                  // só tabela (sem topo injetado)
 
       updateLastUpdateTime();
     } catch (err) {
@@ -2412,13 +2465,11 @@
       renderSustentacaoTable([]);
       drawSustDistribChart([]);
       applySustCard(0);
-
-      // Mesmo em erro, reflete 0 na Home
-      updateKPIs(window.cacheProjetos || []);
-
       updateLastUpdateTime();
     }
   }
+
+
 
   // ========= Criar / Atualizar =========
   async function handleCreateOrUpdate(e) {
@@ -2493,6 +2544,49 @@
       toast('Erro', err.message, 'error');
     }
   }
+  // ✅ Concluir Projeto (CODES)
+  async function concluirProjeto(idOrName) {
+    const p = findProjeto(idOrName);
+    if (!p || !p.id) {
+      return toast('Ação inválida', 'Projeto não identificado.', 'warn');
+    }
+    if (String(p.status).toLowerCase().includes('conclu')) {
+      return toast('Info', 'Este projeto já está concluído.', 'info');
+    }
+
+    showConfirm(
+      `Concluir o projeto "${p.nome}"?`,
+      async () => {
+        try {
+          const res = await fetch(`${API}/${p.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Concluído' }) // envie mais campos se quiser
+          });
+          if (!res.ok) {
+            const erro = await safeJsonOrNull(res);
+            throw new Error((erro && (erro.erro || erro.message)) || `Erro ao concluir (${res.status})`);
+          }
+          toast('Sucesso', 'Projeto concluído!', 'success');
+          await loadProjetos(); // recarrega tabelas/gráficos/kpis
+        } catch (err) {
+          console.error(err);
+          toast('Erro', err.message, 'error');
+        }
+      },
+      null,
+      {
+        title: 'Concluir projeto',
+        icon: '✅',
+        confirmText: 'Concluir',
+        confirmClass: 'bg-emerald-600 hover:bg-emerald-700'
+      }
+    );
+  }
+
+  // deixa global (como as outras)
+  window.concluirProjeto = concluirProjeto;
+
   // Excluir projeto
   async function deleteProject(idOrName) {
     const p = findProjeto(idOrName);
