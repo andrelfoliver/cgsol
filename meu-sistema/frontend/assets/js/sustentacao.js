@@ -230,73 +230,78 @@
         const tbody = document.getElementById('sustentacaoTableBody');
         if (!tbody) return;
 
-        sustCache = Array.isArray(list) ? list : [];
+        // 👉 mostra concluídos somente quando o filtro ativo pedir
+        const showConcluidos = /conclu/i.test(String(window.__sustActiveFilter || ''));
+
+        const visible = (Array.isArray(list) ? list : []).filter(ch => {
+            const isConcluido = /conclu/i.test(String(ch.status || ''));
+            return showConcluidos ? true : !isConcluido;
+        });
+
+        sustCache = visible;
         tbody.innerHTML = '';
 
-        if (!sustCache.length) {
+        if (!visible.length) {
             tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum chamado encontrado.</td></tr>`;
             return;
         }
 
-        sustCache.forEach(ch => {
+        visible.forEach(ch => {
             const concluded = /conclu/i.test(ch.status || '');
-
             const checkBtn = concluded
                 ? `
-                <span class="btn-ico bg-gray-300 text-white opacity-70 cursor-not-allowed"
-                      aria-disabled="true" title="Concluído">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M20 6 9 17l-5-5"/>
-                  </svg>
-                </span>`
+              <span class="btn-ico bg-gray-300 text-white opacity-70 cursor-not-allowed"
+                    aria-disabled="true" title="Concluído">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+              </span>`
                 : `
-                <a href="#"
-                   onclick="concluirChamado('${esc(ch.numero)}')"
-                   class="btn-ico bg-[#16a34a] hover:bg-[#15803d] text-white shadow-sm"
-                   aria-label="Concluir" title="Concluir">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M20 6 9 17l-5-5"/>
-                  </svg>
-                </a>`;
+              <a href="#"
+                 onclick="concluirChamado('${esc(ch.numero)}')"
+                 class="btn-ico bg-[#16a34a] hover:bg-[#15803d] text-white shadow-sm"
+                 aria-label="Concluir" title="Concluir">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+              </a>`;
 
             tbody.insertAdjacentHTML('beforeend', `
-              <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 text-sm font-medium text-gray-900">${esc(ch.projeto)}</td>
-                <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.numero)}</td>
-                <td class="px-6 py-4 text-sm">
-                  <span class="badge" style="background:${colorForStatus(ch.status)};color:#fff;border-radius:6px;">
-                    ${esc(ch.status)}
-                  </span>
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.desenvolvedor)}</td>
-                <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.solicitante)}</td>
-          
-                <td class="px-6 py-4 text-sm font-medium">
-                  <div class="flex items-center gap-3">
-                    <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')"
-                       class="btn-ico bg-[#1555D6] hover:bg-[#0f42a8] text-white shadow-sm" aria-label="Ver" title="Ver">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                      </svg>
-                    </a>
-          
-                    <a href="#" onclick="editarChamado('${esc(ch.numero)}')"
-                       class="btn-ico bg-white text-[#1555D6] ring-2 ring-[#1555D6]" aria-label="Editar" title="Editar">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path d="M12 20h9"/>
-                        <path d="M16.5 3.5 20.5 7.5 7 21H3v-4L16.5 3.5z"/>
-                      </svg>
-                    </a>
-          
-                    ${checkBtn}
-                  </div>
-                </td>
-              </tr>
-            `);
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 text-sm font-medium text-gray-900">${esc(ch.projeto)}</td>
+              <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.numero)}</td>
+              <td class="px-6 py-4 text-sm">
+                <span class="badge" style="background:${colorForStatus(ch.status)};color:#fff;border-radius:6px;">
+                  ${esc(ch.status)}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.desenvolvedor)}</td>
+              <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.solicitante)}</td>
+              <td class="px-6 py-4 text-sm font-medium">
+                <div class="flex items-center gap-3">
+                  <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')"
+                     class="btn-ico bg-[#1555D6] hover:bg-[#0f42a8] text-white shadow-sm" aria-label="Ver" title="Ver">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </a>
+                  <a href="#" onclick="editarChamado('${esc(ch.numero)}')"
+                     class="btn-ico bg-white text-[#1555D6] ring-2 ring-[#1555D6]" aria-label="Editar" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5 20.5 7.5 7 21H3v-4L16.5 3.5z"/>
+                    </svg>
+                  </a>
+                  ${checkBtn}
+                </div>
+              </td>
+            </tr>
+          `);
         });
-
     }
+
+
     // Concluir direto com confirmação (sem abrir o modal Ver)
     window.concluirChamado = function (numero) {
         const ch = sustCache.find(c => String(c.numero) === String(numero));
@@ -352,13 +357,16 @@
         const s = document.getElementById('fSolic')?.value || '';
 
         const pN = norm(p), dN = norm(d), sN = norm(s);
+        const showConcluidos = /conclu/i.test(String(window.__sustActiveFilter || ''));
 
         const filtered = (sustRaw || []).filter(ch => {
+            const isConcluido = /conclu/i.test(String(ch.status || ''));
+            if (!showConcluidos && isConcluido) return false; // esconde concluídos por padrão
+
             const proj = norm(ch.projeto);
             const dev = norm(ch.desenvolvedor);
             const solic = norm(ch.solicitante);
 
-            // cada campo filtra sua coluna; vazio = ignora
             const okProj = !pN || proj.includes(pN);
             const okDev = !dN || dev.includes(dN);
             const okSolic = !sN || solic.includes(sN);
@@ -366,10 +374,8 @@
             return okProj && okDev && okSolic;
         });
 
-        // atualiza cache atual e re-renderiza
         sustCache = filtered;
         renderTable(filtered);
-
     }
 
     // abrir modal por número usando o cache
