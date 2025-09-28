@@ -1185,9 +1185,6 @@
 
   // ========= KPIs =========
   function updateKPIs(list) {
-
-
-
     const codes = list.filter(p => norm(p.coordenacao) === 'codes');
     const coset = list.filter(p => norm(p.coordenacao) === 'coset');
     const cgod = list.filter(p => norm(p.coordenacao) === 'cgod');
@@ -1221,12 +1218,14 @@
       : 0;
     setText('kpiProgressoMedio', progressoMedio + '%');
 
-    // Projetos ativos
+    // Projetos ativos (apenas CODES e apenas "Em Andamento")
     const ativos = list.filter(p => {
-      const s = norm(p.status);
-      return ['em andamento', 'em risco', 'sustentacao'].includes(s);
+      const s = norm(p.status);                         // ex.: "em andamento"
+      const c = (p.coordenacao || '').toLowerCase();   // ex.: "CODES"
+      return c.includes('codes') && s === 'em andamento';
     }).length;
     setText('kpiProjetosAtivos', ativos);
+
 
 
     // Totais Home
@@ -1237,8 +1236,15 @@
     setText('projetosCgod', cgod.length);
 
     // Home – Detalhamento CODES
-    setCardCount('codes', 'desenvolvimento', codes.filter(p => norm(p.status) === 'em andamento').length);
-    // CODES – contagem Sustentação (fallback por status, mas prioriza os chamados, se já carregados)
+    // Desenvolvimento = todos os CODES não concluídos e que não são Sustentação
+    setCardCount(
+      'codes',
+      'desenvolvimento',
+      codes.filter(p => {
+        const s = norm(p.status);
+        return s !== 'concluido' && !isSust(s);
+      }).length
+    );    // CODES – contagem Sustentação (fallback por status, mas prioriza os chamados, se já carregados)
     const sustCount = codes.filter(p => isSust(p.status)).length;
     applySustCard(sustentacaoTotal ?? sustCount);
 
@@ -1251,8 +1257,7 @@
     setCardCount('cgod', 'datalake', cgod.filter(p => norm(p.tipo).includes('dados')).length);
 
     // CODES page
-    setCardCount('codes', 'ativos', codes.filter(p => ['em andamento', 'sustentacao'].includes(norm(p.status))).length);
-
+    setCardCount('codes', 'ativos', codes.filter(p => norm(p.status) === 'em andamento').length);
     // ⛔ quando em Sustentação, não reescreva os cards de status (já vêm dos chamados)
     if (window.__codesView !== 'sustentacao') {
       setCardCount('codes', 'fora-prazo',
@@ -1932,9 +1937,11 @@
         const status = (p.status || "").toLowerCase();
         switch (catLower) {
           case "ativos":
-            return ["em andamento", "em risco", "sustentação", "sustentacao"].includes(status);
-          case "desenvolvimento":
             return status === "em andamento";
+          case "desenvolvimento":
+            // Mostrar todos os não concluídos e não Sustentação
+            return status !== "concluído" && status !== "concluido" && !/^sustentac(ao|ão)$/.test(status);
+
           case "fora-prazo":
             return p.fim && new Date(p.fim) < now && status !== "concluído";
           case "planejado":
