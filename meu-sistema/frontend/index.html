@@ -274,7 +274,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           <!-- CODES -->
-          <div data-card="codes:desenvolvimento"
+          <div data-card="codes:desenvolvimento-home"
             class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
             onclick="showFabrica()">
 
@@ -288,11 +288,11 @@
                   <p class="font-medium text-gray-900">Desenvolvimento</p>
                   <p class="text-xs text-gray-600">Em Andamento</p>
                 </div>
-                <span class="text-lg font-bold text-blue-600">0</span>
+                <span id="homeDevCount" class="text-lg font-bold text-blue-600">0</span>
               </div>
               <div
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('CODES','sustentacao'); event.stopPropagation();">
+                onclick="showSustentacao(); event.stopPropagation();">
                 <div>
                   <p class="font-medium text-gray-900">Sustentação</p>
                   <p class="text-xs text-gray-600">Sistemas em produção</p>
@@ -2022,7 +2022,7 @@
 
         // 2) Encontra o bloco CODES na HOME (o cartão grande “CODES”)
         const codesHomeCard = document.querySelector(
-          '#homePage [data-card="codes:desenvolvimento"]'
+          '#homePage [data-card="codes:desenvolvimento-home"]'
         );
         if (!codesHomeCard) return null;
 
@@ -2104,6 +2104,68 @@
       });
     })();
   </script>
+  <!-- ... fim do script de “Espelha Sustentação” -->
+  </script>
+
+  <!-- ⬇️ COLE ESTE BLOCO AQUI -->
+  <script>
+    (function () {
+      function computeHomeDevCount(data) {
+        if (!Array.isArray(data)) return 0;
+        return data.filter(p => {
+          const coord = (p.coordenacao || '').toLowerCase();
+          const status = (p.status || '').toLowerCase();
+          const nomeDescTipo = [
+            p.nome || p.projeto || '',
+            p.descricao || '',
+            p.tipo || p.projectTipo || p['tipo do projeto'] || ''
+          ].join(' ').toLowerCase();
+
+          const isCodes = coord.includes('codes');
+          const isSust = /sustenta(ç|c)[aã]o/.test(nomeDescTipo) || status === 'sustentação';
+          const emAndamento = status === 'em andamento'; // troque por "true" se quiser contar tudo exceto Sustentação
+          return isCodes && !isSust && emAndamento;
+        }).length;
+      }
+
+      function setHomeDevCount(data) {
+        const el = document.getElementById('homeDevCount');
+        if (!el) return;
+        const val = computeHomeDevCount(data);
+        if (el.textContent.trim() !== String(val)) el.textContent = val;
+      }
+
+      // roda sempre que os KPIs forem atualizados
+      const prevUpdateKPIs = window.updateKPIs;
+      window.updateKPIs = function (data) {
+        try { if (typeof prevUpdateKPIs === 'function') prevUpdateKPIs(data); }
+        finally { setHomeDevCount(data || window.cacheProjetos || []); }
+      };
+
+      // garante atualização ao trocar de aba
+      const prevShowPage = window.showPage;
+      if (typeof prevShowPage === 'function') {
+        window.showPage = function (pageId, el) {
+          const r = prevShowPage.apply(this, arguments);
+          setTimeout(() => setHomeDevCount(window.cacheProjetos || []), 50);
+          return r;
+        };
+      }
+
+      // primeira carga
+      document.addEventListener('DOMContentLoaded', () => {
+        let tries = 0;
+        const t = setInterval(() => {
+          setHomeDevCount(window.cacheProjetos || []);
+          tries++;
+          if (tries > 12 || document.getElementById('homeDevCount')) clearInterval(t);
+        }, 120);
+      });
+    })();
+  </script>
+
+  <!-- imports do Chart.js (deixe como já estão) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
 
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
