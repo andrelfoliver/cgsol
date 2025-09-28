@@ -757,6 +757,7 @@
 
 
     // calcula e atualiza os 8 cards (IDs esperados — ajuste se seu HTML usar outros IDs)
+    // calcula e atualiza os 8 cards (IDs esperados) + total na Home
     function updateSustCards(list = sustRaw) {
         const counters = {
             aDesenvolver: 0,
@@ -790,21 +791,34 @@
             concluido: 'sustFechados'
         };
 
-        // escreve cada card
+        // escreve cada card da grade de Sustentação (CODES)
         for (const k in idMap) {
             const el = document.getElementById(idMap[k]);
             if (el) el.textContent = String(counters[k] || 0);
         }
 
-        // total (card “Sustentação”)
+        // total de chamados de sustentação
         const total = String((list || []).length);
-        const elTotal = document.getElementById('sustTotal');
-        if (elTotal) elTotal.textContent = total;
+
+        // KPI "Sustentação" no topo da página CODES
         const elTopo = document.getElementById('sustentacaoCount');
         if (elTopo) elTopo.textContent = total;
 
+        // (opcional) algum card seu pode usar esse id
+        const elTotal = document.getElementById('sustTotal');
+        if (elTotal) elTotal.textContent = total;
+
+        // 🔸 ATUALIZA o número do card "Sustentação" na Home (Detalhamento por Coordenação > CODES)
+        // Estrutura atual: no card CODES da Home há 2 blocos dentro de ".space-y-3":
+        // [1] Desenvolvimento  [2] Sustentação. Pegamos o <span> numérico do segundo bloco.
+        const homeSustNum = document.querySelector(
+            '#homePage [data-card="codes:desenvolvimento"] .space-y-3 > div:nth-child(2) span.text-lg'
+        );
+        if (homeSustNum) homeSustNum.textContent = total;
+
         return counters;
     }
+
 
 
     // expõe para que main.js possa chamar quando abrir a tela de sustentação

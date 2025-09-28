@@ -297,7 +297,7 @@
                   <p class="font-medium text-gray-900">Sustentação</p>
                   <p class="text-xs text-gray-600">Sistemas em produção</p>
                 </div>
-                <span class="text-lg font-bold text-yellow-600">0</span>
+                <span id="homeSustentacaoCount" class="text-lg font-bold text-yellow-600">0</span>
               </div>
             </div>
           </div>
@@ -2011,125 +2011,99 @@
   </script>
 
   <script>
+    /* ==== Espelha o número de Sustentação (CODES -> HOME) ==== */
+
     (function () {
-      try {
-        if (!Array.isArray(window.cacheProjetos)) {
-          window.cacheProjetos = [
-            { id: 1, nome: 'Portal Unificado', coordenacao: 'COSET', status: 'Em Andamento', rag: 'Verde', progresso: 45, responsavel: 'Ana', sprints: 6 },
-            { id: 2, nome: 'Catálogo de Dados', coordenacao: 'CGOD', status: 'Em Andamento', rag: 'Amarelo', progresso: 25, responsavel: 'Bruno', sprints: 4 },
-            { id: 3, nome: 'Sistema de Pagamentos', coordenacao: 'COSET', status: 'Planejado', rag: '', progresso: 0, responsavel: 'Carla', sprints: 0 },
-            { id: 4, nome: 'BI Operacional', coordenacao: 'CGOD', status: 'Concluído', rag: 'Verde', progresso: 100, responsavel: 'Diego', sprints: 8 },
-            { id: 5, nome: 'APP Interno', coordenacao: 'CODES', status: 'Sustentação', rag: 'Amarelo', progresso: 85, responsavel: 'Eduarda', sprints: 12 }
-          ];
+      // Localiza (ou cria) a referência ao span do número na HOME
+      function getHomeSustEl() {
+        // 1) Se já tiver id, usa
+        let el = document.getElementById('homeSustentacaoCount');
+        if (el) return el;
+
+        // 2) Encontra o bloco CODES na HOME (o cartão grande “CODES”)
+        const codesHomeCard = document.querySelector(
+          '#homePage [data-card="codes:desenvolvimento"]'
+        );
+        if (!codesHomeCard) return null;
+
+        // 3) Dentro dele, acha a linha que tem o onclick para "sustentacao"
+        const sustRow = codesHomeCard.querySelector(
+          '[onclick*="sustentacao"]'
+        );
+        if (!sustRow) return null;
+
+        // 4) O número é o <span> mais “forte” (o da direita)
+        el = sustRow.querySelector('span.text-lg, span.font-bold, span');
+        if (el) {
+          el.id = 'homeSustentacaoCount'; // cria id p/ facilitar próximas execuções
+          return el;
         }
-
-        window.renderAllCoordTables = function (data) {
-          try {
-            const cosetTbody = document.getElementById('cosetTableBody');
-            const cgodTbody = document.getElementById('cgodTableBody');
-            const recentTbody = document.getElementById('projectsTableBody');
-            const codesTbody = document.getElementById('codesTableBody');
-
-            if (cosetTbody) cosetTbody.innerHTML = '';
-            if (cgodTbody) cgodTbody.innerHTML = '';
-            if (recentTbody) recentTbody.innerHTML = '';
-            if (codesTbody) codesTbody.innerHTML = '';
-
-            // Filtro global vindo dos cards
-            const f = window.__tableFilter || { coord: '', categoria: '' };
-            const coordFiltra = (p) => {
-              const c = (p.coordenacao || '').toString().toLowerCase();
-              if (!f.coord) return true;
-              return c.indexOf(f.coord) !== -1;
-            };
-            const catFiltra = (p) => matchesCategoria(p, f.coord, f.categoria);
-
-            // Render base + aplica filtro por coord/categoria nas páginas específicas
-            data.forEach(p => {
-              const nome = p.nome || p.projeto || '—';
-              const status = p.status || '—';
-              const rag = p.rag || '—';
-              const progresso = (typeof p.progresso !== 'undefined') ? p.progresso : 0;
-              const responsavel = p.responsavel || '—';
-              const coord = (p.coordenacao || '').toString().toLowerCase();
-
-              const row = `
-          <tr>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${nome}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${status}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${rag}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${progresso}%</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${responsavel}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
-          </tr>`;
-
-              // COSET
-              if (coord.indexOf('coset') !== -1 && cosetTbody) {
-                if (!f.coord || f.coord === 'coset') {
-                  if (catFiltra(p)) cosetTbody.insertAdjacentHTML('beforeend', row);
-                } else {
-                  cosetTbody.insertAdjacentHTML('beforeend', row);
-                }
-              }
-
-              // CGOD
-              if (coord.indexOf('cgod') !== -1 && cgodTbody) {
-                if (!f.coord || f.coord === 'cgod') {
-                  if (catFiltra(p)) cgodTbody.insertAdjacentHTML('beforeend', row);
-                } else {
-                  cgodTbody.insertAdjacentHTML('beforeend', row);
-                }
-              }
-
-              // CODES
-              if (coord.indexOf('codes') !== -1 && codesTbody) {
-                // Mantém CODES sem subfiltro aqui; o modo Fábrica/Sustentação já é tratado em showPage
-                codesTbody.insertAdjacentHTML('beforeend', row);
-              }
-
-              // Projetos Recentes sempre listam tudo
-              if (recentTbody) recentTbody.insertAdjacentHTML('beforeend', row);
-            });
-
-            // KPIs simples
-            const getCount = (needle) => {
-              needle = (needle || '').toString().toLowerCase();
-              let count = 0;
-              for (let j = 0; j < data.length; j++) {
-                if ((data[j].coordenacao || '').toString().toLowerCase().indexOf(needle) !== -1) count++;
-              }
-              return count;
-            };
-            let el;
-            el = document.getElementById('projetosCoset'); if (el) el.textContent = getCount('coset');
-            el = document.getElementById('projetosCgod'); if (el) el.textContent = getCount('cgod');
-            const totalVG = getCount('codes') + getCount('coset') + getCount('cgod');
-            el = document.getElementById('totalProjetos'); if (el) el.textContent = totalVG;
-
-            // Badge do filtro nas páginas (opcional e só quando há categoria)
-            if (f.categoria) {
-              if (f.coord === 'coset') renderFiltroBadge(cosetTbody, `COSET • ${f.categoria}`);
-              if (f.coord === 'cgod') renderFiltroBadge(cgodTbody, `CGOD • ${f.categoria}`);
-            }
-
-            // Após render, se existir, atualiza somatórios da CODES
-            if (typeof window.updateCodesTotals === 'function') window.updateCodesTotals();
-
-          } catch (err) {
-            console.warn('renderAllCoordTables erro:', err);
-          }
-        };
-
-        // inicializa
-        if (typeof renderAllCoordTables === 'function') renderAllCoordTables(window.cacheProjetos || []);
-        if (typeof updateKPIs === 'function') updateKPIs(window.cacheProjetos || []);
-
-      } catch (outerErr) {
-        console.error('filler geral erro:', outerErr);
+        return null;
       }
+
+      // Fonte: número exibido no topo da aba CODES
+      function getCodesSustEl() {
+        return document.getElementById('sustentacaoCount');
+      }
+
+      // Copia o texto (ex.: "12") da CODES -> HOME
+      function syncSustCount() {
+        const src = getCodesSustEl();
+        const dst = getHomeSustEl();
+        if (!src || !dst) return;
+
+        // Normaliza (tira espaços) e aplica
+        const val = (src.textContent || '0').trim();
+        if (dst.textContent !== val) dst.textContent = val;
+      }
+
+      // Observa mudanças no #sustentacaoCount (quando sua lógica atualizar)
+      function attachObserver() {
+        const src = getCodesSustEl();
+        if (!src || window.__sustMirrorObs) return;
+
+        const obs = new MutationObserver(syncSustCount);
+        obs.observe(src, { characterData: true, childList: true, subtree: true });
+        window.__sustMirrorObs = obs;
+      }
+
+      // Dispara em navegação entre abas (caso você troque para CODES e o número mude)
+      function hookShowPage() {
+        if (window.__showPageHooked) return;
+        window.__showPageHooked = true;
+
+        const orig = window.showPage;
+        if (typeof orig === 'function') {
+          window.showPage = function (pageId, el) {
+            const r = orig.apply(this, arguments);
+            // dá um micro tempo para o DOM da página alvo montar
+            setTimeout(() => { attachObserver(); syncSustCount(); }, 50);
+            return r;
+          };
+        }
+      }
+
+      // Integra com sua função já existente (se houver)
+      const prevUpdateCodesTotals = window.updateCodesTotals;
+      window.updateCodesTotals = function () {
+        try { if (typeof prevUpdateCodesTotals === 'function') prevUpdateCodesTotals(); }
+        finally { attachObserver(); syncSustCount(); }
+      };
+
+      // Primeira carga
+      document.addEventListener('DOMContentLoaded', () => {
+        hookShowPage();
+        // roda algumas tentativas rápidas para pegar quando os cards carregam
+        let tries = 0;
+        const t = setInterval(() => {
+          tries++;
+          attachObserver();
+          syncSustCount();
+          if (tries >= 12 || (getCodesSustEl() && getHomeSustEl())) clearInterval(t);
+        }, 120);
+      });
     })();
   </script>
-
 
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>

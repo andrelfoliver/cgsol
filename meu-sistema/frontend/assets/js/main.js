@@ -1299,6 +1299,8 @@
     const totalVG = (codes.length + (sustentacaoTotal ?? 0)) + coset.length + cgod.length;
     setText('totalProjetos', totalVG);
     setText('projetosCodes', codes.length + (sustentacaoTotal ?? 0));
+    setText('projetosSustentacao', (sustentacaoTotal ?? 0));   // ✅ agora preenche Sustentação
+
     setText('projetosCoset', coset.length);
     setText('projetosCgod', cgod.length);
 
@@ -2299,21 +2301,29 @@
       const res = await fetch(`${API_ROOT}/sustentacao`);
       if (!res.ok) throw new Error(`Falha ao carregar Sustentação (${res.status})`);
       const itens = await res.json();
-      normalizeSustCardsSelectors();   // <— garante os data-card corretos
-      updateSustCards(itens);
 
+      normalizeSustCardsSelectors();            // garante data-card padronizado
+      updateSustCards(itens);                   // preenche os cards "codes:sust-*"
+      drawSustDistribChart(itens);              // 🍩 do card
+      applySustCard(Array.isArray(itens) ? itens.length : 0); // seta sustTotal
 
-      // OK manter o gráfico do card e o total:
-      drawSustDistribChart(itens);                 // 🍩 do card
-      applySustCard(Array.isArray(itens) ? itens.length : 0);
+      // 🔁 AGORA que sustentacaoTotal foi setado por applySustCard,
+      //     recalcule os KPIs da Home para preencher <span id="projetosSustentacao">
+      updateKPIs(window.cacheProjetos || []);
+
       updateLastUpdateTime();
     } catch (e) {
       console.error(e);
       drawSustDistribChart([]);
       applySustCard(0);
+
+      // Mesmo em erro, recalcule para refletir 0 em Sustentação na Home
+      updateKPIs(window.cacheProjetos || []);
+
       updateLastUpdateTime();
     }
   }
+
 
   function renderSustentacaoTable(itens) {
     const lista = Array.isArray(itens) ? itens : [];
@@ -2379,25 +2389,22 @@
     }).join('') || `<tr><td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">Nenhum chamado.</td></tr>`;
   }
 
-
-
-
-
   async function loadSustentacaoView() {
     try {
       const res = await fetch(`${API_ROOT}/sustentacao`);
       if (!res.ok) throw new Error(`Falha ao carregar sustentação (${res.status})`);
       const itens = await res.json();
-      normalizeSustCardsSelectors();   // <— idem na tela de Sustentação
+
+      normalizeSustCardsSelectors();
       updateSustCards(itens);
 
       setCodesCardHighlight('sust');
+      drawSustDistribChart(itens);
+      applySustCard(Array.isArray(itens) ? itens.length : 0);
+      renderSustentacaoTable(itens);
 
-      // (REMOVIDO) if (SUST_TOP_ENABLED) injectSustTopCards(itens);
-
-      drawSustDistribChart(itens);                    // gráfico do card “Sustentação”
-      applySustCard(Array.isArray(itens) ? itens.length : 0); // total no card
-      renderSustentacaoTable(itens);                  // só tabela (sem topo injetado)
+      // 🔁 mantém Home em sincronia com o total de Sustentação
+      updateKPIs(window.cacheProjetos || []);
 
       updateLastUpdateTime();
     } catch (err) {
@@ -2405,11 +2412,13 @@
       renderSustentacaoTable([]);
       drawSustDistribChart([]);
       applySustCard(0);
+
+      // Mesmo em erro, reflete 0 na Home
+      updateKPIs(window.cacheProjetos || []);
+
       updateLastUpdateTime();
     }
   }
-
-
 
   // ========= Criar / Atualizar =========
   async function handleCreateOrUpdate(e) {
