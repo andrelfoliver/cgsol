@@ -21,6 +21,20 @@
   let confirmCallback = null;
   let cancelCallback = null;
   let chartSustDistrib = null;
+  // ---- Chart.js Annotation (registro único) ----
+  let __annotationRegistered = false;
+  function ensureAnnotationPlugin() {
+    if (__annotationRegistered || !window.Chart || !Chart.register) return;
+    const anno =
+      // tenta vários nomes globais possíveis (depende de como o script foi importado)
+      window.chartjsPluginAnnotation ||
+      window['chartjs-plugin-annotation'] ||
+      (window.ChartAnnotation && window.ChartAnnotation);
+    if (anno) {
+      Chart.register(anno);
+      __annotationRegistered = true;
+    }
+  }
 
   // 👇 adicione
   let chartStatusDistrib = null;
@@ -96,6 +110,8 @@
     window.deleteProject = deleteProject;
     window.openNewProject = openNewProject;
     window.showSustentacao = showSustentacao;
+    // Filtro ativo (cards da Fábrica/CODES)
+    window.__activeDevFilter = '';
 
     document.querySelectorAll('[data-card="codes:desenvolvimento"]').forEach(el => {
       // 👉 deixe o mouse de “link”
@@ -272,6 +288,57 @@
     bubble.innerHTML = '';
     bubble.appendChild(span);
     return bubble;
+  }
+  function matchesDevCategory(p, catLower) {
+    const status = (p.status || '').toLowerCase();
+    const now = new Date();
+    switch (catLower) {
+      case 'ativos':
+        return ['em andamento', 'em risco', 'sustentação', 'sustentacao'].includes(status);
+      case 'desenvolvimento':
+        return status === 'em andamento';
+      case 'fora-prazo':
+        return p.fim && new Date(p.fim) < now && status !== 'concluído' && status !== 'concluido';
+      case 'planejado':
+        return status === 'planejado';
+      case 'pausado':
+        return status === 'pausado';
+      case 'concluido':
+        return status === 'concluído' || status === 'concluido';
+      default:
+        return true;
+    }
+  }
+
+  /** Aplica filtro dos cards da Fábrica (CODES) e redesenha tabela + gráficos */
+  function applyCodesFilterAndRedraw(catLower = '') {
+    const base = (Array.isArray(cacheProjetos) ? cacheProjetos : []).filter(
+      p => norm(p.coordenacao) === 'codes'
+    );
+    const filtered = catLower ? base.filter(p => matchesDevCategory(p, catLower)) : base;
+
+    // TABELA CODES
+    renderCoordTable('CODES', 'codesTableBody', filtered);
+
+    // GRÁFICOS CODES (não interfere na tela de Sustentação)
+    if (window.__codesView !== 'sustentacao') {
+      drawCodesSprintsChart(filtered);
+      drawCodesInternChart(filtered);
+    }
+
+    // (Opcional) Se os gráficos "Home" estiverem na tela, reflita o filtro neles também
+    const homeChartsVisible =
+      document.getElementById('statusDistribChart') ||
+      document.getElementById('ragChart') ||
+      document.getElementById('timelineChart');
+
+    if (homeChartsVisible) {
+      const others = (Array.isArray(cacheProjetos) ? cacheProjetos : []).filter(
+        p => norm(p.coordenacao) !== 'codes'
+      );
+      // mistura: CODES filtrado + demais coordenações sem filtro
+      drawCharts(filtered.concat(others));
+    }
   }
 
   // helpers de visibilidade
@@ -1654,17 +1721,50 @@
     const ctx = byId('codesSprintsChart');
     if (!ctx) return;
 
-    const ativos = projects.filter(
-      p => (p.coordenacao || '').toUpperCase() === 'CODES' &&
-        (p.status || '').toLowerCase() === 'em andamento' &&
-        p.totalSprints &&
-        p.sprintsConcluidas != null &&
-        p.sprintsConcluidas < p.totalSprints
+    // Detecta se há filtro ativo nos cards (ex.: 'pausado')
+    const hasActiveFilter = !!window.__activeDevFilter;
+
+    // mesma heurística que usamos no gráfico de internalização
+    function isInternalizacaoTrue(val) {
+      if (val === true) return true;
+      if (typeof val === 'number') return val === 1;
+      if (typeof val === 'string') {
+        const v = val.trim().toLowerCase();
+        return v === 'true' || v === '1' || v === 'sim' || v === 'yes' || v === 's';
+      }
+      return false;
+    }
+
+    // Base: somente CODES e fora da internalização (este gráfico é de sprints de fábrica)
+    let pool = (projects || []).filter(p =>
+      (p.coordenacao || '').toUpperCase() === 'CODES' &&
+      !isInternalizacaoTrue(p.internalizacao)
     );
 
+    // Se NÃO houver filtro ativo, mantém padrão antigo (mostrar apenas "Em Andamento")
+    // Se HOUVER filtro ativo, usamos o que já veio filtrado e NÃO reimpomos status aqui.
+    if (!hasActiveFilter) {
+      pool = pool.filter(p => (p.status || '').toLowerCase() === 'em andamento');
+    }
 
-    if (!ativos.length) {
-      if (chartCodes) chartCodes.destroy();
+    // Não descartamos sem sprints; mostramos 0% quando faltar dado
+    const itens = pool.map(p => {
+      const total = Number.isFinite(p.totalSprints) ? Number(p.totalSprints) : 0;
+      const concl = Number.isFinite(p.sprintsConcluidas) ? Number(p.sprintsConcluidas) : 0;
+      const perc = (total > 0) ? Math.round((Math.min(concl, total) / total) * 100) : 0;
+      return {
+        nome: p.nome,
+        perc,
+        concl,
+        total,
+        equipe: p.equipe,
+        responsavel: p.responsavel,
+        status: p.status
+      };
+    });
+
+    if (!itens.length) {
+      if (chartCodes) { chartCodes.destroy(); chartCodes = null; }
       const c = ctx.getContext("2d");
       c.clearRect(0, 0, ctx.width, ctx.height);
       c.font = "16px Arial";
@@ -1674,15 +1774,19 @@
       return;
     }
 
-    const labels = ativos.map(p => p.nome);
-    const progresso = ativos.map(p => Math.round((p.sprintsConcluidas / p.totalSprints) * 100));
+    const labels = itens.map(x => x.nome);
+    const progresso = itens.map(x => x.perc);
 
     if (chartCodes) chartCodes.destroy();
     chartCodes = new Chart(ctx, {
       type: "bar",
       data: {
         labels,
-        datasets: [{ label: "% concluído", data: progresso, backgroundColor: "#3b82f6" }]
+        datasets: [{
+          label: "% concluído",
+          data: progresso,
+          backgroundColor: "#3b82f6"
+        }]
       },
       options: {
         indexAxis: "y",
@@ -1692,24 +1796,23 @@
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label(ctx) {
-                const proj = ativos[ctx.dataIndex];
+              label(ttx) {
+                const it = itens[ttx.dataIndex];
                 return [
-                  `Projeto: ${proj.nome}`,
-                  `Progresso: ${ctx.parsed.x}% (${proj.sprintsConcluidas}/${proj.totalSprints})`,
-                  proj.equipe ? `Equipe: ${proj.equipe}` : null,
-                  proj.responsavel ? `Responsável: ${proj.responsavel}` : null,
-                  `Status: ${proj.status || '—'}`
+                  `Projeto: ${it.nome}`,
+                  `Progresso: ${ttx.parsed.x}%` + (it.total ? ` (${it.concl}/${it.total})` : ' (sem sprints cadastradas)'),
+                  it.equipe ? `Equipe: ${it.equipe}` : null,
+                  it.responsavel ? `Responsável: ${it.responsavel}` : null,
+                  `Status: ${it.status || '—'}`
                 ].filter(Boolean);
               }
             }
           }
-
-
         },
         scales: {
           x: {
-            min: 0, max: 100,
+            min: 0,
+            max: 100,
             ticks: { callback: v => v + "%" },
             title: { display: true, text: "% das Sprints concluídas" }
           }
@@ -1718,9 +1821,14 @@
     });
   }
 
+
+
   function drawCodesInternChart(projects) {
     const ctx = byId('codesInternChart');
     if (!ctx) return;
+
+    // Registrar plugin de anotação (uma única vez)
+    ensureAnnotationPlugin();
 
     const now = Date.now();
 
@@ -1729,38 +1837,42 @@
       if (typeof val === 'number') return val === 1;
       if (typeof val === 'string') {
         const v = val.trim().toLowerCase();
-        return v === 'true' || v === '1' || v === 'sim' || v === 'yes';
+        return v === 'true' || v === '1' || v === 'sim' || v === 'yes' || v === 's';
       }
       return false;
     }
 
-    // FILTRA apenas projetos da coordenação CODES marcados como internalizacao
-    const items = projects
-      .filter(p => (p.coordenacao || '').toUpperCase() === 'CODES' && isInternalizacaoTrue(p.internalizacao))
-      .map(p => {
-        const ini = p.inicio ? new Date(p.inicio).getTime() : null;
-        const fim = p.fim ? new Date(p.fim).getTime() : null;
-        if (!ini || !fim) return null;
+    function buildItems(list) {
+      return (list || [])
+        .filter(p => (p.coordenacao || '').toUpperCase() === 'CODES' && isInternalizacaoTrue(p.internalizacao))
+        .map(p => {
+          const ini = p.inicio ? new Date(p.inicio).getTime() : null;
+          const fim = p.fim ? new Date(p.fim).getTime() : null;
+          if (!ini || !fim) return null;
 
-        const daysToEnd = Math.ceil((fim - now) / (1000 * 60 * 60 * 24));
-        let cor = '#16a34a';
-        if (fim < now) cor = '#dc2626';
-        else if (daysToEnd <= 7) cor = '#f59e0b';
+          const daysToEnd = Math.ceil((fim - now) / (1000 * 60 * 60 * 24));
+          let cor = '#16a34a';
+          if (fim < now) cor = '#dc2626';
+          else if (daysToEnd <= 7) cor = '#f59e0b';
 
-        return { y: p.nome, x: [ini, fim], responsavel: p.responsavel, equipe: p.equipe, status: p.status, cor };
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.x[0] - b.x[0]);
+          return { y: p.nome, x: [ini, fim], responsavel: p.responsavel, equipe: p.equipe, status: p.status, cor };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.x[0] - b.x[0]);
+    }
 
+    // Usa EXATAMENTE a lista recebida (já filtrada pelos cards)
+    let items = buildItems(projects);
+
+    // ❌ Sem fallback para cacheProjetos — respeita o filtro mesmo que resulte vazio
     if (!items.length) {
       if (chartIntern) { chartIntern.destroy(); chartIntern = null; }
-      // limpa canvas para mensagem amigável
       const c = ctx.getContext("2d");
       c.clearRect(0, 0, ctx.width, ctx.height);
       c.font = "14px Arial";
       c.fillStyle = "#666";
       c.textAlign = "center";
-      c.fillText("Nenhum projeto de internalização com datas válidas.", ctx.width / 2, ctx.height / 2);
+      c.fillText("Nenhum projeto de internalização disponível.", ctx.width / 2, ctx.height / 2);
       return;
     }
 
@@ -1788,8 +1900,8 @@
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label(ctx) {
-                const d = ctx.raw;
+              label(ttx) {
+                const d = ttx.raw;
                 const ini = new Date(d.x[0]).toLocaleDateString('pt-BR');
                 const fim = new Date(d.x[1]).toLocaleDateString('pt-BR');
                 return [
@@ -1803,6 +1915,7 @@
             }
           },
           annotation: {
+            drawTime: 'afterDatasetsDraw',
             annotations: {
               hoje: {
                 type: 'line',
@@ -1810,14 +1923,17 @@
                 xMax: now,
                 borderColor: '#111827',
                 borderWidth: 2,
+                clip: false,
                 label: {
-                  enabled: true,
+                  display: true,
                   content: 'Hoje',
-                  position: 'start',
-                  backgroundColor: '#111827',
+                  // força o rótulo no TOPO da barra do tempo
+                  position: { x: 'center', y: 'start' },
+                  yAdjust: -110,
+                  backgroundColor: 'rgba(17,24,39,0.9)',
                   color: '#fff',
-                  font: { size: 10 },
-                  yAdjust: -6
+                  font: { size: 10, weight: 'bold' },
+                  padding: 4
                 }
               }
             }
@@ -1828,11 +1944,7 @@
             type: 'time',
             min: minX - pad,
             max: maxX + pad,
-            time: {
-              unit: 'day',
-              tooltipFormat: 'dd/MM/yyyy',
-              displayFormats: { day: 'dd/MM' }
-            },
+            time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy', displayFormats: { day: 'dd/MM' } },
             title: { display: true, text: 'Período' }
           },
           y: { title: { display: true, text: 'Projetos' } }
@@ -1840,7 +1952,7 @@
       }
     });
 
-    // Legenda manual
+    // legenda manual (como estava)
     const legendEl = ctx.parentNode.querySelector('.custom-legend');
     if (!legendEl) {
       const div = document.createElement('div');
@@ -1853,7 +1965,6 @@
       ctx.parentNode.appendChild(div);
     }
   }
-
 
 
 
@@ -1888,60 +1999,63 @@
   // ================== FILTRO DE PROJETOS ==================
   function filterProjects(coordenacao, categoria) {
     console.log("Filtro acionado:", coordenacao, categoria);
-    window.__codesView = 'fabrica';
-    setCodesCardHighlight('fabrica');
 
-    toggleCodesDevStatus(true);   // mostra 4 da Fábrica
-    toggleCodesSustCards(false);  // esconde 8 da Sustentação
-
-    // sempre que filtrar CODES (fábrica), garante que os clones de Sustentação foram removidos
+    // Sempre que filtrar CODES (fábrica), garanta a visão correta
     if ((coordenacao || '').toUpperCase() === 'CODES') {
+      window.__codesView = 'fabrica';
+      setCodesCardHighlight('fabrica');
+      toggleCodesDevStatus(true);
+      toggleCodesSustCards(false);
+      document.getElementById("codesSustentacaoWrapper")?.classList.add("hidden");
+      document.getElementById("tableView")?.classList.remove("hidden");
+      document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
+      document.getElementById('codesInternWrapper')?.classList.remove('hidden');
       try { restoreDevTopCards(); } catch (e) { }
     }
 
-    // sempre que filtrar CODES (fábrica), volta o modo p/ 'fabrica'
-    if ((coordenacao || '').toUpperCase() === 'CODES') {
-      window.__codesView = 'fabrica';
+    // === CODES: comportamento estilo Sustentação (toggle + gráficos filtrados) ===
+    const DEV_KEYS = new Set(['ativos', 'desenvolvimento', 'fora-prazo', 'planejado', 'pausado', 'concluido']);
+    const isCodes = (coordenacao || '').toUpperCase() === 'CODES';
+    const catLower = String(categoria || '').toLowerCase();
+
+    if (isCodes && catLower && DEV_KEYS.has(catLower)) {
+      // Toggle: clicar de novo no mesmo card limpa o filtro
+      window.__activeDevFilter = (window.__activeDevFilter === catLower) ? '' : catLower;
+
+      // Visual: destaca o card ativo
+      try {
+        document.querySelectorAll('[data-card^="codes:"]').forEach(n => n.classList.remove('ring-2', 'ring-blue-500'));
+        const sel = window.__activeDevFilter ? document.querySelector(`[data-card="codes:${window.__activeDevFilter}"]`) : null;
+        if (sel) sel.classList.add('ring-2', 'ring-blue-500');
+      } catch { }
+
+      // Redesenha tabela + gráficos com base no filtro atual
+      applyCodesFilterAndRedraw(window.__activeDevFilter);
+      return; // já tratamos CODES aqui
     }
 
-    // Esconde Sustentação ao aplicar filtros da fábrica
+    // ==== Fluxo original (COSET/CGOD ou CODES sem categoria especial) ====
+    window.__codesView = 'fabrica';
+    setCodesCardHighlight('fabrica');
+    toggleCodesDevStatus(true);
+    toggleCodesSustCards(false);
     document.getElementById("codesSustentacaoWrapper")?.classList.add("hidden");
-
-    // Mostra a tabela padrão + gráficos da fábrica
     document.getElementById("tableView")?.classList.remove("hidden");
-    if ((coordenacao || '').toUpperCase() === 'CODES') {
-      document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
-      document.getElementById('codesInternWrapper')?.classList.remove('hidden');
-      document.getElementById('codesChartsRow')?.classList.remove('hidden');
 
-      if (typeof drawCodesSprintsChart === 'function') drawCodesSprintsChart(cacheProjetos);
-      if (typeof drawCodesInternChart === 'function') drawCodesInternChart(cacheProjetos);
-
-      try { window._charts?.codes?.resize?.(); window._charts?.codes?.update?.(); } catch { }
-      try { window._charts?.intern?.resize?.(); window._charts?.intern?.update?.(); } catch { }
-
-      // ⭐ reforça o destaque “Na Fábrica” quando o usuário filtra pelos cards da fábrica
-      setCodesCardHighlight('fabrica');
-    }
-
-    // Filtra os projetos
-    let filtrados = cacheProjetos.filter(
-      p => norm(p.coordenacao) === norm(coordenacao)
-    );
+    // (mantém comportamento existente para outras coordenações)
+    let filtrados = cacheProjetos.filter(p => norm(p.coordenacao) === norm(coordenacao));
 
     if (categoria && categoria !== "total") {
-      const catLower = categoria.toLowerCase();
+      const catLower2 = categoria.toLowerCase();
       const now = new Date();
 
       filtrados = filtrados.filter(p => {
         const status = (p.status || "").toLowerCase();
-        switch (catLower) {
+        switch (catLower2) {
           case "ativos":
-            return status === "em andamento";
+            return ["em andamento", "em risco", "sustentação", "sustentacao"].includes(status);
           case "desenvolvimento":
-            // Mostrar todos os não concluídos e não Sustentação
-            return status !== "concluído" && status !== "concluido" && !/^sustentac(ao|ão)$/.test(status);
-
+            return status === "em andamento";
           case "fora-prazo":
             return p.fim && new Date(p.fim) < now && status !== "concluído";
           case "planejado":
@@ -1956,16 +2070,19 @@
       });
     }
 
-    // Renderiza usando o layout oficial
-    const mapTbody = {
-      CODES: "codesTableBody",
-      COSET: "cosetTableBody",
-      CGOD: "cgodTableBody"
-    };
+    // Render padrão
+    const mapTbody = { CODES: "codesTableBody", COSET: "cosetTableBody", CGOD: "cgodTableBody" };
     if (mapTbody[(coordenacao || '').toUpperCase()]) {
       renderCoordTable(coordenacao.toUpperCase(), mapTbody[coordenacao.toUpperCase()], filtrados);
     }
+
+    // Atualiza gráficos da Fábrica se estivermos em CODES (sem toggle especial)
+    if (isCodes) {
+      drawCodesSprintsChart(filtrados);
+      drawCodesInternChart(filtrados);
+    }
   }
+
 
 
 
@@ -2122,6 +2239,8 @@
   function openNewProject(coord) {
     const form = byId('projectForm');
     if (!form) return;
+
+    // reset básico do form
     form.reset();
     delete form.dataset.id;
 
@@ -2129,13 +2248,39 @@
     const inputP = byId('projectProgresso'); if (inputP) inputP.value = 0;
     if (typeof window.updateProgressDisplay === 'function') window.updateProgressDisplay();
 
+    // coordenação (e mostra/oculta campos extras)
     setValue('projectCoord', coord || '');
     toggleFormByCoord(coord || '');
 
+    // 🔥 remove a opção "Sustentação" do select de status (apenas no Novo Projeto)
+    const statusSel = byId('projectStatus');
+    if (statusSel) {
+      for (let i = statusSel.options.length - 1; i >= 0; i--) {
+        const opt = statusSel.options[i];
+        const t = String(opt.textContent || opt.value || '')
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+        if (t.includes('sustentacao')) statusSel.remove(i);
+      }
+      // se, por acaso, a opção removida estava selecionada, força um valor neutro
+      if (!statusSel.value || statusSel.value.toLowerCase().includes('sustent')) {
+        statusSel.selectedIndex = 0;
+      }
+    }
+
+    // títulos/botões
     const h = document.querySelector('#projectModal h3'); if (h) h.textContent = `Novo Projeto${coord ? ' • ' + coord : ''}`;
     const btn = byId('submitProjectBtn'); if (btn) btn.textContent = 'Salvar Projeto';
-    window.showModal && window.showModal('projectModal');
+
+    // abre o modal
+    if (typeof window.showModal === 'function') {
+      window.showModal('projectModal');
+    } else {
+      const modal = byId('projectModal');
+      if (modal) modal.classList.remove('hidden');
+    }
   }
+
 
   function toggleFormByCoord(coord) {
     const showForCodes = coord === 'CODES';
