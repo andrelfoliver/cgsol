@@ -413,3 +413,22 @@ td.col-actions {
 .actions-tight {
   gap: 0.5rem;
 }
+
+/* cards clicáveis */
+[data-card] {
+  outline: none;
+}
+
+/* remove foco quando foi via mouse/toque 
+[data-card]:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}*/
+
+/* (opcional) se você NÃO quer foco visual nem para teclado, comente o bloco acima e use: */
+
+[data-card]:focus,
+[data-card]:active {
+  outline: none !important;
+  box-shadow: none !important;
+}

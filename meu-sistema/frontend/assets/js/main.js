@@ -118,6 +118,7 @@
       el.style.cursor = 'pointer';
       el.addEventListener('click', (e) => {
         e.preventDefault();
+        resetAllCardHighlights();          // 👈 ADICIONE AQUI
 
         window.__codesView = 'fabrica';      // 🔥 garante a view correta
         toggleCodesDevStatus(true);          // mostra cards da fábrica
@@ -210,8 +211,20 @@
       document.addEventListener('DOMContentLoaded', fn, { once: true });
     } else fn();
   }
+
+  function resetAllCardHighlights() {
+    document
+      .querySelectorAll('#codesPage [data-card], [data-card^="codes:"]')
+      .forEach(n => n.classList.remove(
+        'ring', 'ring-1', 'ring-2', 'ring-4', 'ring-blue-500', 'ring-offset-2',
+        'card-picked', 'card-picked--amber'
+      ));
+  }
+
   // ========= destaque visual dos cards CODES (robusto, sem depender do Tailwind em runtime) =========
   function setCodesCardHighlight(mode /* 'fabrica' | 'sust' | null */) {
+    resetAllCardHighlights();          // 👈 ADICIONE AQUI
+
     // util: escolhe o candidato visível, preferindo o que está na aba CODES
     const pickVisible = (selector) => {
       const nodes = Array.from(document.querySelectorAll(selector));
@@ -380,6 +393,7 @@
 
       el.addEventListener('click', (e) => {
         e.preventDefault();
+        resetAllCardHighlights();          // 👈 ADICIONE AQUI
 
         // quando for CODES + status, garantimos a visão da Fábrica
         if (coord.toLowerCase() === 'codes') {
@@ -666,8 +680,9 @@
 
           node.addEventListener('click', (e) => {
             e.preventDefault(); e.stopPropagation();
-            document.querySelectorAll('.sust-injected-top, [data-card^="codes:"]').forEach(n => n.classList.remove('ring-2', 'ring-blue-500'));
+            resetAllCardHighlights();
             node.classList.add('ring-2', 'ring-blue-500');
+
             try { (window.applyTopSustFilter || applyTopSustFilter)(key); } catch { }
           });
 
@@ -2160,6 +2175,7 @@
     if (isCodes && catLower && DEV_KEYS.has(catLower)) {
       // Toggle: clicar de novo no mesmo card limpa o filtro
       window.__activeDevFilter = (window.__activeDevFilter === catLower) ? '' : catLower;
+      resetAllCardHighlights();          // 👈 usa o reset central
 
       // Visual: destaca o card ativo
       try {

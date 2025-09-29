@@ -108,6 +108,63 @@
       /* barra lateral âmbar */
       pointer-events: none;
     }
+
+    /* ========= Card selecionado (picked) por contexto ========= */
+    /* FÁBRICA / DESENVOLVIMENTO (grid #codesKpisFabExtra) */
+    #codesKpisFabExtra .card-picked {
+      background: linear-gradient(180deg, #f8fbff, #fff);
+      box-shadow: 0 12px 28px rgba(59, 130, 246, .20),
+        inset 0 0 0 1px rgba(59, 130, 246, .18);
+    }
+
+    #codesKpisFabExtra .card-picked::after {
+      box-shadow: inset 6px 0 0 0 #3b82f6;
+      /* azul */
+    }
+
+    /* SUSTENTAÇÃO (grid #codesKpisSustExtra) */
+    #codesKpisSustExtra .card-picked {
+      background: linear-gradient(180deg, #fff9ec, #fff);
+      box-shadow: 0 12px 28px rgba(245, 158, 11, .22),
+        inset 0 0 0 1px rgba(245, 158, 11, .20);
+    }
+
+    #codesKpisSustExtra .card-picked::after {
+      box-shadow: inset 6px 0 0 0 #f59e0b;
+      /* amarelo/laranja */
+    }
+
+    /* (opcional) hover com cor coerente em cada grid */
+    #codesKpisFabExtra [data-card]:hover {
+      box-shadow: 0 10px 24px rgba(59, 130, 246, .16);
+    }
+
+    #codesKpisSustExtra [data-card]:hover {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18);
+    }
+
+    /* 1) Hover neutro nos subcards de DESENVOLVIMENTO (Fábrica) */
+    #codesKpisFabExtra [data-card]:hover {
+      /* era: rgba(59,130,246,.16) (azulado) */
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .08);
+    }
+
+    /* 2) Zera qualquer contorno/focus visual nos subcards (ambos os grids) */
+    #codesKpisFabExtra [data-card],
+    #codesKpisSustExtra [data-card] {
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+      /* iOS/Safari */
+    }
+
+    #codesKpisFabExtra [data-card]:focus,
+    #codesKpisFabExtra [data-card]:focus-visible,
+    #codesKpisSustExtra [data-card]:focus,
+    #codesKpisSustExtra [data-card]:focus-visible {
+      outline: none;
+      box-shadow: inherit;
+      /* não troca a sombra quando recebe foco */
+    }
   </style>
 
 
@@ -675,65 +732,6 @@
           </div>
         </div>
       </div>
-      <script>
-        window.setCodesCardHighlight = function (mode) {
-          const scope = document.getElementById('codesPage');
-          const fabExtra = scope?.querySelector('#codesKpisFabExtra');
-          const sustExtra = scope?.querySelector('#codesKpisSustExtra');
-          const devCard = scope?.querySelector('[data-card="codes:desenvolvimento"]');
-          const sustCard = scope?.querySelector('[data-card="codes:sustentacao"]');
-
-          // 👇 novo: card do topo "Em produção"
-          const prodTop = scope?.querySelector('[data-card="codes:producao-top"]');
-
-          if (!fabExtra || !sustExtra || !devCard || !sustCard) return;
-
-          // limpa destaques dos cards principais
-          devCard.classList.remove('card-hi', 'card-hi--fabrica');
-          sustCard.classList.remove('card-hi', 'card-hi--sust');
-
-          if (mode === 'sust') {
-            // mostra grid Sustentação e esconde Fábrica
-            fabExtra.classList.add('hidden');
-            sustExtra.classList.remove('hidden');
-
-            if (prodTop) prodTop.classList.remove('hidden');
-
-            // 🔸 destaque âmbar no card principal...
-            sustCard.classList.add('card-hi', 'card-hi--sust');
-
-            // 🔸 ...e em TODOS os subcards de Sustentação
-            sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
-              el.classList.add('card-hi', 'card-hi--sust');
-              el.classList.remove('card-picked', 'card-picked--amber'); // limpa seleção anterior
-            });
-            return;
-          }
-
-          // ===== modo Fábrica =====
-          sustExtra.classList.add('hidden');
-          fabExtra.classList.remove('hidden');
-
-          // 👇 esconde o card "Em produção (TOP)" fora do modo Sustentação
-          if (prodTop) prodTop.classList.add('hidden');
-
-          fabExtra.style.removeProperty('display');
-          if (getComputedStyle(fabExtra).display === 'none') fabExtra.style.display = 'grid';
-          fabExtra.querySelectorAll('[data-card]').forEach(el => {
-            el.classList.remove('hidden', 'invisible', 'sr-only');
-            el.style.removeProperty('display');
-            el.style.removeProperty('visibility');
-            el.style.removeProperty('opacity');
-          });
-
-          sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
-            el.classList.remove('card-hi', 'card-hi--sust');
-          });
-
-          // destaca Desenvolvimento (card principal)
-          devCard.classList.add('card-hi', 'card-hi--fabrica');
-        };
-      </script>
 
 
 
@@ -2437,39 +2435,126 @@
       </div>
     </div>
   </div>
+
+
   <script>
-    // torna os cards selecionáveis e aplica o destaque bonito
+    /* ======= UTIL: limpa o "selecionado" de todos os subcards ======= */
+    function clearSubcardSelection() {
+      const scope = document.getElementById('codesPage');
+      if (!scope) return;
+      scope
+        .querySelectorAll('#codesKpisFabExtra .card-picked, #codesKpisSustExtra .card-picked')
+        .forEach(el => el.classList.remove('card-picked'));
+    }
+
+    /* ======= Torna subcards "selecionáveis" com destaque único ======= */
     function wirePickables(scope = document) {
-      scope.querySelectorAll('#codesKpisFabExtra [data-card], #codesKpisSustExtra [data-card]')
+      scope
+        .querySelectorAll('#codesKpisFabExtra [data-card], #codesKpisSustExtra [data-card]')
         .forEach(card => {
           card.classList.add('card-pickable');
-          card.addEventListener('click', () => {
-            const grid = card.closest('#codesKpisFabExtra, #codesKpisSustExtra');
-            // limpa seleções anteriores (de ambos os tipos)
-            grid?.querySelectorAll('.card-picked, .card-picked--amber')
-              .forEach(el => el.classList.remove('card-picked', 'card-picked--amber'));
-
-            // aplica seleção conforme o grid
-            if (grid?.id === 'codesKpisSustExtra') {
-              card.classList.add('card-picked--amber');
-            } else {
+          card.addEventListener(
+            'click',
+            () => {
+              const grid = card.closest('#codesKpisFabExtra, #codesKpisSustExtra');
+              grid?.querySelectorAll('.card-picked').forEach(el => el.classList.remove('card-picked'));
               card.classList.add('card-picked');
-            }
-          }, { passive: true });
+            },
+            { passive: true }
+          );
         });
     }
 
-    // chama na carga
-    document.addEventListener('DOMContentLoaded', () => wirePickables());
-
-    // e também após trocar entre Fábrica/Sustentação
-    const _setHi = window.setCodesCardHighlight;
+    /* ======= Destaque do PAI + troca entre Fábrica/Sustentação ======= */
+    /*  mode: 'sust' | 'fabrica'  */
     window.setCodesCardHighlight = function (mode) {
-      _setHi && _setHi(mode);
-      setTimeout(() => wirePickables(document.getElementById('codesPage')), 0);
-    };
-  </script>
+      const scope = document.getElementById('codesPage');
+      if (!scope) return;
 
+      const fabExtra = scope.querySelector('#codesKpisFabExtra');
+      const sustExtra = scope.querySelector('#codesKpisSustExtra');
+
+      const devCard = scope.querySelector('[data-card="codes:desenvolvimento"]');
+      const sustCard = scope.querySelector('[data-card="codes:sustentacao"]');
+
+      const prodTop = scope.querySelector('[data-card="codes:producao-top"]');
+
+      if (!fabExtra || !sustExtra || !devCard || !sustCard) return;
+
+      // 1) Limpa qualquer seleção de subcards sempre que o PAI mudar
+      clearSubcardSelection();
+
+      // 2) Remove o "glow" dos pais
+      devCard.classList.remove('card-hi', 'card-hi--fabrica');
+      sustCard.classList.remove('card-hi', 'card-hi--sust');
+
+      if (mode === 'sust') {
+        // 3) Mostrar/ocultar grids e o card "Em produção (TOP)"
+        fabExtra.classList.add('hidden');
+        sustExtra.classList.remove('hidden');
+        if (prodTop) prodTop.classList.remove('hidden');
+
+        // 4) Normaliza subcards (sem glow e sem picked)
+        sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
+          el.classList.remove('card-hi', 'card-hi--sust', 'card-picked');
+          el.style.removeProperty('display');
+          el.style.removeProperty('visibility');
+          el.style.removeProperty('opacity');
+        });
+
+        // 5) Destaque somente no PAI "Sustentação"
+        sustCard.classList.add('card-hi', 'card-hi--sust');
+        return;
+      }
+
+      // ===== modo FÁBRICA =====
+      sustExtra.classList.add('hidden');
+      fabExtra.classList.remove('hidden');
+      if (prodTop) prodTop.classList.add('hidden');
+
+      // Garante que os cards do grid extra de fábrica estão visíveis e "limpos"
+      fabExtra.style.removeProperty('display');
+      if (getComputedStyle(fabExtra).display === 'none') fabExtra.style.display = 'grid';
+      fabExtra.querySelectorAll('[data-card]').forEach(el => {
+        el.classList.remove('hidden', 'invisible', 'sr-only', 'card-picked');
+        el.style.removeProperty('display');
+        el.style.removeProperty('visibility');
+        el.style.removeProperty('opacity');
+      });
+
+      sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
+        el.classList.remove('card-hi', 'card-hi--sust', 'card-picked');
+      });
+
+      // Destaque somente no PAI "Desenvolvimento"
+      devCard.classList.add('card-hi', 'card-hi--fabrica');
+    };
+
+    /* ======= Inicialização ======= */
+    document.addEventListener('DOMContentLoaded', () => {
+      // ativa comportamento dos subcards
+      wirePickables();
+
+      // clicar no PAI limpa o destaque dos subcards
+      const scope = document.getElementById('codesPage');
+      const devCard = scope?.querySelector('[data-card="codes:desenvolvimento"]');
+      const sustCard = scope?.querySelector('[data-card="codes:sustentacao"]');
+
+      devCard?.addEventListener('click', clearSubcardSelection, { passive: true });
+      sustCard?.addEventListener('click', clearSubcardSelection, { passive: true });
+    });
+
+    /* ======= Se algum código externo chamar setCodesCardHighlight,
+               garantimos que os subcards continuam "clicáveis" ======= */
+    (function ensurePickablesAfterHighlight() {
+      const _old = window.setCodesCardHighlight;
+      window.setCodesCardHighlight = function (mode) {
+        _old && _old(mode);
+        // re-wira (caso o DOM da grid tenha sido recolocado)
+        setTimeout(() => wirePickables(document.getElementById('codesPage')), 0);
+      };
+    })();
+  </script>
 
 </body>
 
