@@ -642,38 +642,35 @@
     // ---------- CARGA ----------
     async function loadSustentacao() {
         try {
+            // ✅ sempre que abrir Sustentação (lista geral), zera o filtro ativo
+            window.__sustActiveFilter = '';
+
+            // (opcional) limpa qualquer destaque de card selecionado
+            try {
+                document.querySelectorAll('[data-card^="codes:sust"]').forEach(n =>
+                    n.classList.remove('ring-2', 'ring-blue-500')
+                );
+            } catch { }
+
             const projetosById = await fetchProjetosById();
             const resp = await fetch(`${API_ROOT}/sustentacao`);
             if (!resp.ok) throw new Error(`Erro ao buscar sustentação (${resp.status})`);
 
             const raw = await resp.json();
-            console.log('SUST row 0 =>', raw[0]);
-            console.log('CHAVES DISPONÍVEIS =>', Object.keys(raw[0]));
-            console.log('CAMPO DE REGISTRO =>', ['data_chamado', 'data_abertura', 'dt_registro', 'data_registro', 'created_at', 'abertura', 'registro']
-                .find(k => raw[0]?.[k] != null));
-
-            if (Array.isArray(raw) && raw.length) {
-                console.log('Sust RAW primeira linha:', raw[0]);
-                console.log('Keys:', Object.keys(raw[0]));
-            }
 
             const list = Array.isArray(raw) ? raw.map(r => normalizeChamado(r, projetosById)) : [];
-            console.table(list.slice(0, 5), ['numero', 'projeto', 'status', 'data_abertura', 'data_fechamento']);
 
-            // ✅ atualiza somente coisas de sustentação
+            // atualiza totais do topo
             const tot = String(list.length);
             const elTopo = document.getElementById('sustentacaoCount');
             if (elTopo) elTopo.textContent = tot;
 
-
-            // guarda a lista crua e aplica filtros
+            // guarda a lista crua e renderiza aplicando filtros de texto,
+            // já com concluídos ocultos por padrão (porque __sustActiveFilter = '')
             sustRaw = list;
-            applySustFilters();     // renderiza com os filtros atuais (ou todos, se vazios)
-            updateSustCards(sustRaw);
-            // gráficos continuam usando a base completa
-            ensureCharts(sustRaw);
-
-
+            applySustFilters();          // -> usa __sustActiveFilter === '' e esconde "Concluído"
+            updateSustCards(sustRaw);    // cards permanecem contando tudo
+            ensureCharts(sustRaw);       // gráficos na base completa
         } catch (e) {
             console.error(e);
             const tbody = document.getElementById('sustentacaoTableBody');
@@ -682,6 +679,7 @@
             try { chartSustProjetos?.destroy(); chartSustProjetos = null; } catch { }
         }
     }
+
 
     // helper: tenta desenhar assim que o Chart estiver disponível
     function ensureCharts(list) {
