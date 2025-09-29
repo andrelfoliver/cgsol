@@ -60,6 +60,54 @@
     .card-hi--sust::before {
       border-left: 6px solid #f59e0b;
     }
+
+    /* cards clicáveis */
+    .card-pickable:focus {
+      outline: none;
+    }
+
+    .card-picked {
+      position: relative;
+      background: linear-gradient(180deg, #f8fbff, #fff);
+      box-shadow: 0 12px 28px rgba(59, 130, 246, .20), inset 0 0 0 1px rgba(59, 130, 246, .18);
+      transform: translateY(-1px);
+      transition: box-shadow .25s ease, transform .15s ease, background .25s ease;
+    }
+
+    .card-picked::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      /* barra lateral */
+      box-shadow: inset 6px 0 0 0 #3b82f6;
+      pointer-events: none;
+    }
+
+    /* hover consistente para todos os cards “pickables” */
+    .card-pickable:hover {
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .06);
+      transform: translateY(-1px);
+    }
+
+    /* === seleção (clique) com tema âmbar para Sustentação === */
+    .card-picked--amber {
+      position: relative;
+      background: linear-gradient(180deg, #fffaf0, #fff);
+      box-shadow: 0 12px 28px rgba(245, 158, 11, .22), inset 0 0 0 1px rgba(245, 158, 11, .22);
+      transform: translateY(-1px);
+      transition: box-shadow .25s ease, transform .15s ease, background .25s ease;
+    }
+
+    .card-picked--amber::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      box-shadow: inset 6px 0 0 0 #f59e0b;
+      /* barra lateral âmbar */
+      pointer-events: none;
+    }
   </style>
 
 
@@ -645,23 +693,20 @@
           sustCard.classList.remove('card-hi', 'card-hi--sust');
 
           if (mode === 'sust') {
-            // mostra grid da Sustentação, esconde o da Fábrica
+            // mostra grid Sustentação e esconde Fábrica
             fabExtra.classList.add('hidden');
             sustExtra.classList.remove('hidden');
 
-            // 👇 mostra o card "Em produção (TOP)" só no modo Sustentação
             if (prodTop) prodTop.classList.remove('hidden');
 
-            // normaliza subcards
-            sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
-              el.classList.remove('card-hi', 'card-hi--sust');
-              el.style.removeProperty('display');
-              el.style.removeProperty('visibility');
-              el.style.removeProperty('opacity');
-            });
-
-            // destaca apenas o card principal “Sustentação”
+            // 🔸 destaque âmbar no card principal...
             sustCard.classList.add('card-hi', 'card-hi--sust');
+
+            // 🔸 ...e em TODOS os subcards de Sustentação
+            sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
+              el.classList.add('card-hi', 'card-hi--sust');
+              el.classList.remove('card-picked', 'card-picked--amber'); // limpa seleção anterior
+            });
             return;
           }
 
@@ -2392,6 +2437,38 @@
       </div>
     </div>
   </div>
+  <script>
+    // torna os cards selecionáveis e aplica o destaque bonito
+    function wirePickables(scope = document) {
+      scope.querySelectorAll('#codesKpisFabExtra [data-card], #codesKpisSustExtra [data-card]')
+        .forEach(card => {
+          card.classList.add('card-pickable');
+          card.addEventListener('click', () => {
+            const grid = card.closest('#codesKpisFabExtra, #codesKpisSustExtra');
+            // limpa seleções anteriores (de ambos os tipos)
+            grid?.querySelectorAll('.card-picked, .card-picked--amber')
+              .forEach(el => el.classList.remove('card-picked', 'card-picked--amber'));
+
+            // aplica seleção conforme o grid
+            if (grid?.id === 'codesKpisSustExtra') {
+              card.classList.add('card-picked--amber');
+            } else {
+              card.classList.add('card-picked');
+            }
+          }, { passive: true });
+        });
+    }
+
+    // chama na carga
+    document.addEventListener('DOMContentLoaded', () => wirePickables());
+
+    // e também após trocar entre Fábrica/Sustentação
+    const _setHi = window.setCodesCardHighlight;
+    window.setCodesCardHighlight = function (mode) {
+      _setHi && _setHi(mode);
+      setTimeout(() => wirePickables(document.getElementById('codesPage')), 0);
+    };
+  </script>
 
 
 </body>
