@@ -455,29 +455,48 @@
             </div>
           </div>
         </div>
+        <!-- Em produção (TOP) — aparece só no modo Sustentação -->
+        <div data-card="codes:producao-top"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow hidden"
+          onclick="showSustentacao()">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🚀</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em produção</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustProducaoTop">0</p>
+            </div>
+          </div>
+        </div>
+
 
         <!-- Em andamento -->
-        <div data-card="codes:ativos" class="bg-white rounded-lg shadow-md p-6">
+        <!-- Fora do Prazo (no TOP) -->
+        <div data-card="codes:fora-prazo" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100 text-blue-600">🚀</div>
+            <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Em andamento</p>
+              <p class="text-sm font-medium text-gray-600">Fora do Prazo</p>
               <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
         </div>
+
 
       </div>
 
 
       <!-- EXTRA (muda conforme o modo) -->
       <!-- Fábrica: 4 cards -->
-      <div id="codesKpisFabExtra" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
-        <div data-card="codes:fora-prazo" class="bg-white rounded-lg shadow-md p-6">
+      <!-- EXTRA (muda conforme o modo) -->
+      <!-- Fábrica: 4 cards -->
+      <div id="codesKpisFabExtra" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 mt-2">
+
+        <!-- Em andamento (agora no bloco extra da Fábrica) -->
+        <div data-card="codes:ativos" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">🚀</div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Fora do Prazo</p>
+              <p class="text-sm font-medium text-gray-600">Em andamento</p>
               <p class="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
@@ -517,6 +536,7 @@
       <!-- Sustentação: 8 cards (começa oculto) -->
       <div id="codesKpisSustExtra"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 mb-4 mt-2 hidden">
+
         <!-- Fora do Prazo (substitui o antigo "Total de Chamados") -->
         <div data-card="codes:sust:fora-prazo"
           class="bg-white rounded-lg shadow-md  p-6 cursor-pointer hover:shadow-lg transition-shadow">
@@ -614,6 +634,10 @@
           const sustExtra = scope?.querySelector('#codesKpisSustExtra');
           const devCard = scope?.querySelector('[data-card="codes:desenvolvimento"]');
           const sustCard = scope?.querySelector('[data-card="codes:sustentacao"]');
+
+          // 👇 novo: card do topo "Em produção"
+          const prodTop = scope?.querySelector('[data-card="codes:producao-top"]');
+
           if (!fabExtra || !sustExtra || !devCard || !sustCard) return;
 
           // limpa destaques dos cards principais
@@ -621,10 +645,14 @@
           sustCard.classList.remove('card-hi', 'card-hi--sust');
 
           if (mode === 'sust') {
+            // mostra grid da Sustentação, esconde o da Fábrica
             fabExtra.classList.add('hidden');
             sustExtra.classList.remove('hidden');
 
-            // não destacar subcards de Sustentação
+            // 👇 mostra o card "Em produção (TOP)" só no modo Sustentação
+            if (prodTop) prodTop.classList.remove('hidden');
+
+            // normaliza subcards
             sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
               el.classList.remove('card-hi', 'card-hi--sust');
               el.style.removeProperty('display');
@@ -632,14 +660,17 @@
               el.style.removeProperty('opacity');
             });
 
-            // destacar somente o card principal "Sustentação"
+            // destaca apenas o card principal “Sustentação”
             sustCard.classList.add('card-hi', 'card-hi--sust');
             return;
           }
 
-          // volta para Fábrica
+          // ===== modo Fábrica =====
           sustExtra.classList.add('hidden');
           fabExtra.classList.remove('hidden');
+
+          // 👇 esconde o card "Em produção (TOP)" fora do modo Sustentação
+          if (prodTop) prodTop.classList.add('hidden');
 
           fabExtra.style.removeProperty('display');
           if (getComputedStyle(fabExtra).display === 'none') fabExtra.style.display = 'grid';
@@ -650,18 +681,15 @@
             el.style.removeProperty('opacity');
           });
 
-          // (opcional) remove classes hi dos cartões de Sustentação extra, caso tenha sido mexido via script
           sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
             el.classList.remove('card-hi', 'card-hi--sust');
-            // se quiser manter o “look” padrão, não precisa remover — o grid está hidden mesmo
-            // se quiser recolocar depois de novo, o bloco acima, em mode==='sust', volta a aplicar o visual normal do grid
           });
 
           // destaca Desenvolvimento (card principal)
           devCard.classList.add('card-hi', 'card-hi--fabrica');
         };
-
       </script>
+
 
 
       <script>
@@ -1783,6 +1811,9 @@
           // CODES
           if (shortId === 'codes') {
             const isSust = (window.__codesView === 'sustentacao');
+            // 👇 força o toggle do card "Em produção (TOP)"
+            const prodTop = document.querySelector('#codesPage [data-card="codes:producao-top"]');
+            if (prodTop) prodTop.classList.toggle('hidden', !isSust);
             const sustWrap = document.getElementById('codesSustentacaoWrapper');
             const tableView = document.getElementById('tableView');
             const sprintsWrap = document.getElementById('codesSprintsWrapper');
