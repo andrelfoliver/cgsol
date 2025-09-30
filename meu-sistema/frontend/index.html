@@ -561,17 +561,17 @@
           </div>
         </div>
         <!-- Em produção (TOP) — aparece só no modo Sustentação -->
-        <div data-card="codes:producao-top"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow hidden"
-          onclick="showSustentacao()">
+        <div data-card="codes:sust:em_producao"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🚀</div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Em produção</p>
-              <p class="text-2xl font-bold text-gray-900" id="sustProducaoTop">0</p>
+              <p class="text-sm font-medium text-gray-600">Em Produção</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustProducao" data-count>0</p>
             </div>
           </div>
         </div>
+
 
 
         <!-- Em andamento -->
@@ -745,8 +745,11 @@
         // opcional: atalho pra voltar ao modo Fábrica
         window.showFabrica = function () {
           window.__codesView = 'fabrica';
+          // 👇 garante o hide imediato do card TOP “Em produção”
+          document.querySelector('#codesPage [data-card="codes:sust:em_producao"]')?.classList.add('hidden');
           showPage('codes', getNavButtonFor && getNavButtonFor('codes'));
         };
+
       </script>
 
 
@@ -1855,7 +1858,7 @@
           if (shortId === 'codes') {
             const isSust = (window.__codesView === 'sustentacao');
             // 👇 força o toggle do card "Em produção (TOP)"
-            const prodTop = document.querySelector('#codesPage [data-card="codes:producao-top"]');
+            const prodTop = document.querySelector('#codesPage [data-card="codes:sust:em_producao"]');
             if (prodTop) prodTop.classList.toggle('hidden', !isSust);
             const sustWrap = document.getElementById('codesSustentacaoWrapper');
             const tableView = document.getElementById('tableView');
@@ -2625,7 +2628,7 @@
       const devCard = scope.querySelector('[data-card="codes:desenvolvimento"]');
       const sustCard = scope.querySelector('[data-card="codes:sustentacao"]');
 
-      const prodTop = scope.querySelector('[data-card="codes:producao-top"]');
+      const prodTop = scope.querySelector('[data-card="codes:sust:em_producao"]');
 
       if (!fabExtra || !sustExtra || !devCard || !sustCard) return;
 
@@ -2690,6 +2693,10 @@
 
       devCard?.addEventListener('click', clearSubcardSelection, { passive: true });
       sustCard?.addEventListener('click', clearSubcardSelection, { passive: true });
+      devCard?.addEventListener('click', () => {
+        document.querySelector('#codesPage [data-card="codes:sust:em_producao"]')?.classList.add('hidden');
+      }, { passive: true });
+
     });
 
     /* ======= Se algum código externo chamar setCodesCardHighlight,

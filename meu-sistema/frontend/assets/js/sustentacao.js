@@ -751,8 +751,12 @@
         'em homologacao': css.getPropertyValue('--st-em-homologacao').trim(),
         'pendente': css.getPropertyValue('--st-pendente').trim(),
         'suspenso': css.getPropertyValue('--st-suspenso').trim(),
-        'em testes': css.getPropertyValue('--st-em-testes').trim()
+        'em testes': css.getPropertyValue('--st-em-testes').trim(),
+        // 👇 ADICIONAR
+        'em produção': css.getPropertyValue('--st-em-producao').trim(),
+        'em producao': css.getPropertyValue('--st-em-producao').trim()
     };
+
     function normStatusKey(s) {
         return String(s || '')
             .normalize('NFD').replace(/\p{Diacritic}/gu, '')
@@ -969,7 +973,12 @@
             return;
         }
 
-        const filtered = (sustRaw || []).filter(ch => norm(ch.status).includes(wanted));
+        const filtered = (sustRaw || []).filter(ch => {
+            const st = norm(ch.status);
+            // aceita qualquer variação contendo "producao"
+            if (wanted.includes('producao')) return st.includes('producao');
+            return st.includes(wanted);
+        });
         sustCache = filtered;
         renderTable(filtered);
         ensureCharts(filtered);     // ⚠️ só gráficos/tabela, cards NÃO mudam
@@ -985,7 +994,8 @@
             emTestes: 0,
             pendente: 0,
             suspenso: 0,
-            concluido: 0
+            concluido: 0,
+            emProducao: 0        // 👈 novo
         };
 
         (list || []).forEach(ch => {
@@ -995,12 +1005,13 @@
             else if (s.includes('em homolog') || s.includes('homolog')) counters.emHomologacao++;
             else if (s.includes('em testes') || s.includes('testes')) counters.emTestes++;
             else if (s.includes('suspens')) counters.suspenso++;
+            else if (s.includes('produc')) counters.emProducao++;                 // 👈 conta “produção”
             else if (s.includes('conclu')) counters.concluido++;
             else if (s.includes('pendente')) counters.pendente++;
             else counters.pendente++;
         });
 
-        // IDs legados (tela Sustentação)
+        // IDs da grade (Sustentação)
         const idMap = {
             aDesenvolver: 'sustADevs',
             emDesenvolvimento: 'sustEmDev',
@@ -1008,10 +1019,11 @@
             emTestes: 'sustTestes',
             pendente: 'sustPendente',
             suspenso: 'sustSuspenso',
-            concluido: 'sustFechados'
+            concluido: 'sustFechados',
+            emProducao: 'sustProducao'       // 👈 id do card “Em produção” na grade
         };
 
-        // data-card (Visão Geral) — com e sem acento
+        // data-card (Visão Geral / Home)
         const cardKeys = {
             aDesenvolver: ['codes:sustentação:a_desenvolver', 'codes:sust:a_desenvolver'],
             emDesenvolvimento: ['codes:sustentação:em_desenvolvimento', 'codes:sust:em_desenvolvimento'],
@@ -1020,10 +1032,10 @@
             pendente: ['codes:sustentação:pendente', 'codes:sust:pendente'],
             suspenso: ['codes:sustentação:suspenso', 'codes:sust:suspenso'],
             concluido: ['codes:sustentação:fechados', 'codes:sust:fechados'],
-            total: ['codes:sustentação', 'codes:sust:total', 'codes:sustentacao', 'codes:sust'] // cobre vários layouts
+            emProducao: ['codes:sustentação:em_producao', 'codes:sust:em_producao', 'codes:producao-top'], // 👈 inclui o “top”
+            total: ['codes:sustentação', 'codes:sust:total', 'codes:sustentacao', 'codes:sust']
         };
 
-        // helper: escreve em possíveis nós do card
         function writeCardCount(cardKey, value) {
             const sel = `[data-card="${cardKey}"]`;
             const nodes = document.querySelectorAll(
@@ -1032,13 +1044,13 @@
             nodes.forEach(el => el.textContent = String(value));
         }
 
-        // Atualiza IDs legados
+        // Atualiza IDs legados (grade)
         for (const k in idMap) {
             const el = document.getElementById(idMap[k]);
             if (el) el.textContent = String(counters[k] || 0);
         }
 
-        // Atualiza cards da Visão Geral por data-card
+        // Atualiza data-card (Home/Visão geral)
         for (const k of Object.keys(counters)) {
             const val = counters[k] || 0;
             (cardKeys[k] || []).forEach(key => writeCardCount(key, val));
@@ -1052,7 +1064,6 @@
 
         return counters;
     }
-
 
     /* ============ HISTÓRICO DE ANDAMENTO (Sustentação) ============ */
     // >>> usa as rotas reais do backend:
@@ -1219,7 +1230,9 @@
             'sustTestes': 'em testes',
             'sustPendente': 'pendente',
             'sustSuspenso': 'suspenso',
-            'sustFechados': 'concluido'
+            'sustFechados': 'concluido',
+            'sustProducao': 'em producao'
+
         };
 
         for (const id in map) {
@@ -1250,6 +1263,28 @@
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); run(e); }
             });
         }
+        // Card TOP “Em produção” (Home), se existir
+        const prodTop = document.querySelector('[data-card="codes:producao-top"]');
+        if (prodTop && !prodTop.__bound) {
+            prodTop.__bound = true;
+            prodTop.style.cursor = 'pointer';
+            prodTop.setAttribute('role', 'button');
+            prodTop.setAttribute('tabindex', '0');
+
+            const runTop = (e) => {
+                e.preventDefault();
+                window.filterSustByStatus('em producao'); // usa o mesmo filtro normalizado
+                // se você quiser garantir que está na aba Sustentação:
+                document.getElementById('codesSustentacaoWrapper')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            };
+
+            prodTop.addEventListener('click', runTop);
+            prodTop.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); runTop(e); }
+            });
+        }
+
     }
 
 
