@@ -241,6 +241,24 @@
       pointer-events: none;
       box-shadow: inset 6px 0 0 0 #2563eb;
     }
+
+    /* Hover âmbar para o CARD PAI “Sustentação” (mesmo efeito dos subcards) */
+    #codesPage [data-card="codes:sustentação"]:hover,
+    #codesPage [data-card="codes:sustentacao"]:hover,
+    #codesPage [data-card="codes:sust"]:hover,
+    #codesPage [data-card="codes:sust:total"]:hover {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
+    }
+
+    /* Acessibilidade: foco via teclado com o mesmo realce */
+    #codesPage [data-card="codes:sustentação"]:focus-visible,
+    #codesPage [data-card="codes:sustentacao"]:focus-visible,
+    #codesPage [data-card="codes:sust"]:focus-visible,
+    #codesPage [data-card="codes:sust:total"]:focus-visible {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
+    }
   </style>
 
 
