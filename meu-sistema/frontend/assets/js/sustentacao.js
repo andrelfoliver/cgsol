@@ -418,7 +418,6 @@
     }
 
     // ---------- TABELA ----------
-    // ---------- TABELA ----------
     function renderTable(list) {
         const tbody = document.getElementById('sustentacaoTableBody');
         if (!tbody) return;
@@ -428,13 +427,15 @@
         const showConcluidos = /conclu/.test(active);
         const showProducao = /produc/.test(active);
 
-        // Aplica corte final na lista para a tabela (aqui é só visual; gráficos usam outra base)
+        // Aplica corte final na lista para a tabela (visual; gráficos usam outra base)
         const visible = (Array.isArray(list) ? list : []).filter(ch => {
-            const st = String(ch.status || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+            const st = String(ch.status || '')
+                .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+                .toLowerCase();
             const isConcluido = /conclu/.test(st);
             const isProducao = /produc/.test(st);
 
-            // regra: na visão geral de Sustentação NÃO aparecem Concluídos nem Em Produção,
+            // regra: na visão geral NÃO aparecem Concluídos nem Em Produção,
             // a menos que o card/filtro específico esteja ativo.
             if (isConcluido && !showConcluidos) return false;
             if (isProducao && !showProducao) return false;
@@ -453,65 +454,78 @@
             const stRaw = String(ch.status || '');
             const stKey = stRaw.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
             const isConcluido = /conclu/.test(stKey);
+            const isProducao = /produc/.test(stKey);
 
             // Botões de ação:
-            // - Se NÃO concluído: ✔️ Concluir
-            // - Se Concluído: 🚀 Produção
-            const actions = isConcluido
+            // - Em Produção: 🚀 desabilitado (não faz sentido concluir / reenviar)
+            // - Concluído:   🚀 Enviar p/ produção (ativo)
+            // - Outros:      ✅ Concluir (ativo)
+            const actions = isProducao
                 ? `
-          <button title="Enviar para Produção"
-                  class="btn-ico bg-amber-600 hover:bg-amber-700 text-white shadow-sm"
-                  onclick="window.enviarParaProducao('${esc(ch.numero)}')">
-            <!-- foguete -->
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M14 3l7 7-4 1-4 4-1 4-7-7 1-4 4-4 4-1z"/>
-              <path d="M5 15l-2 6 6-2"/>
-            </svg>
-          </button>`
-                : `
-          <a href="#"
-             onclick="concluirChamado('${esc(ch.numero)}')"
-             class="btn-ico bg-[#16a34a] hover:bg-[#15803d] text-white shadow-sm"
-             aria-label="Concluir" title="Concluir">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M20 6 9 17l-5-5"/>
-            </svg>
-          </a>`;
+              <span class="btn-ico bg-gray-300 text-white opacity-60 cursor-not-allowed"
+                    aria-disabled="true" title="Já em produção">
+                <!-- foguete (desabilitado) -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M14 3l7 7-4 1-4 4-1 4-7-7 1-4 4-4 4-1z"/>
+                  <path d="M5 15l-2 6 6-2"/>
+                </svg>
+              </span>`
+                : (isConcluido
+                    ? `
+              <button title="Enviar para Produção"
+                      class="btn-ico bg-amber-600 hover:bg-amber-700 text-white shadow-sm"
+                      onclick="window.enviarParaProducao('${esc(ch.numero)}')">
+                <!-- foguete -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M14 3l7 7-4 1-4 4-1 4-7-7 1-4 4-4 4-1z"/>
+                  <path d="M5 15l-2 6 6-2"/>
+                </svg>
+              </button>`
+                    : `
+              <a href="#"
+                 onclick="concluirChamado('${esc(ch.numero)}')"
+                 class="btn-ico bg-[#16a34a] hover:bg-[#15803d] text-white shadow-sm"
+                 aria-label="Concluir" title="Concluir">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+              </a>`);
 
             tbody.insertAdjacentHTML('beforeend', `
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 text-sm font-medium text-gray-900">${esc(ch.projeto)}</td>
-          <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.numero)}</td>
-          <td class="px-6 py-4 text-sm">
-            <span class="badge" style="background:${colorForStatus(stRaw)};color:#fff;border-radius:6px;">
-              ${esc(stRaw)}
-            </span>
-          </td>
-          <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.desenvolvedor)}</td>
-          <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.solicitante)}</td>
-          <td class="px-6 py-4 text-sm font-medium">
-            <div class="flex items-center gap-3">
-              <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')"
-                 class="btn-ico bg-[#1555D6] hover:bg-[#0f42a8] text-white shadow-sm" aria-label="Ver" title="Ver">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-              </a>
-              <a href="#" onclick="editarChamado('${esc(ch.numero)}')"
-                 class="btn-ico bg-white text-[#1555D6] ring-2 ring-[#1555D6]" aria-label="Editar" title="Editar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path d="M12 20h9"/>
-                  <path d="M16.5 3.5 20.5 7.5 7 21H3v-4L16.5 3.5z"/>
-                </svg>
-              </a>
-              ${actions}
-            </div>
-          </td>
-        </tr>
-      `);
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 text-sm font-medium text-gray-900">${esc(ch.projeto)}</td>
+              <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.numero)}</td>
+              <td class="px-6 py-4 text-sm">
+                <span class="badge" style="background:${colorForStatus(stRaw)};color:#fff;border-radius:6px;">
+                  ${esc(stRaw)}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.desenvolvedor)}</td>
+              <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.solicitante)}</td>
+              <td class="px-6 py-4 text-sm font-medium">
+                <div class="flex items-center gap-3">
+                  <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')"
+                     class="btn-ico bg-[#1555D6] hover:bg-[#0f42a8] text-white shadow-sm" aria-label="Ver" title="Ver">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </a>
+                  <a href="#" onclick="editarChamado('${esc(ch.numero)}')"
+                     class="btn-ico bg-white text-[#1555D6] ring-2 ring-[#1555D6]" aria-label="Editar" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5 20.5 7.5 7 21H3v-4L16.5 3.5z"/>
+                    </svg>
+                  </a>
+                  ${actions}
+                </div>
+              </td>
+            </tr>
+          `);
         });
     }
+
 
 
     // Concluir direto com confirmação (sem abrir o modal Ver)

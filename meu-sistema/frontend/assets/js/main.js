@@ -6,8 +6,26 @@
 (function () {
   'use strict';
 
-  const API = 'http://localhost:5001/api/projetos';
-  const API_ROOT = 'http://localhost:5001/api';
+  // API base dinâmica (evita mixed content em HTTPS)
+  const API_ROOT = (location.protocol === 'https:')
+    ? `${location.origin}/api`          // produção/preview: proxy no mesmo domínio
+    : 'http://localhost:5001/api';      // dev local
+  const API = `${API_ROOT}/projetos`;
+
+  // Shim: se alguém chamar fetch('/api/...'), redireciona pra API_ROOT
+  (() => {
+    const _fetch = window.fetch;
+    window.fetch = function (input, init) {
+      if (typeof input === 'string' && input.startsWith('/api/')) {
+        input = API_ROOT + input.slice(4); // remove o '/api'
+      }
+      return _fetch(input, init);
+    };
+    if (location.protocol === 'https:' && /^http:\/\//i.test(API_ROOT)) {
+      console.warn('[SigSOL] Mixed content: ajuste o backend via proxy /api no mesmo domínio ou sirva HTTPS.');
+    }
+  })();
+
   const SUST_TOP_ENABLED = false; // <- desliga os cards injetados de Sustentação
 
   // Cache em memória
@@ -1096,7 +1114,7 @@
   // Carregar lista de andamentos
   async function loadAndamentos(projetoId) {
     try {
-      const res = await fetch(`http://localhost:5001/api/projetos/${projetoId}/andamentos`);
+      const res = await fetch(`${API_ROOT}/projetos/${projetoId}/andamentos`);
       if (!res.ok) throw new Error("Erro ao buscar andamentos");
 
       const data = await res.json();
@@ -1895,26 +1913,26 @@
   }
 
 
+  // === Contadores dos cards (com proteção para Sustentação) ===============
   function setCardCount(coordKey, cat, value) {
-    // Se estiver na tela de Sustentação, bloqueia updates dos cards de status da Sustentação
+    // Se estiver na tela de Sustentação, não sobrescreva os cards de Sustentação
     if (window.__codesView === 'sustentacao' && String(coordKey).toLowerCase() === 'codes') {
-      const catNorm = String(cat || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const catNorm = String(cat || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
       const sustSet = new Set([
         'sust-fora-prazo', 'sust-a-desenvolver', 'sust-pendente', 'sust-em-dev',
         'sust-homologacao', 'sust-suspenso', 'sust-em-testes', 'sust-concluido'
       ]);
-      if (sustSet.has(catNorm)) return; // não sobrescreve Sustentação
+      if (sustSet.has(catNorm)) return; // não mexe nos cards da Sustentação
     }
 
-    // Também evita sobrescrever cards de sustentação mesmo fora da view (defesa extra)
+    // Nunca aceitar categorias sust-* por aqui (Sustentação é atualizada por updateSustCards)
     if (/^sust-/.test(String(cat))) return;
 
     const sel = `[data-card="${coordKey}:${cat}"]`;
     const containers = document.querySelectorAll(sel);
-    if (!containers.length) {
-      console.warn(`setCardCount: nenhum container para ${coordKey}:${cat}`);
-      return;
-    }
+    if (!containers.length) return; // silencioso: se não tem card, não há o que atualizar
 
     containers.forEach(container => {
       let countEl =
@@ -1923,7 +1941,9 @@
         container.querySelector('span.text-lg.font-bold') ||
         container.querySelector('span.text-lg') ||
         container.querySelector('.count') ||
-        Array.from(container.querySelectorAll('span, p')).reverse().find(n => /\d+/.test(n.textContent || ''));
+        Array.from(container.querySelectorAll('span, p'))
+          .reverse()
+          .find(n => /\d+/.test(n.textContent || ''));
 
       if (!countEl) {
         const p = document.createElement('p');
@@ -1931,9 +1951,10 @@
         container.appendChild(p);
         countEl = p;
       }
-      countEl.textContent = value;
+      countEl.textContent = String(value ?? 0);
     });
   }
+
 
 
   function drawSustDistribChart(itens) {
@@ -2757,13 +2778,10 @@
 
       updateLastUpdateTime();
     } catch (e) {
-      console.error(e);
+      console.error('Sustentação: falha ao carregar ->', e && (e.message || e));
       drawSustDistribChart([]);
       applySustCard(0);
-
-      // Mesmo em erro, recalcule para refletir 0 em Sustentação na Home
       updateKPIs(window.cacheProjetos || []);
-
       updateLastUpdateTime();
     }
   }
@@ -3223,5 +3241,6 @@
     get codes() { return chartCodes; },
     get intern() { return chartIntern; }
   };
+
 
 })(); // 🔚 fim do IIFE
