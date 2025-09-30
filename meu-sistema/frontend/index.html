@@ -177,6 +177,70 @@
       box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
       transform: translateY(-1px);
     }
+
+    /* — Subcards de DESENVOLVIMENTO (CODES) com brilho AZUL — */
+    #codesPage [data-card="codes:desenvolvimento"]:hover,
+    #codesPage [data-card="codes:em-andamento"]:hover,
+    #codesPage [data-card="codes:ativos"]:hover,
+    #codesPage [data-card="codes:fora-prazo"]:hover,
+    #codesPage [data-card="codes:planejado"]:hover,
+    #codesPage [data-card="codes:pausado"]:hover,
+    #codesPage [data-card="codes:concluido"]:hover,
+    #codesPage [data-card="codes:concluído"]:hover {
+      box-shadow: 0 12px 28px rgba(37, 99, 235, .22) !important;
+      transform: translateY(-1px);
+    }
+
+    /* Acessibilidade: foco via teclado */
+    #codesPage [data-card="codes:desenvolvimento"]:focus-visible,
+    #codesPage [data-card="codes:em-andamento"]:focus-visible,
+    #codesPage [data-card="codes:ativos"]:focus-visible,
+    #codesPage [data-card="codes:fora-prazo"]:focus-visible,
+    #codesPage [data-card="codes:planejado"]:focus-visible,
+    #codesPage [data-card="codes:pausado"]:focus-visible,
+    #codesPage [data-card="codes:concluido"]:focus-visible,
+    #codesPage [data-card="codes:concluído"]:focus-visible {
+      box-shadow: 0 12px 28px rgba(37, 99, 235, .22) !important;
+      transform: translateY(-1px);
+    }
+
+    /* transição suave (opcional) */
+    #codesPage [data-card^="codes:"] {
+      transition: box-shadow .18s ease, transform .18s ease;
+    }
+
+    /* — Barra azul lateral no "Fora do Prazo" APENAS quando estiver selecionado — */
+    /* Cobre tanto a aba #codesPage quanto o grid #codesKpisFabExtra */
+    #codesPage [data-card="codes:fora-prazo"],
+    #codesKpisFabExtra [data-card="codes:fora-prazo"] {
+      position: relative;
+      /* ancora o pseudo-elemento */
+      z-index: 0;
+    }
+
+    /* aparece só quando o JS marcou o card como selecionado (ring azul) */
+    #codesPage [data-card="codes:fora-prazo"].ring-blue-500::after,
+    #codesKpisFabExtra [data-card="codes:fora-prazo"].ring-blue-500::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      /* acompanha seus cantos */
+      pointer-events: none;
+      box-shadow: inset 6px 0 0 0 #2563eb;
+      /* a barrinha azul */
+    }
+
+    /* (opcional) se em algum fluxo você usar .card-picked, mantém o mesmo efeito */
+    #codesPage [data-card="codes:fora-prazo"].card-picked::after,
+    #codesKpisFabExtra [data-card="codes:fora-prazo"].card-picked::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      pointer-events: none;
+      box-shadow: inset 6px 0 0 0 #2563eb;
+    }
   </style>
 
 
