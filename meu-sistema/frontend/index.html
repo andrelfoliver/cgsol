@@ -2258,12 +2258,9 @@
 
   <!-- Lógica dinâmica (main.js) -->
   <script src="assets/js/main.js?v=10" defer></script>
-  <script src="assets/js/sustentacao.js?v=2"></script>
-
-
   <script src="assets/js/pdti.js"></script>
+  <script src="assets/js/sustentacao.js?v=7"></script>
 
-  <!--script src="assets/js/codes-sustentacao.js?v=1" defer></script-->
 
   <!-- Modal: Ver Chamado (estilo igual ao modal de projetos) -->
   <div id="verChamadoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
@@ -2334,13 +2331,28 @@
           </div>
         </div>
 
-        <!-- Observações (igual à seção “Descrição/Riscos” do modal de projetos) -->
+        <!-- Histórico de Andamento (Sustentação — igual ao de Desenvolvimento) -->
         <div class="px-6 pb-6">
           <div class="bg-white border rounded-lg p-4">
-            <h4 class="font-semibold text-gray-700 mb-2">Observações</h4>
-            <p id="verObs" class="text-sm text-gray-700 whitespace-pre-wrap">—</p>
+            <h4 class="font-semibold text-gray-700 mb-3">Histórico de Andamento</h4>
+
+            <!-- Lista de itens -->
+            <div id="sustHistoricoList" class="space-y-2">
+              <!-- itens serão renderizados via JS (renderSustHistorico) -->
+              <p class="text-sm text-gray-500">Nenhum andamento registrado.</p>
+            </div>
+
+            <!-- Editor inline: input + botão “+” -->
+            <div class="mt-3 flex gap-2">
+              <input id="sustNovoAndamento" type="text" placeholder="Descreva andamento..."
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2" />
+              <button id="btnAddSustObs" type="button"
+                class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">+</button>
+            </div>
           </div>
         </div>
+
+
 
         <!-- Rodapé (botões iguais) -->
         <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3">
@@ -2355,6 +2367,142 @@
     </div>
   </div>
 
+  <script>
+    (function () {
+      // popula a área de observação quando o modal abre
+      window.fillObsChamado = function (obsTexto) {
+        const view = document.getElementById('verObs');
+        const input = document.getElementById('verObsInput');
+        if (!view || !input) return;
+        const t = (obsTexto ?? '—');
+        view.textContent = t || '—';
+        input.value = (t === '—') ? '' : t;
+        // estado padrão: leitura
+        window.toggleObsEditor(false, true);
+      };
+
+      // alterna visual de edição/leitura
+      window.toggleObsEditor = function (editing, silent) {
+        const view = document.getElementById('verObs');
+        const input = document.getElementById('verObsInput');
+        const btnEdit = document.getElementById('btnEditarObs');
+        const btnSave = document.getElementById('btnSalvarObs');
+        const btnCancel = document.getElementById('btnCancelarObs');
+        const hint = document.getElementById('verObsHint');
+        if (!view || !input || !btnEdit || !btnSave || !btnCancel) return;
+
+        if (editing) {
+          view.classList.add('hidden');
+          input.classList.remove('hidden');
+          btnEdit.classList.add('hidden');
+          btnSave.classList.remove('hidden');
+          btnCancel.classList.remove('hidden');
+          hint?.classList.remove('hidden');
+          if (!silent) input.focus();
+        } else {
+          view.classList.remove('hidden');
+          input.classList.add('hidden');
+          btnEdit.classList.remove('hidden');
+          btnSave.classList.add('hidden');
+          btnCancel.classList.add('hidden');
+          hint?.classList.add('hidden');
+        }
+      };
+
+      // salva a observação (usa hook se existir; senão, fallback)
+      window.saveObsEditor = function () {
+        const numero = document.getElementById('verNumero')?.textContent?.trim();
+        const input = document.getElementById('verObsInput');
+        const view = document.getElementById('verObs');
+        const texto = (input?.value || '').trim();
+
+        if (!numero) return window.alert('Não foi possível identificar o número do chamado.');
+        if (!view) return;
+
+        const applyUI = () => {
+          view.textContent = texto || '—';
+          window.toggleObsEditor(false);
+        };
+
+        // Hook oficial (se você tiver no sustentacao.js)
+        if (typeof window.saveObservacaoChamado === 'function') {
+          try {
+            const r = window.saveObservacaoChamado(numero, texto);
+            // aceita tanto sync quanto Promise
+            if (r && typeof r.then === 'function') {
+              r.then(applyUI).catch(err => alert('Erro ao salvar observação: ' + (err?.message || err)));
+            } else {
+              applyUI();
+            }
+          } catch (e) {
+            alert('Erro ao salvar observação: ' + (e?.message || e));
+          }
+          return;
+        }
+
+        // Fallback: tenta atualizar no array em memória e re-renderizar a lista
+        try {
+          const arr = (window.__sustChamados || []);
+          const idx = arr.findIndex(ch => String(ch.numero) === String(numero));
+          if (idx >= 0) {
+            arr[idx].observacoes = texto;
+            // se houver função para re-render da tabela:
+            if (typeof window.renderSustentacaoTable === 'function') {
+              window.renderSustentacaoTable(arr);
+            }
+          }
+        } catch { /* noop */ }
+
+        applyUI();
+      };
+
+      // Integra com a abertura do modal: quando você chamar a função que abre “Ver Chamado”,
+      // chame fillObsChamado(passando a string de observações do chamado).
+      // Se já tiver uma função showVerChamado, fazemos um wrap leve:
+      (function wrapOpenModal() {
+        const modalId = 'verChamadoModal';
+        // se existir um ponto único de abertura que já popula campos:
+        const oldOpen = window.openVerChamado;
+        window.openVerChamado = function (chamado) {
+          // chamado: objeto { numero, abertura, ..., observacoes }
+          if (typeof oldOpen === 'function') oldOpen(chamado);
+          window.fillObsChamado(chamado?.observacoes || chamado?.obs || '');
+          // garante que o input de data/hora e o botão concluir já estavam como antes
+          window.showModal && window.showModal(modalId);
+        };
+
+        // caso você não use openVerChamado(obj), mas popula manualmente,
+        // pode apenas chamar window.fillObsChamado(obs) logo após setar #verNumero etc.
+      })();
+
+      // Quando clicar em “Concluir”, inclui a observação atual no fluxo (se houver hook)
+      (function wireConcluirWithObs() {
+        const btn = document.getElementById('btnConcluirChamado');
+        if (!btn || btn.__wiredWithObs) return;
+        btn.__wiredWithObs = true;
+
+        btn.addEventListener('click', () => {
+          const numero = document.getElementById('verNumero')?.textContent?.trim();
+          const fechamento = document.getElementById('verFechamento')?.value || '';
+          const obsAtual = document.getElementById('verObsInput')?.classList.contains('hidden')
+            ? (document.getElementById('verObs')?.textContent || '')
+            : (document.getElementById('verObsInput')?.value || '');
+
+          // Se existir um finalizador oficial, passe a observação junto
+          if (typeof window.concluirChamado === 'function') {
+            try { window.concluirChamado(numero, fechamento, obsAtual?.trim()); return; }
+            catch { /* continua no fallback */ }
+          }
+
+          // Fallback simples: salva observação e fecha
+          if (typeof window.saveObservacaoChamado === 'function') {
+            try { window.saveObservacaoChamado(numero, (obsAtual || '').trim()); } catch { }
+          }
+          window.hideModal && window.hideModal('verChamadoModal');
+        }, { passive: true });
+      })();
+    })();
+  </script>
 
   <!-- Modal Editar Chamado -->
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="editChamadoModal">

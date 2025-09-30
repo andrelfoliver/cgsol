@@ -88,7 +88,7 @@ class SustentacaoChamado(db.Model):
     __tablename__ = "sustentacao_chamados"
 
     id = db.Column(db.Integer, primary_key=True)
-    numero_chamado = db.Column(db.String(50), unique=True, nullable=False)
+    numero_chamado = db.Column(db.String(50), unique=True, nullable=False, index=True)
     projeto = db.Column(db.String(100), nullable=False)
     desenvolvedor = db.Column(db.String(100))
     data_chamado = db.Column(db.DateTime)
@@ -98,3 +98,33 @@ class SustentacaoChamado(db.Model):
     observacao = db.Column(db.Text)
     criado_em = db.Column(db.DateTime, default=db.func.now())
     atualizado_em = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
+
+    # relação para as observações (cascade para deletar observações quando excluir o chamado)
+    observacoes = db.relationship(
+        "SustentacaoObservacao",
+        backref=db.backref("chamado", lazy="joined"),
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+
+# --- Histórico de observações por chamado de Sustentação ---
+class SustentacaoObservacao(db.Model):
+    __tablename__ = "sustentacao_observacoes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    numero_chamado = db.Column(
+        db.String(50),
+        db.ForeignKey("sustentacao_chamados.numero_chamado", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    texto = db.Column(db.Text, nullable=False)
+    criado_em = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "numero_chamado": self.numero_chamado,
+            "texto": self.texto,
+            "created_at": self.criado_em.isoformat() if self.criado_em else None,
+        }

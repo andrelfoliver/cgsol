@@ -952,6 +952,66 @@
   }
 
 
+  // ==== Sustentação: edição inline no mesmo padrão dos Andamentos ====
+  window.startEditSustObs = startEditSustObs;
+  window.confirmEditSustObs = confirmEditSustObs;
+
+  function startEditSustObs(id, textoAtualEsc) {
+    const item = document.getElementById(`sustobs-${id}`);
+    if (!item) return;
+
+    const textoAtual = decodeFromAttr(textoAtualEsc || '');
+    const valueEsc = encodeForAttr(textoAtual);
+
+    item.innerHTML = `
+    <input id="sustobs-input-${id}" type="text" class="border p-1 flex-1 rounded" value="${valueEsc}">
+    <div class="flex gap-2 ml-2">
+      <button class="px-2 py-1 text-xs bg-green-600 text-white rounded"
+              onclick="confirmEditSustObs(${id}, document.getElementById('sustobs-input-${id}').value)">💾 Salvar</button>
+      <button class="px-2 py-1 text-xs bg-gray-500 text-white rounded"
+              onclick="loadSustObs(window.currentChamadoNumero)">❌ Cancelar</button>
+    </div>
+  `;
+  }
+
+  async function confirmEditSustObs(id, novoTexto) {
+    const texto = (novoTexto || '').trim();
+    if (!texto) return;
+
+    try {
+      const res = await fetch(`/api/sustentacao/observacoes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto })
+      });
+      if (!res.ok) throw new Error('Falha ao editar observação');
+      if (window.currentChamadoNumero) await loadSustObs(window.currentChamadoNumero);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // sobrescreve a versão antiga para usar o modal de confirmação bonito
+  // deixe só ESTA versão
+  async function deleteSustObs(id) {
+    showConfirm('Excluir esta observação?', async () => {
+      const res = await fetch(`/api/sustentacao/observacoes/${id}`, { method: 'DELETE' });
+      if (!res.ok) { toast('Erro', 'Falha ao excluir observação', 'error'); return; }
+      if (window.currentChamadoNumero) await loadSustObs(window.currentChamadoNumero);
+    }, null, {
+      title: 'Excluir observação',
+      icon: '🗑️',
+      confirmText: 'Excluir',
+      confirmClass: 'bg-red-600 hover:bg-red-700',
+      cancelText: 'Cancelar'
+    });
+  }
+
+  // Exporte DEPOIS das definições (uma vez só)
+  window.loadSustObs = loadSustObs;
+  window.addSustObs = addSustObs;
+  window.editSustObs = editSustObs;
+  window.deleteSustObs = deleteSustObs;
 
 
   // Exibir andamentos no modal
@@ -1045,6 +1105,237 @@
       console.error("Erro ao carregar andamentos", err);
     }
   }
+
+  // ==== Sustentação: histórico de observações (anotações) ====
+
+  // Carrega e renderiza a lista para o número atual
+  // ======= Observações de Sustentação (persistência real) =======
+
+  async function loadSustObs(numero) {
+    const box = document.getElementById('sustHistoricoList');
+    if (!box) return;
+    box.innerHTML = '<div class="text-sm text-gray-500">Carregando…</div>';
+
+    try {
+      const r = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(numero)}/observacoes`);
+      if (!r.ok) throw new Error(await r.text());
+      const itens = await r.json();
+
+      if (!Array.isArray(itens) || !itens.length) {
+        box.innerHTML = '<p class="text-sm text-gray-500">Nenhum andamento registrado.</p>';
+        return;
+      }
+
+      box.innerHTML = itens.map(it => `
+      <div class="flex items-start gap-2 mb-2">
+        <div class="flex-1 px-3 py-2 rounded border bg-gray-50 text-sm text-gray-700">
+          <div class="text-xs text-gray-500">${(new Date(it.created_at)).toLocaleString('pt-BR')}</div>
+          <div class="mt-1 whitespace-pre-wrap">${it.texto.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#039;' }[m]))}</div>
+        </div>
+        <div class="shrink-0 flex gap-2">
+          <button class="px-2 py-1 text-sm rounded bg-yellow-400 text-white hover:bg-yellow-500"
+                  onclick="editSustObs('${it.id}')">Editar</button>
+          <button class="px-2 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600"
+                  onclick="deleteSustObs('${it.id}', '${numero}')">Excluir</button>
+        </div>
+      </div>
+    `).join('');
+    } catch (e) {
+      console.error(e);
+      box.innerHTML = '<p class="text-sm text-red-600">Falha ao carregar observações.</p>';
+    }
+  }
+
+  window.addSustObs = async function (numero) {
+    const input = document.getElementById('sustNovoAndamento');
+    const texto = (input?.value || '').trim();
+    if (!texto) return;
+
+    try {
+      const r = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(numero)}/observacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto })
+      });
+      if (!r.ok) throw new Error(await r.text());
+      input.value = '';
+      await loadSustObs(numero);
+      (typeof toast === 'function') && toast('Sucesso', 'Andamento adicionado.', 'success');
+    } catch (e) {
+      console.error(e);
+      (typeof toast === 'function') && toast('Erro', 'Falha ao salvar.', 'error');
+    }
+  };
+
+  window.editSustObs = async function (obsId) {
+    const novo = prompt('Editar andamento:');
+    if (novo == null) return;
+    try {
+      const r = await fetch(`${API_ROOT}/sustentacao/observacoes/${encodeURIComponent(obsId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto: String(novo).trim() })
+      });
+      if (!r.ok) throw new Error(await r.text());
+      await loadSustObs(window.currentChamadoNumero);
+      (typeof toast === 'function') && toast('Sucesso', 'Andamento atualizado.', 'success');
+    } catch (e) {
+      console.error(e);
+      (typeof toast === 'function') && toast('Erro', 'Falha ao atualizar.', 'error');
+    }
+  };
+
+  window.deleteSustObs = async function (obsId, numero) {
+    if (!confirm('Excluir este andamento?')) return;
+    try {
+      const r = await fetch(`${API_ROOT}/sustentacao/observacoes/${encodeURIComponent(obsId)}`, {
+        method: 'DELETE'
+      });
+      if (!r.ok) throw new Error(await r.text());
+      await loadSustObs(numero || window.currentChamadoNumero);
+      (typeof toast === 'function') && toast('Sucesso', 'Andamento excluído.', 'success');
+    } catch (e) {
+      console.error(e);
+      (typeof toast === 'function') && toast('Erro', 'Falha ao excluir.', 'error');
+    }
+  };
+
+
+  window.addSustObs = async function (numero) {
+    const ta = document.getElementById('sustNovoAndamento');
+    const texto = (ta?.value || '').trim();
+    const n = numero || window.currentChamadoNumero || window.__viewNumero;
+    if (!n) return;
+    if (!texto) { alert('Digite uma observação.'); return; }
+
+    try {
+      const resp = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(n)}/observacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto })
+      });
+      if (!resp.ok) throw new Error(await resp.text());
+      ta.value = '';
+      await loadSustObs(n);
+    } catch (e) {
+      console.error(e);
+      alert('Não foi possível salvar a observação.');
+    }
+  };
+
+
+
+  // Desenha a lista no modal
+  function renderSustObs(list) {
+    const wrap = document.getElementById('sustObsList');
+    if (!wrap) return;
+
+    if (!Array.isArray(list) || !list.length) {
+      wrap.innerHTML = `<p class="text-sm text-gray-500">Nenhuma observação registrada.</p>`;
+      return;
+    }
+
+    wrap.innerHTML = '';
+    list.forEach(item => {
+      const when = item.created_at || item.criado_em || item.data || item.dt || item.timestamp;
+      const whenStr = formatToBrasilia(when);
+
+      const row = document.createElement('div');
+      row.className = 'flex justify-between items-center p-2 border rounded bg-gray-50';
+      row.id = `sustobs-${item.id}`;
+
+      row.innerHTML = `
+        <span class="desc">${whenStr} — ${escapeHtml(item.texto || '')}</span>
+        <div class="flex gap-2">
+          <button class="px-2 py-1 text-xs bg-yellow-500 text-white rounded"
+                  onclick="startEditSustObs(${item.id}, '${encodeForAttr(item.texto || '')}')">✏️ Editar</button>
+          <button class="px-2 py-1 text-xs bg-red-600 text-white rounded"
+                  onclick="deleteSustObs(${item.id})">🗑️ Excluir</button>
+        </div>
+      `;
+      wrap.appendChild(row);
+    });
+  }
+
+
+
+  // Adiciona nova observação (usa o input #newSustObs)
+  async function addSustObs(numero) {
+    const inp = document.getElementById('newSustObs');
+    if (!inp) return;
+    const texto = (inp.value || '').trim();
+    if (!texto) return;
+
+    try {
+      const res = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(numero)}/observacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto })
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.erro || 'Falha ao salvar observação');
+      }
+      inp.value = '';
+      await loadSustObs(numero);
+    } catch (e) {
+      console.error('Erro ao adicionar observação:', e);
+    }
+  }
+
+  // Edita (abre prompt simples) e salva
+  async function editSustObs(id, textoAtual) {
+    const novo = prompt('Editar observação:', decodeFromAttr(textoAtual || '')) || '';
+    const texto = novo.trim();
+    if (!texto) return;
+    try {
+      const res = await fetch(`${API_ROOT}/sustentacao/observacoes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto })
+      });
+      if (!res.ok) throw new Error('Falha ao editar observação');
+      // recarrega usando o número atual (armazenado no modal)
+      if (window.currentChamadoNumero) loadSustObs(window.currentChamadoNumero);
+    } catch (e) {
+      console.error('Erro ao editar observação:', e);
+    }
+  }
+
+
+  // depois de definir loadSustObs / addSustObs / editSustObs / deleteSustObs:
+  window.loadSustObs = loadSustObs;
+  window.addSustObs = addSustObs;
+  window.editSustObs = editSustObs;
+  window.deleteSustObs = deleteSustObs;
+
+  // helpers
+  function escapeHtml(s) { return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;'); }
+  function encodeForAttr(s) { return String(s).replaceAll('"', '&quot;').replaceAll("'", '&#39;'); }
+  function decodeFromAttr(s) { return String(s).replaceAll('&quot;', '"').replaceAll('&#39;', "'"); }
+  function formatDateTime(iso) { try { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString(); } catch { return ''; } }
+
+  // ==== utilidades pequenas ====
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;');
+  }
+  function encodeForAttr(s) {
+    return String(s).replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+  }
+  function decodeFromAttr(s) {
+    return String(s).replaceAll('&quot;', '"').replaceAll('&#39;', "'");
+  }
+  function formatDateTime(iso) {
+    try {
+      const d = new Date(iso);
+      if (isNaN(d)) return '';
+      return d.toLocaleString();
+    } catch { return ''; }
+  }
+
   // ========= Ações (links com ícones) =========
   // === Ações (bolinhas) para projetos ===
   function actionLinksHtml(idArg) {

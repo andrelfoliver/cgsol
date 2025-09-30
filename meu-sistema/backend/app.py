@@ -4,9 +4,10 @@ from datetime import date
 from database import db, Projeto, Andamento
 
 
-app = Flask(__name__, static_url_path="/api")
-CORS(app)
-
+app = Flask(__name__)   # <- só isso
+CORS(app,
+     resources={r"/api/*": {"origins": "*"}},
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 # modelo sustentacao_chamados (precisa estar definido em database.py)
 from database import SustentacaoChamado  
 
@@ -163,6 +164,56 @@ def deletar_andamento(andamento_id):
         app.logger.exception("Erro ao deletar andamento")
         return jsonify({'erro': str(e)}), 400
 
+from database import SustentacaoObservacao, SustentacaoChamado  # garantir import
+
+# Listar e criar observações de um chamado
+# Listar e criar observações de um chamado
+@app.route('/api/sustentacao/<string:numero>/observacoes', methods=['GET', 'POST'])
+def sust_obs_list_create(numero):
+    # Garante que o chamado existe
+    SustentacaoChamado.query.filter_by(numero_chamado=numero).first_or_404()
+
+    if request.method == 'POST':
+        data = (request.get_json() or {})
+        texto = (data.get('texto') or '').strip()
+        # 👇 ADICIONE ESTE LOG
+        app.logger.info("POST /api/sustentacao/%s/observacoes texto=%r", numero, texto)
+
+        if not texto:
+            return jsonify({'erro': 'Texto é obrigatório'}), 400
+
+        row = SustentacaoObservacao(numero_chamado=numero, texto=texto)
+        db.session.add(row)
+        db.session.commit()
+        return jsonify(row.to_dict()), 201
+
+    itens = SustentacaoObservacao.query.filter_by(numero_chamado=numero)\
+        .order_by(SustentacaoObservacao.criado_em.desc())\
+        .all()
+    return jsonify([r.to_dict() for r in itens]), 200
+
+# Editar/Excluir uma observação específica
+@app.route('/api/sustentacao/observacoes/<int:oid>', methods=['PUT', 'DELETE'])
+def sust_obs_update_delete(oid):
+    row = SustentacaoObservacao.query.get_or_404(oid)
+
+    if request.method == 'DELETE':
+        db.session.delete(row)
+        db.session.commit()
+        return ('', 204)  # No Content
+
+    data = (request.get_json() or {})
+    texto = (data.get('texto') or '').strip()
+    if not texto:
+        return jsonify({'erro': 'Texto é obrigatório'}), 400
+
+    row.texto = texto
+    db.session.commit()
+    return jsonify(row.to_dict()), 200
+
+
+
+   
 
 # Listar histórico de um projeto
 @app.route('/api/projetos/<int:id>/andamentos', methods=['GET'])

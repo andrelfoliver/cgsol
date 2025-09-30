@@ -2,7 +2,37 @@
 (function () {
     'use strict';
 
-    const API_ROOT = 'http://localhost:5001/api';
+    // --- SHIMS p/ main.js esperar sem quebrar ---
+    window.ensureDynamicStatusCards = window.ensureDynamicStatusCards || function () { /* no-op */ };
+
+    // Mapa de rótulos -> chave (usado por main.js em alguns cenários)
+    window.SUST_LABEL_TO_KEY = window.SUST_LABEL_TO_KEY || {
+        'A desenvolver': 'a_desenvolver',
+        'Em desenvolvimento': 'em_desenvolvimento',
+        'Em homologação': 'em_homologacao',
+        'Em testes': 'em_testes',
+        'Pendente': 'pendente',
+        'Suspenso': 'suspenso',
+        'Concluídos': 'fechados',
+        'Total': 'total'
+    };
+
+
+    // --- API base e shim de fetch (main.js)
+    (function () {
+        if (!window.API_ROOT) window.API_ROOT = 'http://localhost:5001/api';
+        console.log('[MAIN] API_ROOT =', window.API_ROOT);
+
+        const _fetch = window.fetch;
+        window.fetch = function (input, init) {
+            if (typeof input === 'string' && input.startsWith('/api/')) {
+                // troca /api/... por http://localhost:5001/api/...
+                input = window.API_ROOT + input.replace(/^\/api/, '');
+            }
+            return _fetch(input, init);
+        };
+    })();
+
 
     // gráficos
     let chartSustStatus = null;
@@ -155,38 +185,200 @@
     }
 
     function normalizeChamado(r, projetosById) {
-        const projetoId =
-            r.projeto_id ?? r.id_projeto ?? r.projetoId ?? r.idProjeto ??
+        projetosById = projetosById || {};
+
+        // helper seguro de id
+        function makeId() {
+            try {
+                if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                    return crypto.randomUUID();
+                }
+            } catch (_) { }
+            return String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8);
+        }
+
+        // ---- Projeto (id/nome) ---------------------------------------------------
+        var projetoId =
+            (r.projeto_id != null ? r.projeto_id : null) ||
+            (r.id_projeto != null ? r.id_projeto : null) ||
+            (r.projetoId != null ? r.projetoId : null) ||
+            (r.idProjeto != null ? r.idProjeto : null) ||
             (Number.isInteger(r.projeto) ? r.projeto : null);
 
-        const projetoNome =
-            r.projeto ?? r.projeto_nome ?? r.nome_projeto ??
+        var projetoNome =
+            (r.projeto != null ? r.projeto : null) ||
+            (r.projeto_nome != null ? r.projeto_nome : null) ||
+            (r.nome_projeto != null ? r.nome_projeto : null) ||
             (projetoId != null ? projetosById[String(projetoId)] : null);
 
+        // ---- Identificadores ------------------------------------------------------
+        var id =
+            (r.id != null ? r.id : null) ||
+            (r.chamado_id != null ? r.chamado_id : null) ||
+            (r.ticket_id != null ? r.ticket_id : null) ||
+            (r.id_chamado != null ? r.id_chamado : null) ||
+            (r.idTicket != null ? r.idTicket : null);
+
+        var numero =
+            (r.numero != null ? r.numero : null) ||
+            (r.numero_chamado != null ? r.numero_chamado : null) ||
+            (r.ticket != null ? r.ticket : null) ||
+            (r.chamado != null ? r.chamado : null) ||
+            (r.id != null ? r.id : null);
+
+        // ---- Datas ----------------------------------------------------------------
+        function pickAny(obj, patterns) {
+            for (var k in obj) {
+                for (var i = 0; i < patterns.length; i++) {
+                    if (patterns[i].test(k)) return obj[k];
+                }
+            }
+            return null;
+        }
+
+        var dataAbertura =
+            (r.data_chamado != null ? r.data_chamado : null) ||
+            (r.data_abertura != null ? r.data_abertura : null) ||
+            (r.dt_registro != null ? r.dt_registro : null) ||
+            (r.data_registro != null ? r.data_registro : null) ||
+            (r.dt_abertura != null ? r.dt_abertura : null) ||
+            (r.data != null ? r.data : null) ||
+            (r.created_at != null ? r.created_at : null) ||
+            (r.abertura != null ? r.abertura : null) ||
+            (r.registro != null ? r.registro : null) ||
+            (r['DT REGISTRO'] != null ? r['DT REGISTRO'] : null) ||
+            (r['DT_REGISTRO'] != null ? r['DT_REGISTRO'] : null) ||
+            (r['DT ABERTURA'] != null ? r['DT ABERTURA'] : null) ||
+            (r['DT_ABERTURA'] != null ? r['DT_ABERTURA'] : null) ||
+            (r['DT REGISTRO '] != null ? r['DT REGISTRO '] : null) ||
+            (r['DATA REGISTRO'] != null ? r['DATA REGISTRO'] : null) ||
+            (r['DATA ABERTURA'] != null ? r['DATA ABERTURA'] : null) ||
+            (r['ABERTURA'] != null ? r['ABERTURA'] : null) ||
+            pickAny(r, [/^dt.?reg/i, /^dt.?abert/i, /abertura/i, /registro/i]);
+
+        var dataFechamento =
+            (r.data_fechamento != null ? r.data_fechamento : null) ||
+            (r.dt_fechado != null ? r.dt_fechado : null) ||
+            (r.data_fechado != null ? r.data_fechado : null) ||
+            (r.dt_fechamento != null ? r.dt_fechamento : null) ||
+            (r.fechado != null ? r.fechado : null) ||
+            (r.fechamento != null ? r.fechamento : null) ||
+            (r['DT FECHADO'] != null ? r['DT FECHADO'] : null) ||
+            (r['DT_FECHADO'] != null ? r['DT_FECHADO'] : null) ||
+            (r['DT FECHAMENTO'] != null ? r['DT FECHAMENTO'] : null) ||
+            (r['DT_FECHAMENTO'] != null ? r['DT_FECHAMENTO'] : null) ||
+            pickAny(r, [/^dt.?fech/i, /fechamento/i, /fechado/i]);
+
+        // ---- Pessoas / Status -----------------------------------------------------
+        var desenvolvedor =
+            (r.desenvolvedor != null ? r.desenvolvedor : null) ||
+            (r.dev != null ? r.dev : null) ||
+            (r.responsavel != null ? r.responsavel : '—');
+
+        var solicitante =
+            (r.solicitante != null ? r.solicitante : null) ||
+            (r.aberto_por != null ? r.aberto_por : null) ||
+            (r.solicitante_nome != null ? r.solicitante_nome : '—');
+
+        var status =
+            (r.status != null ? r.status : null) ||
+            (r.situacao != null ? r.situacao : null) ||
+            (r.state != null ? r.state : '—');
+
+        // ---- Observação “solta” (compat) -----------------------------------------
+        var obsSolta =
+            (r.observacao != null ? r.observacao : null) ||
+            (r.observacoes != null ? r.observacoes : null) ||
+            (r.obs != null ? r.obs : '');
+
+        // ---- Histórico ------------------------------------------------------------
+        var historico = r.historico || r.andamentos || r.logs || [];
+        if (!Array.isArray(historico)) historico = [];
+
+        function normItem(it) {
+            if (!it || typeof it !== 'object') {
+                return {
+                    id: makeId(),
+                    dataHora: new Date().toISOString(),
+                    autor: desenvolvedor || '—',
+                    texto: String(it != null ? it : '').trim()
+                };
+            }
+            var itId =
+                (it.id != null ? it.id : null) ||
+                (it.item_id != null ? it.item_id : null) ||
+                (it.log_id != null ? it.log_id : null) ||
+                (it.codigo != null ? it.codigo : null) ||
+                makeId();
+
+            var itData =
+                (it.dataHora != null ? it.dataHora : null) ||
+                (it.data_hora != null ? it.data_hora : null) ||
+                (it.data != null ? it.data : null) ||
+                (it.dt != null ? it.dt : null) ||
+                (it.when != null ? it.when : null) ||
+                (it.timestamp != null ? it.timestamp : null) ||
+                pickAny(it, [/^data/i, /^dt/i, /hora/i, /time/i]) ||
+                new Date().toISOString();
+
+            var itAutor =
+                (it.autor != null ? it.autor : null) ||
+                (it.user != null ? it.user : null) ||
+                (it.usuario != null ? it.usuario : null) ||
+                (it.quem != null ? it.quem : null) ||
+                (it.responsavel != null ? it.responsavel : null) ||
+                desenvolvedor || '—';
+
+            var itTexto =
+                (it.texto != null ? it.texto : null) ||
+                (it.mensagem != null ? it.mensagem : null) ||
+                (it.msg != null ? it.msg : null) ||
+                (it.descricao != null ? it.descricao : null) ||
+                (it.obs != null ? it.obs : null) ||
+                (it.observacao != null ? it.observacao : '');
+
+            return {
+                id: String(itId),
+                dataHora: itData,
+                autor: String(itAutor || '—'),
+                texto: String(itTexto || '')
+            };
+        }
+
+        historico = historico.map(normItem).filter(function (x) {
+            return x && x.texto !== undefined;
+        });
+
+        // se não houver histórico mas há observação solta, cria um item
+        if (!historico.length && obsSolta) {
+            var when = dataFechamento || dataAbertura || new Date().toISOString();
+            historico = [{
+                id: makeId(),
+                dataHora: when,
+                autor: desenvolvedor || '—',
+                texto: String(obsSolta)
+            }];
+        }
+
+        // ---- Retorno final --------------------------------------------------------
         return {
-            id: r.id ?? r.chamado_id ?? r.ticket_id ?? null,
-            numero: r.numero ?? r.numero_chamado ?? r.ticket ?? r.chamado ?? r.id ?? null,
-            projeto: projetoNome ?? '—',
-            desenvolvedor: r.desenvolvedor ?? r.dev ?? r.responsavel ?? '—',
-            data_abertura: (
-                r.data_chamado ??
-                r.data_abertura ?? r.dt_registro ?? r.data_registro ?? r.dt_abertura ??
-                r.data ?? r.created_at ?? r.abertura ?? r.registro ??
-                r['DT REGISTRO'] ?? r['DT_REGISTRO'] ?? r['DT ABERTURA'] ?? r['DT_ABERTURA'] ??
-                r['DT REGISTRO '] ?? r['DATA REGISTRO'] ?? r['DATA ABERTURA'] ?? r['ABERTURA'] ??
-                pickAny(r, [/^dt.?reg/i, /^dt.?abert/i, /abertura/i, /registro/i]) ?? null
-            ),
-            data_fechamento: (
-                r.data_fechamento ?? r.dt_fechado ?? r.data_fechado ?? r.dt_fechamento ??
-                r.fechado ?? r.fechamento ??
-                r['DT FECHADO'] ?? r['DT_FECHADO'] ?? r['DT FECHAMENTO'] ?? r['DT_FECHAMENTO'] ??
-                pickAny(r, [/^dt.?fech/i, /fechamento/i, /fechado/i]) ?? null
-            ),
-            solicitante: r.solicitante ?? r.aberto_por ?? r.solicitante_nome ?? '—',
-            status: r.status ?? r.situacao ?? r.state ?? '—',
-            observacao: r.observacao ?? r.observacoes ?? r.obs ?? ''
+            id: id != null ? id : null,
+            numero: numero != null ? numero : null,
+            projeto: projetoNome != null ? projetoNome : '—',
+            desenvolvedor: desenvolvedor,
+            data_abertura: dataAbertura != null ? dataAbertura : null,
+            data_fechamento: dataFechamento != null ? dataFechamento : null,
+            solicitante: solicitante,
+            status: status,
+            // mantemos observacao por compat, mas a tela usa 'historico'
+            observacao: '',
+            historico: historico
         };
     }
+
+
+
+
     function renderBulletsLegend(containerId, labels, colors) {
         const el = document.getElementById(containerId);
         if (!el) return;
@@ -357,11 +549,10 @@
         const s = document.getElementById('fSolic')?.value || '';
 
         const pN = norm(p), dN = norm(d), sN = norm(s);
-        const showConcluidos = /conclu/i.test(String(window.__sustActiveFilter || ''));
 
         const filtered = (sustRaw || []).filter(ch => {
-            const isConcluido = /conclu/i.test(String(ch.status || ''));
-            if (!showConcluidos && isConcluido) return false; // esconde concluídos por padrão
+            // 👇 exclui concluídos da tabela, sempre
+            if (/conclu/i.test(String(ch.status || ''))) return false;
 
             const proj = norm(ch.projeto);
             const dev = norm(ch.desenvolvedor);
@@ -399,6 +590,7 @@
     ) {
         // guardar para "Concluir"
         window.__viewNumero = numero || null;
+        window.currentChamadoNumero = numero;
 
         // textos
         document.getElementById('verProjeto')?.replaceChildren(document.createTextNode(projeto || '—'));
@@ -447,6 +639,8 @@
         }
 
         window.showModal && window.showModal('verChamadoModal');
+        loadSustObs(numero); // carrega do backend e preenche #sustHistoricoList
+
     };
 
     // mapeia status -> classes do "pill"
@@ -505,6 +699,26 @@
         const btn = document.getElementById('btnConcluirChamado');
         if (btn && !btn.__bound) { btn.__bound = true; btn.addEventListener('click', doConcluirChamado); }
     });
+    // Delegação: funciona mesmo se o botão aparecer depois no DOM
+    document.addEventListener('click', (e) => {
+        const el = e.target.closest('#btnAddSustObs, [data-add-sust-obs]');
+        if (!el) return;
+
+        e.preventDefault();
+
+        // se quiser, pode passar o número no data-attribute do botão
+        const numeroAttr = el.getAttribute('data-numero');
+        const numero = numeroAttr || window.currentChamadoNumero || window.__viewNumero;
+
+        console.log('[SUST] addSustObs: click detectado. numero=', numero);
+
+        // sempre prioriza a implementação interna “boa”
+        const fn = window.__addSustObsImpl || window.addSustObs;
+        if (typeof fn === 'function') fn(numero);
+        else console.error('[SUST] addSustObs não disponível.');
+    });
+
+
 
     // UX: fecha ao clicar fora / ESC
     (function enhanceViewModalUX() {
@@ -642,35 +856,38 @@
     // ---------- CARGA ----------
     async function loadSustentacao() {
         try {
-            // ✅ sempre que abrir Sustentação (lista geral), zera o filtro ativo
-            window.__sustActiveFilter = '';
-
-            // (opcional) limpa qualquer destaque de card selecionado
-            try {
-                document.querySelectorAll('[data-card^="codes:sust"]').forEach(n =>
-                    n.classList.remove('ring-2', 'ring-blue-500')
-                );
-            } catch { }
-
             const projetosById = await fetchProjetosById();
             const resp = await fetch(`${API_ROOT}/sustentacao`);
             if (!resp.ok) throw new Error(`Erro ao buscar sustentação (${resp.status})`);
 
             const raw = await resp.json();
+            console.log('SUST row 0 =>', raw[0]);
+            console.log('CHAVES DISPONÍVEIS =>', Object.keys(raw[0]));
+            console.log('CAMPO DE REGISTRO =>', ['data_chamado', 'data_abertura', 'dt_registro', 'data_registro', 'created_at', 'abertura', 'registro']
+                .find(k => raw[0]?.[k] != null));
+
+            if (Array.isArray(raw) && raw.length) {
+                console.log('Sust RAW primeira linha:', raw[0]);
+                console.log('Keys:', Object.keys(raw[0]));
+            }
 
             const list = Array.isArray(raw) ? raw.map(r => normalizeChamado(r, projetosById)) : [];
+            console.table(list.slice(0, 5), ['numero', 'projeto', 'status', 'data_abertura', 'data_fechamento']);
 
-            // atualiza totais do topo
+            // ✅ atualiza somente coisas de sustentação
             const tot = String(list.length);
             const elTopo = document.getElementById('sustentacaoCount');
             if (elTopo) elTopo.textContent = tot;
 
-            // guarda a lista crua e renderiza aplicando filtros de texto,
-            // já com concluídos ocultos por padrão (porque __sustActiveFilter = '')
+
+            // guarda a lista crua e aplica filtros
             sustRaw = list;
-            applySustFilters();          // -> usa __sustActiveFilter === '' e esconde "Concluído"
-            updateSustCards(sustRaw);    // cards permanecem contando tudo
-            ensureCharts(sustRaw);       // gráficos na base completa
+            applySustFilters();     // renderiza com os filtros atuais (ou todos, se vazios)
+            updateSustCards(sustRaw);
+            // gráficos continuam usando a base completa
+            ensureCharts(sustRaw);
+
+
         } catch (e) {
             console.error(e);
             const tbody = document.getElementById('sustentacaoTableBody');
@@ -679,7 +896,6 @@
             try { chartSustProjetos?.destroy(); chartSustProjetos = null; } catch { }
         }
     }
-
 
     // helper: tenta desenhar assim que o Chart estiver disponível
     function ensureCharts(list) {
@@ -781,9 +997,10 @@
             else if (s.includes('suspens')) counters.suspenso++;
             else if (s.includes('conclu')) counters.concluido++;
             else if (s.includes('pendente')) counters.pendente++;
-            else counters.pendente++; // fallback
+            else counters.pendente++;
         });
 
+        // IDs legados (tela Sustentação)
         const idMap = {
             aDesenvolver: 'sustADevs',
             emDesenvolvimento: 'sustEmDev',
@@ -794,21 +1011,200 @@
             concluido: 'sustFechados'
         };
 
-        // escreve cada card
+        // data-card (Visão Geral) — com e sem acento
+        const cardKeys = {
+            aDesenvolver: ['codes:sustentação:a_desenvolver', 'codes:sust:a_desenvolver'],
+            emDesenvolvimento: ['codes:sustentação:em_desenvolvimento', 'codes:sust:em_desenvolvimento'],
+            emHomologacao: ['codes:sustentação:em_homologacao', 'codes:sust:em_homologacao'],
+            emTestes: ['codes:sustentação:em_testes', 'codes:sust:em_testes'],
+            pendente: ['codes:sustentação:pendente', 'codes:sust:pendente'],
+            suspenso: ['codes:sustentação:suspenso', 'codes:sust:suspenso'],
+            concluido: ['codes:sustentação:fechados', 'codes:sust:fechados'],
+            total: ['codes:sustentação', 'codes:sust:total', 'codes:sustentacao', 'codes:sust'] // cobre vários layouts
+        };
+
+        // helper: escreve em possíveis nós do card
+        function writeCardCount(cardKey, value) {
+            const sel = `[data-card="${cardKey}"]`;
+            const nodes = document.querySelectorAll(
+                `${sel} [data-count], ${sel} .count, ${sel} .value, ${sel} .metric-value, ${sel} .card-number, ${sel} .kpi-number`
+            );
+            nodes.forEach(el => el.textContent = String(value));
+        }
+
+        // Atualiza IDs legados
         for (const k in idMap) {
             const el = document.getElementById(idMap[k]);
             if (el) el.textContent = String(counters[k] || 0);
         }
 
-        // total (card “Sustentação”)
+        // Atualiza cards da Visão Geral por data-card
+        for (const k of Object.keys(counters)) {
+            const val = counters[k] || 0;
+            (cardKeys[k] || []).forEach(key => writeCardCount(key, val));
+        }
+
+        // Totais
         const total = String((list || []).length);
-        const elTotal = document.getElementById('sustTotal');
-        if (elTotal) elTotal.textContent = total;
-        const elTopo = document.getElementById('sustentacaoCount');
-        if (elTopo) elTopo.textContent = total;
+        document.getElementById('sustTotal')?.replaceChildren(document.createTextNode(total));
+        document.getElementById('sustentacaoCount')?.replaceChildren(document.createTextNode(total));
+        (cardKeys.total || []).forEach(key => writeCardCount(key, total));
 
         return counters;
     }
+
+
+    /* ============ HISTÓRICO DE ANDAMENTO (Sustentação) ============ */
+    // >>> usa as rotas reais do backend:
+    // GET/POST  /api/sustentacao/:numero/observacoes
+    // PUT/DELETE /api/sustentacao/observacoes/:id
+
+    function _escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
+
+    async function loadSustObsImpl(numero) {
+        window.currentChamadoNumero = numero;
+        const box = document.getElementById('sustHistoricoList');
+        if (!box) return;
+        box.innerHTML = '<div class="text-sm text-gray-500">Carregando…</div>';
+        try {
+            const url = `${API_ROOT}/sustentacao/${encodeURIComponent(numero)}/observacoes?t=${Date.now()}`;
+            const r = await fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
+            if (!r.ok) throw new Error(await r.text());
+
+            let itens = await r.json();
+            if (!Array.isArray(itens) || !itens.length) {
+                box.innerHTML = '<p class="text-sm text-gray-500">Nenhum andamento registrado.</p>';
+                return;
+            }
+            itens = itens.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+            box.innerHTML = itens.map(it => `
+            <div class="flex items-start gap-2 mb-2">
+              <div class="flex-1 px-3 py-2 rounded border bg-gray-50 text-sm text-gray-700">
+                <div class="text-xs text-gray-500">${new Date(it.created_at).toLocaleString('pt-BR')}</div>
+                <div class="mt-1 whitespace-pre-wrap">${esc(it.texto)}</div>
+              </div>
+              <div class="shrink-0 flex gap-2">
+                <button type="button" class="px-2 py-1 text-sm rounded bg-yellow-400 text-white hover:bg-yellow-500"
+                        onclick="editSustObs(${it.id}, '${numero}')">Editar</button>
+                <button type="button" class="px-2 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600"
+                        onclick="deleteSustObs(${it.id}, '${numero}')">Excluir</button>
+              </div>
+            </div>`).join('');
+        } catch (e) {
+            console.error(e);
+            box.innerHTML = '<p class="text-sm text-red-600">Falha ao carregar observações.</p>';
+        }
+    }
+
+    async function addSustObsImpl(numero) {
+        numero = numero || window.currentChamadoNumero || window.__viewNumero || document.getElementById('verNumero')?.textContent?.trim();
+        const input = document.getElementById('sustNovoAndamento') || document.getElementById('novaObs');
+        const texto = (input?.value || '').trim();
+
+        console.log('[SUST] addSustObs:start', { numero, textoLen: texto.length, preview: texto.slice(0, 80) });
+        if (!numero) { alert('Sem número do chamado.'); return; }
+        if (!input) { alert('Campo #sustNovoAndamento não encontrado.'); return; }
+        if (!texto) { alert('Digite o andamento antes de adicionar.'); return; }
+
+        const btn = document.getElementById('btnAddSustObs');
+        const oldHTML = btn?.innerHTML;
+
+        try {
+            if (btn) { btn.disabled = true; btn.innerHTML = 'Enviando…'; }
+
+            const r = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(numero)}/observacoes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ texto })
+            });
+            if (!r.ok) throw new Error(`HTTP ${r.status} - ${await r.text()}`);
+
+            const created = await r.json();
+
+            // render otimista
+            try {
+                const box = document.getElementById('sustHistoricoList');
+                if (box) {
+                    const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+                    box.insertAdjacentHTML('afterbegin', `
+                <div class="flex items-start gap-2 mb-2" data-optimistic="1">
+                  <div class="flex-1 px-3 py-2 rounded border bg-gray-50 text-sm text-gray-700">
+                    <div class="text-xs text-gray-500">${new Date(created.created_at || Date.now()).toLocaleString('pt-BR')}</div>
+                    <div class="mt-1 whitespace-pre-wrap">${esc(created.texto || texto)}</div>
+                  </div>
+                </div>`);
+                }
+            } catch { }
+
+            input.value = '';
+            await loadSustObs(numero);   // reconcilia com GET sem cache
+            return created;              // <- *** importante ***
+        } catch (e) {
+            console.error('[SUST] falhou:', e);
+            window.toast ? toast('Erro', 'Falha ao salvar andamento.', 'error') : alert('Falha ao salvar andamento.');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = oldHTML || '+'; }
+        }
+    }
+    window.loadSustObs = loadSustObsImpl;
+    window.addSustObs = addSustObsImpl;
+
+    window.__addSustObsImpl = addSustObsImpl;
+    window.__loadSustObsImpl = loadSustObsImpl;
+
+
+    // (opcional, mas útil): se alguém tentar setar algo que não é função, ignora
+    (function hardenExports() {
+        let addRef = addSustObsImpl;
+        let loadRef = loadSustObsImpl;
+
+        Object.defineProperty(window, 'addSustObs', {
+            configurable: true,
+            get() { return addRef; },
+            set(v) { if (typeof v === 'function') addRef = v; else console.warn('[SUST] addSustObs ignorado (não-função)'); }
+        });
+        Object.defineProperty(window, 'loadSustObs', {
+            configurable: true,
+            get() { return loadRef; },
+            set(v) { if (typeof v === 'function') loadRef = v; else console.warn('[SUST] loadSustObs ignorado (não-função)'); }
+        });
+
+    })();
+
+    window.editSustObs = async function (obsId, numero) {
+        numero = numero || window.currentChamadoNumero || window.__viewNumero;
+        const novo = prompt('Editar andamento:');
+        if (novo == null) return;
+        try {
+            const r = await fetch(`${API_ROOT}/sustentacao/observacoes/${encodeURIComponent(obsId)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ texto: String(novo).trim() })
+            });
+            if (!r.ok) throw new Error(await r.text());
+            await loadSustObs(numero); // ✅ recarrega usando o número certo
+            (typeof toast === 'function') && toast('Sucesso', 'Andamento atualizado.', 'success');
+        } catch (e) {
+            console.error(e);
+            (typeof toast === 'function') && toast('Erro', 'Falha ao atualizar.', 'error');
+        }
+    };
+
+    window.deleteSustObs = async function (obsId, numero) {
+        numero = numero || window.currentChamadoNumero || window.__viewNumero;
+        if (!confirm('Excluir este andamento?')) return;
+        try {
+            const r = await fetch(`${API_ROOT}/sustentacao/observacoes/${encodeURIComponent(obsId)}`, { method: 'DELETE' });
+            if (!r.ok) throw new Error(await r.text());  // 204 é ok e passa aqui
+            await loadSustObs(numero); // ✅ recarrega usando o número certo
+            (typeof toast === 'function') && toast('Sucesso', 'Andamento excluído.', 'success');
+        } catch (e) {
+            console.error(e);
+            (typeof toast === 'function') && toast('Erro', 'Falha ao excluir.', 'error');
+        }
+    };
+
 
 
     // expõe para que main.js possa chamar quando abrir a tela de sustentação
@@ -874,4 +1270,17 @@
     window.showAllSust = function () { window.filterSustByStatus(''); };
 
     window.loadSustentacao = loadSustentacao;
+    document.addEventListener('DOMContentLoaded', () => {
+        // se estamos no dashboard/visão geral e ainda não carregamos sustentação,
+        // dispara o load para preencher os cards.
+        const hasSustCards =
+            document.querySelector('[data-card^="codes:sustentação"]') ||
+            document.querySelector('[data-card^="codes:sust"]') ||
+            document.getElementById('sustentacaoCount');
+
+        if (hasSustCards && (!Array.isArray(sustRaw) || sustRaw.length === 0)) {
+            try { loadSustentacao(); } catch { }
+        }
+    });
+
 })();
