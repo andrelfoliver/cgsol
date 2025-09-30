@@ -14,39 +14,250 @@
     .card-hi {
       position: relative;
       transform: translateZ(0);
-      /* evita blur em textos */
       transition: box-shadow .25s ease, transform .15s ease, background .25s ease;
+      z-index: 0;
+      /* garante plano base */
     }
 
     .card-hi::before {
       content: "";
       position: absolute;
       inset: 0;
-      border-radius: 0.75rem;
-      /* equivalente ao rounded-lg */
+      border-radius: .75rem;
       pointer-events: none;
+      z-index: -1;
+      /* 👈 fica atrás do card */
     }
 
-    /* variação FÁBRICA (azul): sombra suave + barra esquerda */
+    /* Fábrica */
     .card-hi--fabrica {
-      background: linear-gradient(180deg, #f8fbff, #ffffff);
+      background: linear-gradient(180deg, #f8fbff, #fff);
       box-shadow: 0 8px 28px rgba(21, 85, 214, .15);
-      transform: scale(1.005);
+      transform: translateZ(0) scale(1.005);
     }
 
+    .card-hi--fabrica:hover {
+      box-shadow: 0 14px 40px rgba(21, 85, 214, .22);
+      /* sombra mais forte no hover */
+    }
+
+    /* Sustentação */
+    .card-hi--sust {
+      background: linear-gradient(180deg, #fffaf0, #fff);
+      box-shadow: 0 8px 28px rgba(245, 158, 11, .18);
+      transform: translateZ(0) scale(1.005);
+    }
+
+    .card-hi--sust:hover {
+      box-shadow: 0 14px 40px rgba(245, 158, 11, .26);
+    }
+
+    /* barra lateral */
     .card-hi--fabrica::before {
       border-left: 6px solid #1555D6;
     }
 
-    /* variação SUSTENTAÇÃO (âmbar/banana): sombra quente + barra esquerda */
-    .card-hi--sust {
-      background: linear-gradient(180deg, #fffaf0, #ffffff);
-      box-shadow: 0 8px 28px rgba(245, 158, 11, .18);
-      transform: scale(1.005);
-    }
-
     .card-hi--sust::before {
       border-left: 6px solid #f59e0b;
+    }
+
+    /* cards clicáveis */
+    .card-pickable:focus {
+      outline: none;
+    }
+
+    .card-picked {
+      position: relative;
+      background: linear-gradient(180deg, #f8fbff, #fff);
+      box-shadow: 0 12px 28px rgba(59, 130, 246, .20), inset 0 0 0 1px rgba(59, 130, 246, .18);
+      transform: translateY(-1px);
+      transition: box-shadow .25s ease, transform .15s ease, background .25s ease;
+    }
+
+    .card-picked::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      /* barra lateral */
+      box-shadow: inset 6px 0 0 0 #3b82f6;
+      pointer-events: none;
+    }
+
+    /* hover consistente para todos os cards “pickables” */
+    .card-pickable:hover {
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .06);
+      transform: translateY(-1px);
+    }
+
+    /* === seleção (clique) com tema âmbar para Sustentação === */
+    .card-picked--amber {
+      position: relative;
+      background: linear-gradient(180deg, #fffaf0, #fff);
+      box-shadow: 0 12px 28px rgba(245, 158, 11, .22), inset 0 0 0 1px rgba(245, 158, 11, .22);
+      transform: translateY(-1px);
+      transition: box-shadow .25s ease, transform .15s ease, background .25s ease;
+    }
+
+    .card-picked--amber::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      box-shadow: inset 6px 0 0 0 #f59e0b;
+      /* barra lateral âmbar */
+      pointer-events: none;
+    }
+
+    /* ========= Card selecionado (picked) por contexto ========= */
+    /* FÁBRICA / DESENVOLVIMENTO (grid #codesKpisFabExtra) */
+    #codesKpisFabExtra .card-picked {
+      background: linear-gradient(180deg, #f8fbff, #fff);
+      box-shadow: 0 12px 28px rgba(59, 130, 246, .20),
+        inset 0 0 0 1px rgba(59, 130, 246, .18);
+    }
+
+    #codesKpisFabExtra .card-picked::after {
+      box-shadow: inset 6px 0 0 0 #3b82f6;
+      /* azul */
+    }
+
+    /* SUSTENTAÇÃO (grid #codesKpisSustExtra) */
+    #codesKpisSustExtra .card-picked {
+      background: linear-gradient(180deg, #fff9ec, #fff);
+      box-shadow: 0 12px 28px rgba(245, 158, 11, .22),
+        inset 0 0 0 1px rgba(245, 158, 11, .20);
+    }
+
+    #codesKpisSustExtra .card-picked::after {
+      box-shadow: inset 6px 0 0 0 #f59e0b;
+      /* amarelo/laranja */
+    }
+
+    /* (opcional) hover com cor coerente em cada grid */
+    #codesKpisFabExtra [data-card]:hover {
+      box-shadow: 0 10px 24px rgba(59, 130, 246, .16);
+    }
+
+    #codesKpisSustExtra [data-card]:hover {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18);
+    }
+
+    /* 1) Hover neutro nos subcards de DESENVOLVIMENTO (Fábrica) */
+    #codesKpisFabExtra [data-card]:hover {
+      /* era: rgba(59,130,246,.16) (azulado) */
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .08);
+    }
+
+    /* 2) Zera qualquer contorno/focus visual nos subcards (ambos os grids) */
+    #codesKpisFabExtra [data-card],
+    #codesKpisSustExtra [data-card] {
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+      /* iOS/Safari */
+    }
+
+    #codesKpisFabExtra [data-card]:focus,
+    #codesKpisFabExtra [data-card]:focus-visible,
+    #codesKpisSustExtra [data-card]:focus,
+    #codesKpisSustExtra [data-card]:focus-visible {
+      outline: none;
+      box-shadow: inherit;
+      /* não troca a sombra quando recebe foco */
+    }
+
+    /* Hover âmbar igual aos subcards para o TOP “Em Produção” */
+    #codesKpisTop [data-card="codes:sust:em_producao"]:hover {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
+    }
+
+    /* (opcional) foco por teclado com o mesmo realce */
+    #codesKpisTop [data-card="codes:sust:em_producao"]:focus-visible {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
+    }
+
+    /* — Subcards de DESENVOLVIMENTO (CODES) com brilho AZUL — */
+    #codesPage [data-card="codes:desenvolvimento"]:hover,
+    #codesPage [data-card="codes:em-andamento"]:hover,
+    #codesPage [data-card="codes:ativos"]:hover,
+    #codesPage [data-card="codes:fora-prazo"]:hover,
+    #codesPage [data-card="codes:planejado"]:hover,
+    #codesPage [data-card="codes:pausado"]:hover,
+    #codesPage [data-card="codes:concluido"]:hover,
+    #codesPage [data-card="codes:concluído"]:hover {
+      box-shadow: 0 12px 28px rgba(37, 99, 235, .22) !important;
+      transform: translateY(-1px);
+    }
+
+    /* Acessibilidade: foco via teclado */
+    #codesPage [data-card="codes:desenvolvimento"]:focus-visible,
+    #codesPage [data-card="codes:em-andamento"]:focus-visible,
+    #codesPage [data-card="codes:ativos"]:focus-visible,
+    #codesPage [data-card="codes:fora-prazo"]:focus-visible,
+    #codesPage [data-card="codes:planejado"]:focus-visible,
+    #codesPage [data-card="codes:pausado"]:focus-visible,
+    #codesPage [data-card="codes:concluido"]:focus-visible,
+    #codesPage [data-card="codes:concluído"]:focus-visible {
+      box-shadow: 0 12px 28px rgba(37, 99, 235, .22) !important;
+      transform: translateY(-1px);
+    }
+
+    /* transição suave (opcional) */
+    #codesPage [data-card^="codes:"] {
+      transition: box-shadow .18s ease, transform .18s ease;
+    }
+
+    /* — Barra azul lateral no "Fora do Prazo" APENAS quando estiver selecionado — */
+    /* Cobre tanto a aba #codesPage quanto o grid #codesKpisFabExtra */
+    #codesPage [data-card="codes:fora-prazo"],
+    #codesKpisFabExtra [data-card="codes:fora-prazo"] {
+      position: relative;
+      /* ancora o pseudo-elemento */
+      z-index: 0;
+    }
+
+    /* aparece só quando o JS marcou o card como selecionado (ring azul) */
+    #codesPage [data-card="codes:fora-prazo"].ring-blue-500::after,
+    #codesKpisFabExtra [data-card="codes:fora-prazo"].ring-blue-500::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      /* acompanha seus cantos */
+      pointer-events: none;
+      box-shadow: inset 6px 0 0 0 #2563eb;
+      /* a barrinha azul */
+    }
+
+    /* (opcional) se em algum fluxo você usar .card-picked, mantém o mesmo efeito */
+    #codesPage [data-card="codes:fora-prazo"].card-picked::after,
+    #codesKpisFabExtra [data-card="codes:fora-prazo"].card-picked::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      pointer-events: none;
+      box-shadow: inset 6px 0 0 0 #2563eb;
+    }
+
+    /* Hover âmbar para o CARD PAI “Sustentação” (mesmo efeito dos subcards) */
+    #codesPage [data-card="codes:sustentação"]:hover,
+    #codesPage [data-card="codes:sustentacao"]:hover,
+    #codesPage [data-card="codes:sust"]:hover,
+    #codesPage [data-card="codes:sust:total"]:hover {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
+    }
+
+    /* Acessibilidade: foco via teclado com o mesmo realce */
+    #codesPage [data-card="codes:sustentação"]:focus-visible,
+    #codesPage [data-card="codes:sustentacao"]:focus-visible,
+    #codesPage [data-card="codes:sust"]:focus-visible,
+    #codesPage [data-card="codes:sust:total"]:focus-visible {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
     }
   </style>
 
@@ -165,7 +376,7 @@
       </div>
 
       <!-- KPIs linha 2 -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 mt-4">
         <div class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">✅</div>
@@ -262,30 +473,31 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           <!-- CODES -->
-          <div data-card="codes:desenvolvimento"
+          <div data-card="codes:desenvolvimento-home"
             class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-            onclick="filterProjects('CODES','desenvolvimento')">
+            onclick="showFabrica()">
 
             <div class="flex items-center mb-4">
               <div class="p-2 rounded-lg bg-blue-100 text-blue-600 mr-3">💻</div>
               <h4 class="text-lg font-semibold text-gray-800">CODES</h4>
             </div>
             <div class="space-y-3">
-              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg
+              cursor-pointer hover:bg-gray-100 transition-colors">
                 <div>
                   <p class="font-medium text-gray-900">Desenvolvimento</p>
-                  <p class="text-xs text-gray-600">Projetos ativos</p>
+                  <p class="text-xs text-gray-600">Em Andamento</p>
                 </div>
-                <span class="text-lg font-bold text-blue-600">0</span>
+                <span id="homeDevCount" class="text-lg font-bold text-blue-600">0</span>
               </div>
               <div
                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                onclick="filterProjects('CODES','sustentacao')">
+                onclick="showSustentacao(); event.stopPropagation();">
                 <div>
                   <p class="font-medium text-gray-900">Sustentação</p>
                   <p class="text-xs text-gray-600">Sistemas em produção</p>
                 </div>
-                <span class="text-lg font-bold text-yellow-600">0</span>
+                <span id="homeSustentacaoCount" class="text-lg font-bold text-yellow-600">0</span>
               </div>
             </div>
           </div>
@@ -400,39 +612,16 @@
         </div>
       </div>
 
+
       <!-- KPIs CODES -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-4">
+      <!-- TOP (fixo): sempre visível -->
+      <!-- KPIs CODES -->
+      <div id="codesKpisTop" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 mt-4">
 
-        <!-- Total de Projetos -->
-        <div data-card="codes:total"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','total')">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-gray-100 text-gray-600">📊</div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Total de Projetos</p>
-              <p class="text-2xl font-bold text-gray-900">0</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Ativos -->
-        <div data-card="codes:ativos"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','ativos')">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100 text-blue-600">🚀</div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Projetos Ativos</p>
-              <p class="text-2xl font-bold text-gray-900">0</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Desenvolvimento -->
+        <!-- Desenvolvimento (CODES) -->
         <div data-card="codes:desenvolvimento"
           class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','desenvolvimento')">
+          onclick="showFabrica()">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">💻</div>
             <div class="ml-4">
@@ -442,13 +631,10 @@
           </div>
         </div>
 
-
-
         <!-- Sustentação -->
         <div data-card="codes:sustentacao"
           class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
           onclick="showSustentacao()">
-
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🔧</div>
             <div class="ml-4">
@@ -458,10 +644,33 @@
           </div>
         </div>
 
-        <!-- Fora do Prazo -->
-        <div data-card="codes:fora-prazo"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','fora-prazo')">
+        <!-- Total de Projetos -->
+        <div data-card="codes:total" class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-gray-100 text-gray-600">📊</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Total de Projetos</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+        <!-- Em produção (TOP) — aparece só no modo Sustentação -->
+        <div data-card="codes:sust:em_producao"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🚀</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Produção</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustProducao" data-count>0</p>
+            </div>
+          </div>
+        </div>
+
+
+
+        <!-- Em andamento -->
+        <!-- Fora do Prazo (no TOP) -->
+        <div data-card="codes:fora-prazo" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
             <div class="ml-4">
@@ -471,10 +680,28 @@
           </div>
         </div>
 
-        <!-- Planejado -->
-        <div data-card="codes:planejado"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','planejado')">
+
+      </div>
+
+
+      <!-- EXTRA (muda conforme o modo) -->
+      <!-- Fábrica: 4 cards -->
+      <!-- EXTRA (muda conforme o modo) -->
+      <!-- Fábrica: 4 cards -->
+      <div id="codesKpisFabExtra" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 mt-2">
+
+        <!-- Em andamento (agora no bloco extra da Fábrica) -->
+        <div data-card="codes:ativos" class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">🚀</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em andamento</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:planejado" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-gray-100 text-gray-600">📅</div>
             <div class="ml-4">
@@ -484,10 +711,7 @@
           </div>
         </div>
 
-        <!-- Pausado -->
-        <div data-card="codes:pausado"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','pausado')">
+        <div data-card="codes:pausado" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-purple-100 text-purple-600">⏸️</div>
             <div class="ml-4">
@@ -497,10 +721,7 @@
           </div>
         </div>
 
-        <!-- Concluído -->
-        <div data-card="codes:concluido"
-          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onclick="filterProjects('codes','concluido')">
+        <div data-card="codes:concluido" class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-blue-100 text-blue-600">✅</div>
             <div class="ml-4">
@@ -509,10 +730,121 @@
             </div>
           </div>
         </div>
+      </div>
 
+      <!-- Sustentação: 8 cards (começa oculto) -->
+      <div id="codesKpisSustExtra"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 mb-4 mt-2 hidden">
+
+        <!-- Fora do Prazo (substitui o antigo "Total de Chamados") -->
+        <div data-card="codes:sust:fora-prazo"
+          class="bg-white rounded-lg shadow-md  p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Fora do Prazo</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustForaPrazo">0</p>
+            </div>
+          </div>
+        </div>
+
+
+        <div data-card="codes:sust:adesenvolver"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">📝</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">A Desenvolver</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustADevs">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:emdesenv"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">⚙️</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Dev.</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustEmDev">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:homolog"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🧪</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Homologação</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustHomolog">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:testes"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🔍</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Testes</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustTestes">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:pendente"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">⏳</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Pendente</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustPendente">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:suspenso"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🛑</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Suspenso</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustSuspenso">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:fechados"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">✅</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Fechados</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustFechados">0</p>
+            </div>
+          </div>
+        </div>
       </div>
 
 
+
+      <script>
+        // alterna o modo e re-renderiza a página CODES
+        window.showSustentacao = function () {
+          window.__codesView = 'sustentacao';
+          showPage('codes', getNavButtonFor && getNavButtonFor('codes'));
+        };
+
+        // opcional: atalho pra voltar ao modo Fábrica
+        window.showFabrica = function () {
+          window.__codesView = 'fabrica';
+          // 👇 garante o hide imediato do card TOP “Em produção”
+          document.querySelector('#codesPage [data-card="codes:sust:em_producao"]')?.classList.add('hidden');
+          showPage('codes', getNavButtonFor && getNavButtonFor('codes'));
+        };
+
+      </script>
 
 
       <!-- Gráficos CODES -->
@@ -544,7 +876,7 @@
         <div id="codesSustentacaoWrapper" class="mt-6">
 
           <!-- TOPO: 2 gráficos lado a lado -->
-          <div class="grid lg:grid-cols-2 gap-6 mb-6">
+          <div class="grid lg:grid-cols-2 gap-6 mb-6 mt-4">
             <div class="bg-white rounded-lg shadow p-6">
               <h3 class="text-lg font-semibold text-gray-800 mb-4">Status dos Chamados</h3>
               <div class="h-72">
@@ -1509,6 +1841,49 @@
       </form>
     </div>
   </div>
+  <script>
+    // ✅ Filtra por coordenação e (opcional) categoria do card
+    window.filterProjects = function (coord, sub) {
+      const goto = (pid) => showPage(pid, (typeof getNavButtonFor === 'function') && getNavButtonFor(pid));
+      const c = String(coord || '').toLowerCase();
+      const s = String(sub || '').toLowerCase();
+
+      // guarda filtro global que as tabelas vão usar
+      window.__tableFilter = { coord: c, categoria: s };
+
+      if (c === 'codes') {
+        // Alterna a visão da CODES
+        window.__codesView = (s === 'sustentacao') ? 'sustentacao' : 'fabrica';
+        goto('codes');
+
+        // destaca após a troca de página
+        setTimeout(() => {
+          if (typeof window.setCodesCardHighlight === 'function') {
+            window.setCodesCardHighlight(window.__codesView === 'sustentacao' ? 'sust' : 'fabrica');
+          }
+          // foca na tabela/grids
+          document.getElementById(window.__codesView === 'sustentacao' ? 'codesSustentacaoWrapper' : 'tableView')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0);
+        return;
+      }
+
+      if (c === 'coset') {
+        goto('coset'); setTimeout(() => {
+          document.getElementById('cosetPage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0); return;
+      }
+
+      if (c === 'cgod') {
+        goto('cgod'); setTimeout(() => {
+          document.getElementById('cgodPage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0); return;
+      }
+
+      goto('home'); // fallback
+    };
+  </script>
+
 
   <!-- HELPERS + NAV -->
   <script>
@@ -1521,167 +1896,160 @@
     }
 
     function showPage(pageId, el) {
-      // Esconde todas as páginas
-      document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+      // 1) Aceita 'home' ou 'homePage'
+      const pid = pageId?.endsWith('Page') ? pageId : (pageId + 'Page');
 
-      // Mostra apenas a página alvo
-      const target = document.getElementById(pageId + 'Page');
+      // 2) Esconde todas e mostra a alvo
+      document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+      const target = document.getElementById(pid);
       if (target) target.classList.remove('hidden');
 
-      // Atualiza visual dos botões de nav (somente os botões do nav)
-      document.querySelectorAll('nav .nav-btn').forEach(btn => {
+      // 3) Se não veio botão, deduz automaticamente
+      if (!el && typeof getNavButtonFor === 'function') {
+        const key = pageId?.replace(/Page$/, '');
+        el = getNavButtonFor(key);
+      }
+
+      // 4) Normaliza TODOS os botões do nav antes de ativar um
+      const navBtns = document.querySelectorAll('nav .nav-btn');
+      navBtns.forEach(btn => {
         btn.classList.remove('border-blue-500', 'text-blue-600');
-        btn.classList.add('border-transparent', 'text-gray-500');
+        btn.classList.add('border-transparent');
+
+        // remove cinzas possivelmente acumuladas
+        btn.classList.remove('text-gray-900', 'text-gray-800', 'text-gray-700', 'text-gray-600', 'text-gray-500', 'text-gray-400');
+        btn.classList.add('text-gray-600');
       });
+
+      // 5) Marca o ativo (se houver)
       if (el && el.classList) {
-        el.classList.remove('border-transparent', 'text-gray-500');
+        el.classList.remove('border-transparent', 'text-gray-600');
         el.classList.add('border-blue-500', 'text-blue-600');
       }
 
-      // Função auxiliar para tentar redesenhar charts/tabelas de forma segura
+      // 6) Redesenho seguro (seu código original, sem mudanças de lógica)
       const tryRedraw = () => {
         if (!window.__appsReady) window.__appsReady = { tries: 0 };
-
-        // limita tentativas
-        if (window.__appsReady.tries >= 4) {
-          window.__appsReady.tries = 0;
-        }
+        if (window.__appsReady.tries >= 4) window.__appsReady.tries = 0;
         window.__appsReady.tries++;
 
         try {
-          // fonte única de dados (se main.js preencher window.cacheProjetos)
           const data = Array.isArray(window.cacheProjetos) ? window.cacheProjetos : [];
 
+          const shortId = pid.replace(/Page$/, '');
+
           // HOME
-          if (pageId === 'home') {
+          if (shortId === 'home') {
             if (typeof drawCharts === 'function' && data.length) drawCharts(data);
-            try { chartCoordenacao?.resize?.(); chartCoordenacao?.update?.(); } catch (e) { }
-            try { chartStatus?.resize?.(); chartStatus?.update?.(); } catch (e) { }
-            try { chartStatusDistrib?.resize?.(); chartStatusDistrib?.update?.(); } catch (e) { }
-            try { chartRag?.resize?.(); chartRag?.update?.(); } catch (e) { }
-            try { chartTimeline?.resize?.(); chartTimeline?.update?.(); } catch (e) { }
+            try { chartCoordenacao?.resize?.(); chartCoordenacao?.update?.(); } catch { }
+            try { chartStatus?.resize?.(); chartStatus?.update?.(); } catch { }
+            try { chartStatusDistrib?.resize?.(); chartStatusDistrib?.update?.(); } catch { }
+            try { chartRag?.resize?.(); chartRag?.update?.(); } catch { }
+            try { chartTimeline?.resize?.(); chartTimeline?.update?.(); } catch { }
           }
 
           // CODES
-          if (pageId === 'codes') {
-            const isSust = window.__codesView === 'sustentacao';
+          if (shortId === 'codes') {
+            const isSust = (window.__codesView === 'sustentacao');
+            // 👇 força o toggle do card "Em produção (TOP)"
+            const prodTop = document.querySelector('#codesPage [data-card="codes:sust:em_producao"]');
+            if (prodTop) prodTop.classList.toggle('hidden', !isSust);
+            const sustWrap = document.getElementById('codesSustentacaoWrapper');
+            const tableView = document.getElementById('tableView');
+            const sprintsWrap = document.getElementById('codesSprintsWrapper');
+            const internWrap = document.getElementById('codesInternWrapper');
+            const fabExtra = document.getElementById('codesKpisFabExtra');
+            const sustExtra = document.getElementById('codesKpisSustExtra');
 
             if (isSust) {
-              // 👇 modo Sustentação
-              document.getElementById('codesSustentacaoWrapper')?.classList.remove('hidden');
-
-              // oculta tudo que é da fábrica
-              document.getElementById('tableView')?.classList.add('hidden');
-              document.getElementById('codesSprintsWrapper')?.classList.add('hidden');
-              document.getElementById('codesInternWrapper')?.classList.add('hidden');
-
-              // mata gráficos da fábrica (evita “fantasmas”)
-              try { window._charts?.codes?.destroy?.(); } catch { }
-              try { window._charts?.intern?.destroy?.(); } catch { }
-
-              // carrega os chamados
-              if (typeof loadSustentacao === 'function') {
-                setTimeout(() => loadSustentacao(), 0);
-              }
+              sustWrap?.classList.remove('hidden');
+              tableView?.classList.add('hidden');
+              sprintsWrap?.classList.add('hidden');
+              internWrap?.classList.add('hidden');
+              fabExtra?.classList.add('hidden');
+              sustExtra?.classList.remove('hidden');
+              if (typeof loadSustentacao === 'function') setTimeout(() => loadSustentacao(), 0);
             } else {
-              // 👇 modo Fábrica
-              document.getElementById('codesSustentacaoWrapper')?.classList.add('hidden');
-              document.getElementById('tableView')?.classList.remove('hidden');
-              document.getElementById('codesSprintsWrapper')?.classList.remove('hidden');
-              document.getElementById('codesInternWrapper')?.classList.remove('hidden');
-
-              // redesenha gráficos com o cache atual (se existir)
-              const data = Array.isArray(window.cacheProjetos) ? window.cacheProjetos : [];
+              sustWrap?.classList.add('hidden');
+              tableView?.classList.remove('hidden');
+              sprintsWrap?.classList.remove('hidden');
+              internWrap?.classList.remove('hidden');
+              sustExtra?.classList.add('hidden');
+              fabExtra?.classList.remove('hidden');
               if (typeof drawCodesSprintsChart === 'function' && data.length) drawCodesSprintsChart(data);
               if (typeof drawCodesInternChart === 'function' && data.length) drawCodesInternChart(data);
-
-              try { window._charts?.codes?.resize?.(); window._charts?.codes?.update?.(); } catch { }
-              try { window._charts?.intern?.resize?.(); window._charts?.intern?.update?.(); } catch { }
             }
 
-            // ⭐ destaque visual do card correto: “Na Fábrica” apenas quando NÃO é Sustentação
-            window.setCodesCardHighlight && window.setCodesCardHighlight(isSust ? 'sust' : 'fabrica');
+            if (typeof window.setCodesCardHighlight === 'function') {
+              window.setCodesCardHighlight(isSust ? 'sust' : 'fabrica');
+            }
           }
 
-
-
           // COSET
-          if (pageId === 'coset') {
-            if (typeof renderAllCoordTables === 'function') {
-              renderAllCoordTables(data);
-            } else {
+          if (shortId === 'coset') {
+            if (typeof renderAllCoordTables === 'function') renderAllCoordTables(data);
+            else {
               const tbody = document.getElementById('cosetTableBody');
               if (tbody && data.length) {
                 tbody.innerHTML = data
                   .filter(p => (p.coordenacao || '').toString().toLowerCase().includes('coset'))
                   .map(p => `<tr>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
-                    </tr>`).join('');
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
+                </tr>`).join('');
               }
             }
-
             if (typeof drawCosetTiposChart === 'function') drawCosetTiposChart(data);
-            try { chartCoset?.resize?.(); chartCoset?.update?.(); } catch (e) { }
+            try { chartCoset?.resize?.(); chartCoset?.update?.(); } catch { }
           }
 
           // CGOD
-          if (pageId === 'cgod') {
-            if (typeof renderAllCoordTables === 'function') {
-              renderAllCoordTables(data);
-            } else {
+          if (shortId === 'cgod') {
+            if (typeof renderAllCoordTables === 'function') renderAllCoordTables(data);
+            else {
               const tbody = document.getElementById('cgodTableBody');
               if (tbody && data.length) {
                 tbody.innerHTML = data
                   .filter(p => (p.coordenacao || '').toString().toLowerCase().includes('cgod'))
                   .map(p => `<tr>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
-                    </tr>`).join('');
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
+                </tr>`).join('');
               }
             }
-
             if (typeof drawCgodChart === 'function') drawCgodChart(data);
-            try { chartCgod?.resize?.(); chartCgod?.update?.(); } catch (e) { }
+            try { chartCgod?.resize?.(); chartCgod?.update?.(); } catch { }
           }
 
           // PDTI
-          if (pageId === 'pdti') {
-            if (typeof loadPDTITable === 'function') loadPDTITable();   // busca API e atualiza tudo
+          if (shortId === 'pdti') {
+            if (typeof loadPDTITable === 'function') loadPDTITable();
             if (typeof filterPDTI === 'function') filterPDTI();
             if (typeof renderPDTICharts === 'function') renderPDTICharts();
             if (typeof updatePDTIProgress === 'function') updatePDTIProgress();
-
-
-            try { chartPdtiTipo?.resize?.(); chartPdtiTipo?.update?.(); } catch (e) { }
-            try { chartPdtiTimeline?.resize?.(); chartPdtiTimeline?.update?.(); } catch (e) { }
+            try { chartPdtiTipo?.resize?.(); chartPdtiTipo?.update?.(); } catch { }
+            try { chartPdtiTimeline?.resize?.(); chartPdtiTimeline?.update?.(); } catch { }
           }
 
-          // Atualiza KPIs e tabela recente se existirem funções
           if (typeof updateKPIs === 'function') updateKPIs(data);
           if (typeof renderRecentTable === 'function') renderRecentTable(data);
 
-          // zera tentativas quando deu certo
           window.__appsReady.tries = 0;
-
         } catch (err) {
           console.warn('Erro ao redesenhar charts em showPage:', err);
           if (window.__appsReady.tries < 4) setTimeout(tryRedraw, 150);
         }
       };
-
-      // Pequeno atraso para garantir que o canvas esteja visível
       setTimeout(tryRedraw, 80);
     }
-
     function hideModal(id) { const el = document.getElementById(id); if (el) el.classList.add('hidden'); }
     window.showModal = function (id) { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); };
     window.hideNotify = function () { const el = document.getElementById('notifyModal'); if (el) el.classList.add('hidden'); };
@@ -1720,6 +2088,11 @@
     document.addEventListener('DOMContentLoaded', () => {
       const firstBtn = document.querySelector('nav .nav-btn:first-child');
       showPage('home', firstBtn);
+
+      // garante o visual correto na primeira ida à CODES
+      if (typeof window.setCodesCardHighlight === 'function') {
+        window.setCodesCardHighlight(window.__codesView === 'sustentacao' ? 'sust' : 'fabrica');
+      }
     });
   </script>
 
@@ -1730,7 +2103,7 @@
     // Garante que todas as páginas (#homePage, #codesPage, #cosetPage, #cgodPage, #pdtiPage)
     // sejam filhas diretas de <main>. Isso corrige casos de aninhamento acidental.
     (function ensurePageSiblings() {
-      const main = document.querySelector('main.container, main.container.mx-auto, main.container.mx-auto.px-4.py-6') || document.querySelector('main');
+      const main = document.querySelector('main.container') || document.querySelector('main');
       if (!main) return;
       ['home', 'codes', 'coset', 'cgod', 'pdti'].forEach(id => {
         const page = document.getElementById(id + 'Page');
@@ -1748,7 +2121,7 @@
       window.showPage = function (pageId, el) {
         // garante estrutura correta antes de mostrar
         (function ensurePageSiblings() {
-          const main = document.querySelector('main.container, main.container.mx-auto, main.container.mx-auto.px-4.py-6') || document.querySelector('main');
+          const main = document.querySelector('main.container') || document.querySelector('main');
           if (!main) return;
           ['home', 'codes', 'coset', 'cgod', 'pdti'].forEach(id => {
             const page = document.getElementById(id + 'Page');
@@ -1761,96 +2134,213 @@
   </script>
 
 
+  <script>
+    // Mapeia "sub" dos cards para tipos/padrões de busca
+    function matchesCategoria(p, coord, sub) {
+      if (!sub) return true; // sem subcategoria = somente coordenação
+      const nome = (p.nome || p.projeto || '').toLowerCase();
+      const desc = (p.descricao || '').toLowerCase();
+      const tipo = (p.tipo || p.projectTipo || p['tipo do projeto'] || '').toLowerCase();
+      const txt = nome + ' ' + desc + ' ' + tipo;
+
+      if (coord === 'coset') {
+        if (sub === 'infraestrutura') return /infraestrutura/.test(txt);
+        if (sub === 'integracao' || sub === 'sistemas-integrados') return /(integra(ç|c)ão|integrad[oa])/.test(txt) || /sistema\s+integrado/.test(txt);
+        if (sub === 'modernizacao') return /moderniza/.test(txt);
+        if (sub === 'compliance') return /(compliance|conformidade|lgpd)/.test(txt);
+        return true;
+      }
+
+      if (coord === 'cgod') {
+        if (sub === 'catalogos') return /(cat[aá]logo|cat[aá]logos|metadado|sistema de dados)/.test(txt);
+        if (sub === 'analytics') return /(analytics|bi\b|dashboard)/.test(txt);
+        if (sub === 'qualidade') return /(qualidade|qualidade de dado[s]?)/.test(txt);
+        if (sub === 'governanca') return /(governan[çc]a|lgpd|seguran[çc]a)/.test(txt);
+        return true;
+      }
+
+      // CODES (extra, caso queira usar no futuro)
+      if (coord === 'codes') {
+        if (sub === 'desenvolvimento') return !/sustenta(ç|c)[aã]o/.test(txt);
+        if (sub === 'sustentacao') return /sustenta(ç|c)[aã]o/.test(txt);
+        return true;
+      }
+
+      return true;
+    }
+
+    // Mostra um "badge" de filtro ativo (opcional)
+    function renderFiltroBadge(tbodyEl, label) {
+      if (!tbodyEl || !label) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+      <td colspan="6" class="px-6 py-3 bg-blue-50 text-sm text-blue-800">
+        Filtro ativo: <strong>${label}</strong>
+        <button class="ml-2 text-blue-700 underline" onclick="(function(){
+          window.__tableFilter = { coord: (window.__tableFilter?.coord || ''), categoria: '' };
+          if (typeof renderAllCoordTables === 'function') renderAllCoordTables(window.cacheProjetos || []);
+        })()">limpar</button>
+      </td>`;
+      tbodyEl.prepend(tr);
+    }
+  </script>
 
   <script>
+    /* ==== Espelha o número de Sustentação (CODES -> HOME) ==== */
+
     (function () {
-      try {
-        if (!Array.isArray(window.cacheProjetos)) {
-          window.cacheProjetos = [
-            { id: 1, nome: 'Portal Unificado', coordenacao: 'COSET', status: 'Em Andamento', rag: 'Verde', progresso: 45, responsavel: 'Ana', sprints: 6 },
-            { id: 2, nome: 'Catálogo de Dados', coordenacao: 'CGOD', status: 'Em Andamento', rag: 'Amarelo', progresso: 25, responsavel: 'Bruno', sprints: 4 },
-            { id: 3, nome: 'Sistema de Pagamentos', coordenacao: 'COSET', status: 'Planejado', rag: '', progresso: 0, responsavel: 'Carla', sprints: 0 },
-            { id: 4, nome: 'BI Operacional', coordenacao: 'CGOD', status: 'Concluído', rag: 'Verde', progresso: 100, responsavel: 'Diego', sprints: 8 },
-            { id: 5, nome: 'APP Interno', coordenacao: 'CODES', status: 'Sustentação', rag: 'Amarelo', progresso: 85, responsavel: 'Eduarda', sprints: 12 }
-          ];
+      // Localiza (ou cria) a referência ao span do número na HOME
+      function getHomeSustEl() {
+        // 1) Se já tiver id, usa
+        let el = document.getElementById('homeSustentacaoCount');
+        if (el) return el;
+
+        // 2) Encontra o bloco CODES na HOME (o cartão grande “CODES”)
+        const codesHomeCard = document.querySelector(
+          '#homePage [data-card="codes:desenvolvimento-home"]'
+        );
+        if (!codesHomeCard) return null;
+
+        // 3) Dentro dele, acha a linha que tem o onclick para "sustentacao"
+        const sustRow = codesHomeCard.querySelector(
+          '[onclick*="sustentacao"]'
+        );
+        if (!sustRow) return null;
+
+        // 4) O número é o <span> mais “forte” (o da direita)
+        el = sustRow.querySelector('span.text-lg, span.font-bold, span');
+        if (el) {
+          el.id = 'homeSustentacaoCount'; // cria id p/ facilitar próximas execuções
+          return el;
         }
-
-        window.renderAllCoordTables = function (data) {
-          try {
-            var cosetTbody = document.getElementById('cosetTableBody');
-            var cgodTbody = document.getElementById('cgodTableBody');
-            var recentTbody = document.getElementById('projectsTableBody');
-            var codesTbody = document.getElementById('codesTableBody');
-
-            if (cosetTbody) cosetTbody.innerHTML = '';
-            if (cgodTbody) cgodTbody.innerHTML = '';
-            if (recentTbody) recentTbody.innerHTML = '';
-            if (codesTbody) codesTbody.innerHTML = '';
-
-            for (var i = 0; i < data.length; i++) {
-              var p = data[i];
-              var nome = p.nome || p.projeto || '—';
-              var status = p.status || '—';
-              var rag = p.rag || '—';
-              var progresso = (typeof p.progresso !== 'undefined') ? p.progresso : 0;
-              var responsavel = p.responsavel || '—';
-
-              var row = ''
-                + '<tr>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + nome + '</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + status + '</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + rag + '</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + progresso + '%</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + responsavel + '</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>'
-                + '</tr>';
-
-              var coord = (p.coordenacao || '').toString().toLowerCase();
-              if (coord.indexOf('coset') !== -1 && cosetTbody) cosetTbody.innerHTML += row;
-              else if (coord.indexOf('cgod') !== -1 && cgodTbody) cgodTbody.innerHTML += row;
-              else if (coord.indexOf('codes') !== -1 && codesTbody) codesTbody.innerHTML += row;
-
-              if (recentTbody) recentTbody.innerHTML += row;
-            }
-
-            // KPIs simples
-            var getCount = function (needle) {
-              needle = (needle || '').toString().toLowerCase();
-              var count = 0;
-              for (var j = 0; j < data.length; j++) {
-                if ((data[j].coordenacao || '').toString().toLowerCase().indexOf(needle) !== -1) count++;
-              }
-              return count;
-            };
-
-            var el;
-            el = document.getElementById('projetosCoset'); if (el) el.textContent = getCount('coset');
-            el = document.getElementById('projetosCgod'); if (el) el.textContent = getCount('cgod');
-            const codesCount = getCount('codes');
-            const cosetCount = getCount('coset');
-            const cgodCount = getCount('cgod');
-            const totalVG = codesCount + cosetCount + cgodCount;
-            el = document.getElementById('totalProjetos');
-            if (el) el.textContent = totalVG;
-
-            // Somatório correto (base + sustentação) após render:
-            if (typeof window.updateCodesTotals === 'function') window.updateCodesTotals();
-
-          } catch (err) {
-            console.warn('renderAllCoordTables erro:', err);
-          }
-        };
-
-        // inicializa
-        if (typeof renderAllCoordTables === 'function') renderAllCoordTables(window.cacheProjetos || []);
-        if (typeof updateKPIs === 'function') updateKPIs(window.cacheProjetos || []);
-
-      } catch (outerErr) {
-        console.error('filler geral erro:', outerErr);
+        return null;
       }
+
+      // Fonte: número exibido no topo da aba CODES
+      function getCodesSustEl() {
+        return document.getElementById('sustentacaoCount');
+      }
+
+      // Copia o texto (ex.: "12") da CODES -> HOME
+      function syncSustCount() {
+        const src = getCodesSustEl();
+        const dst = getHomeSustEl();
+        if (!src || !dst) return;
+
+        // Normaliza (tira espaços) e aplica
+        const val = (src.textContent || '0').trim();
+        if (dst.textContent !== val) dst.textContent = val;
+      }
+
+      // Observa mudanças no #sustentacaoCount (quando sua lógica atualizar)
+      function attachObserver() {
+        const src = getCodesSustEl();
+        if (!src || window.__sustMirrorObs) return;
+
+        const obs = new MutationObserver(syncSustCount);
+        obs.observe(src, { characterData: true, childList: true, subtree: true });
+        window.__sustMirrorObs = obs;
+      }
+
+      // Dispara em navegação entre abas (caso você troque para CODES e o número mude)
+      function hookShowPage() {
+        if (window.__showPageHooked) return;
+        window.__showPageHooked = true;
+
+        const orig = window.showPage;
+        if (typeof orig === 'function') {
+          window.showPage = function (pageId, el) {
+            const r = orig.apply(this, arguments);
+            // dá um micro tempo para o DOM da página alvo montar
+            setTimeout(() => { attachObserver(); syncSustCount(); }, 50);
+            return r;
+          };
+        }
+      }
+
+      // Integra com sua função já existente (se houver)
+      const prevUpdateCodesTotals = window.updateCodesTotals;
+      window.updateCodesTotals = function () {
+        try { if (typeof prevUpdateCodesTotals === 'function') prevUpdateCodesTotals(); }
+        finally { attachObserver(); syncSustCount(); }
+      };
+
+      // Primeira carga
+      document.addEventListener('DOMContentLoaded', () => {
+        hookShowPage();
+        // roda algumas tentativas rápidas para pegar quando os cards carregam
+        let tries = 0;
+        const t = setInterval(() => {
+          tries++;
+          attachObserver();
+          syncSustCount();
+          if (tries >= 12 || (getCodesSustEl() && getHomeSustEl())) clearInterval(t);
+        }, 120);
+      });
+    })();
+  </script>
+  <!-- ... fim do script de “Espelha Sustentação” -->
+  </script>
+
+  <!-- ⬇️ COLE ESTE BLOCO AQUI -->
+  <script>
+    (function () {
+      function computeHomeDevCount(data) {
+        if (!Array.isArray(data)) return 0;
+        return data.filter(p => {
+          const coord = (p.coordenacao || '').toLowerCase();
+          const status = (p.status || '').toLowerCase();
+          const nomeDescTipo = [
+            p.nome || p.projeto || '',
+            p.descricao || '',
+            p.tipo || p.projectTipo || p['tipo do projeto'] || ''
+          ].join(' ').toLowerCase();
+
+          const isCodes = coord.includes('codes');
+          const isSust = /sustenta(ç|c)[aã]o/.test(nomeDescTipo) || status === 'sustentação';
+          const emAndamento = status === 'em andamento'; // troque por "true" se quiser contar tudo exceto Sustentação
+          return isCodes && !isSust && emAndamento;
+        }).length;
+      }
+
+      function setHomeDevCount(data) {
+        const el = document.getElementById('homeDevCount');
+        if (!el) return;
+        const val = computeHomeDevCount(data);
+        if (el.textContent.trim() !== String(val)) el.textContent = val;
+      }
+
+      // roda sempre que os KPIs forem atualizados
+      const prevUpdateKPIs = window.updateKPIs;
+      window.updateKPIs = function (data) {
+        try { if (typeof prevUpdateKPIs === 'function') prevUpdateKPIs(data); }
+        finally { setHomeDevCount(data || window.cacheProjetos || []); }
+      };
+
+      // garante atualização ao trocar de aba
+      const prevShowPage = window.showPage;
+      if (typeof prevShowPage === 'function') {
+        window.showPage = function (pageId, el) {
+          const r = prevShowPage.apply(this, arguments);
+          setTimeout(() => setHomeDevCount(window.cacheProjetos || []), 50);
+          return r;
+        };
+      }
+
+      // primeira carga
+      document.addEventListener('DOMContentLoaded', () => {
+        let tries = 0;
+        const t = setInterval(() => {
+          setHomeDevCount(window.cacheProjetos || []);
+          tries++;
+          if (tries > 12 || document.getElementById('homeDevCount')) clearInterval(t);
+        }, 120);
+      });
     })();
   </script>
 
+  <!-- imports do Chart.js (deixe como já estão) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
 
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
@@ -1865,12 +2355,9 @@
 
   <!-- Lógica dinâmica (main.js) -->
   <script src="assets/js/main.js?v=10" defer></script>
-  <script src="assets/js/sustentacao.js?v=2"></script>
-
-
   <script src="assets/js/pdti.js"></script>
+  <script src="assets/js/sustentacao.js?v=7"></script>
 
-  <!--script src="assets/js/codes-sustentacao.js?v=1" defer></script-->
 
   <!-- Modal: Ver Chamado (estilo igual ao modal de projetos) -->
   <div id="verChamadoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
@@ -1941,13 +2428,28 @@
           </div>
         </div>
 
-        <!-- Observações (igual à seção “Descrição/Riscos” do modal de projetos) -->
+        <!-- Histórico de Andamento (Sustentação — igual ao de Desenvolvimento) -->
         <div class="px-6 pb-6">
           <div class="bg-white border rounded-lg p-4">
-            <h4 class="font-semibold text-gray-700 mb-2">Observações</h4>
-            <p id="verObs" class="text-sm text-gray-700 whitespace-pre-wrap">—</p>
+            <h4 class="font-semibold text-gray-700 mb-3">Histórico de Andamento</h4>
+
+            <!-- Lista de itens -->
+            <div id="sustHistoricoList" class="space-y-2">
+              <!-- itens serão renderizados via JS (renderSustHistorico) -->
+              <p class="text-sm text-gray-500">Nenhum andamento registrado.</p>
+            </div>
+
+            <!-- Editor inline: input + botão “+” -->
+            <div class="mt-3 flex gap-2">
+              <input id="sustNovoAndamento" type="text" placeholder="Descreva andamento..."
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2" />
+              <button id="btnAddSustObs" type="button"
+                class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">+</button>
+            </div>
           </div>
         </div>
+
+
 
         <!-- Rodapé (botões iguais) -->
         <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3">
@@ -1962,6 +2464,142 @@
     </div>
   </div>
 
+  <script>
+    (function () {
+      // popula a área de observação quando o modal abre
+      window.fillObsChamado = function (obsTexto) {
+        const view = document.getElementById('verObs');
+        const input = document.getElementById('verObsInput');
+        if (!view || !input) return;
+        const t = (obsTexto ?? '—');
+        view.textContent = t || '—';
+        input.value = (t === '—') ? '' : t;
+        // estado padrão: leitura
+        window.toggleObsEditor(false, true);
+      };
+
+      // alterna visual de edição/leitura
+      window.toggleObsEditor = function (editing, silent) {
+        const view = document.getElementById('verObs');
+        const input = document.getElementById('verObsInput');
+        const btnEdit = document.getElementById('btnEditarObs');
+        const btnSave = document.getElementById('btnSalvarObs');
+        const btnCancel = document.getElementById('btnCancelarObs');
+        const hint = document.getElementById('verObsHint');
+        if (!view || !input || !btnEdit || !btnSave || !btnCancel) return;
+
+        if (editing) {
+          view.classList.add('hidden');
+          input.classList.remove('hidden');
+          btnEdit.classList.add('hidden');
+          btnSave.classList.remove('hidden');
+          btnCancel.classList.remove('hidden');
+          hint?.classList.remove('hidden');
+          if (!silent) input.focus();
+        } else {
+          view.classList.remove('hidden');
+          input.classList.add('hidden');
+          btnEdit.classList.remove('hidden');
+          btnSave.classList.add('hidden');
+          btnCancel.classList.add('hidden');
+          hint?.classList.add('hidden');
+        }
+      };
+
+      // salva a observação (usa hook se existir; senão, fallback)
+      window.saveObsEditor = function () {
+        const numero = document.getElementById('verNumero')?.textContent?.trim();
+        const input = document.getElementById('verObsInput');
+        const view = document.getElementById('verObs');
+        const texto = (input?.value || '').trim();
+
+        if (!numero) return window.alert('Não foi possível identificar o número do chamado.');
+        if (!view) return;
+
+        const applyUI = () => {
+          view.textContent = texto || '—';
+          window.toggleObsEditor(false);
+        };
+
+        // Hook oficial (se você tiver no sustentacao.js)
+        if (typeof window.saveObservacaoChamado === 'function') {
+          try {
+            const r = window.saveObservacaoChamado(numero, texto);
+            // aceita tanto sync quanto Promise
+            if (r && typeof r.then === 'function') {
+              r.then(applyUI).catch(err => alert('Erro ao salvar observação: ' + (err?.message || err)));
+            } else {
+              applyUI();
+            }
+          } catch (e) {
+            alert('Erro ao salvar observação: ' + (e?.message || e));
+          }
+          return;
+        }
+
+        // Fallback: tenta atualizar no array em memória e re-renderizar a lista
+        try {
+          const arr = (window.__sustChamados || []);
+          const idx = arr.findIndex(ch => String(ch.numero) === String(numero));
+          if (idx >= 0) {
+            arr[idx].observacoes = texto;
+            // se houver função para re-render da tabela:
+            if (typeof window.renderSustentacaoTable === 'function') {
+              window.renderSustentacaoTable(arr);
+            }
+          }
+        } catch { /* noop */ }
+
+        applyUI();
+      };
+
+      // Integra com a abertura do modal: quando você chamar a função que abre “Ver Chamado”,
+      // chame fillObsChamado(passando a string de observações do chamado).
+      // Se já tiver uma função showVerChamado, fazemos um wrap leve:
+      (function wrapOpenModal() {
+        const modalId = 'verChamadoModal';
+        // se existir um ponto único de abertura que já popula campos:
+        const oldOpen = window.openVerChamado;
+        window.openVerChamado = function (chamado) {
+          // chamado: objeto { numero, abertura, ..., observacoes }
+          if (typeof oldOpen === 'function') oldOpen(chamado);
+          window.fillObsChamado(chamado?.observacoes || chamado?.obs || '');
+          // garante que o input de data/hora e o botão concluir já estavam como antes
+          window.showModal && window.showModal(modalId);
+        };
+
+        // caso você não use openVerChamado(obj), mas popula manualmente,
+        // pode apenas chamar window.fillObsChamado(obs) logo após setar #verNumero etc.
+      })();
+
+      // Quando clicar em “Concluir”, inclui a observação atual no fluxo (se houver hook)
+      (function wireConcluirWithObs() {
+        const btn = document.getElementById('btnConcluirChamado');
+        if (!btn || btn.__wiredWithObs) return;
+        btn.__wiredWithObs = true;
+
+        btn.addEventListener('click', () => {
+          const numero = document.getElementById('verNumero')?.textContent?.trim();
+          const fechamento = document.getElementById('verFechamento')?.value || '';
+          const obsAtual = document.getElementById('verObsInput')?.classList.contains('hidden')
+            ? (document.getElementById('verObs')?.textContent || '')
+            : (document.getElementById('verObsInput')?.value || '');
+
+          // Se existir um finalizador oficial, passe a observação junto
+          if (typeof window.concluirChamado === 'function') {
+            try { window.concluirChamado(numero, fechamento, obsAtual?.trim()); return; }
+            catch { /* continua no fallback */ }
+          }
+
+          // Fallback simples: salva observação e fecha
+          if (typeof window.saveObservacaoChamado === 'function') {
+            try { window.saveObservacaoChamado(numero, (obsAtual || '').trim()); } catch { }
+          }
+          window.hideModal && window.hideModal('verChamadoModal');
+        }, { passive: true });
+      })();
+    })();
+  </script>
 
   <!-- Modal Editar Chamado -->
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="editChamadoModal">
@@ -2043,6 +2681,129 @@
     </div>
   </div>
 
+
+  <script>
+    /* ======= UTIL: limpa o "selecionado" de todos os subcards ======= */
+    function clearSubcardSelection() {
+      const scope = document.getElementById('codesPage');
+      if (!scope) return;
+      scope
+        .querySelectorAll('#codesKpisFabExtra .card-picked, #codesKpisSustExtra .card-picked')
+        .forEach(el => el.classList.remove('card-picked'));
+    }
+
+    /* ======= Torna subcards "selecionáveis" com destaque único ======= */
+    function wirePickables(scope = document) {
+      scope
+        .querySelectorAll('#codesKpisFabExtra [data-card], #codesKpisSustExtra [data-card]')
+        .forEach(card => {
+          card.classList.add('card-pickable');
+          card.addEventListener(
+            'click',
+            () => {
+              const grid = card.closest('#codesKpisFabExtra, #codesKpisSustExtra');
+              grid?.querySelectorAll('.card-picked').forEach(el => el.classList.remove('card-picked'));
+              card.classList.add('card-picked');
+            },
+            { passive: true }
+          );
+        });
+    }
+
+    /* ======= Destaque do PAI + troca entre Fábrica/Sustentação ======= */
+    /*  mode: 'sust' | 'fabrica'  */
+    window.setCodesCardHighlight = function (mode) {
+      const scope = document.getElementById('codesPage');
+      if (!scope) return;
+
+      const fabExtra = scope.querySelector('#codesKpisFabExtra');
+      const sustExtra = scope.querySelector('#codesKpisSustExtra');
+
+      const devCard = scope.querySelector('[data-card="codes:desenvolvimento"]');
+      const sustCard = scope.querySelector('[data-card="codes:sustentacao"]');
+
+      const prodTop = scope.querySelector('[data-card="codes:sust:em_producao"]');
+
+      if (!fabExtra || !sustExtra || !devCard || !sustCard) return;
+
+      // 1) Limpa qualquer seleção de subcards sempre que o PAI mudar
+      clearSubcardSelection();
+
+      // 2) Remove o "glow" dos pais
+      devCard.classList.remove('card-hi', 'card-hi--fabrica');
+      sustCard.classList.remove('card-hi', 'card-hi--sust');
+
+      if (mode === 'sust') {
+        // 3) Mostrar/ocultar grids e o card "Em produção (TOP)"
+        fabExtra.classList.add('hidden');
+        sustExtra.classList.remove('hidden');
+        if (prodTop) prodTop.classList.remove('hidden');
+
+        // 4) Normaliza subcards (sem glow e sem picked)
+        sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
+          el.classList.remove('card-hi', 'card-hi--sust', 'card-picked');
+          el.style.removeProperty('display');
+          el.style.removeProperty('visibility');
+          el.style.removeProperty('opacity');
+        });
+
+        // 5) Destaque somente no PAI "Sustentação"
+        sustCard.classList.add('card-hi', 'card-hi--sust');
+        return;
+      }
+
+      // ===== modo FÁBRICA =====
+      sustExtra.classList.add('hidden');
+      fabExtra.classList.remove('hidden');
+      if (prodTop) prodTop.classList.add('hidden');
+
+      // Garante que os cards do grid extra de fábrica estão visíveis e "limpos"
+      fabExtra.style.removeProperty('display');
+      if (getComputedStyle(fabExtra).display === 'none') fabExtra.style.display = 'grid';
+      fabExtra.querySelectorAll('[data-card]').forEach(el => {
+        el.classList.remove('hidden', 'invisible', 'sr-only', 'card-picked');
+        el.style.removeProperty('display');
+        el.style.removeProperty('visibility');
+        el.style.removeProperty('opacity');
+      });
+
+      sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
+        el.classList.remove('card-hi', 'card-hi--sust', 'card-picked');
+      });
+
+      // Destaque somente no PAI "Desenvolvimento"
+      devCard.classList.add('card-hi', 'card-hi--fabrica');
+    };
+
+    /* ======= Inicialização ======= */
+    document.addEventListener('DOMContentLoaded', () => {
+      // ativa comportamento dos subcards
+      wirePickables();
+
+      // clicar no PAI limpa o destaque dos subcards
+      const scope = document.getElementById('codesPage');
+      const devCard = scope?.querySelector('[data-card="codes:desenvolvimento"]');
+      const sustCard = scope?.querySelector('[data-card="codes:sustentacao"]');
+
+      devCard?.addEventListener('click', clearSubcardSelection, { passive: true });
+      sustCard?.addEventListener('click', clearSubcardSelection, { passive: true });
+      devCard?.addEventListener('click', () => {
+        document.querySelector('#codesPage [data-card="codes:sust:em_producao"]')?.classList.add('hidden');
+      }, { passive: true });
+
+    });
+
+    /* ======= Se algum código externo chamar setCodesCardHighlight,
+               garantimos que os subcards continuam "clicáveis" ======= */
+    (function ensurePickablesAfterHighlight() {
+      const _old = window.setCodesCardHighlight;
+      window.setCodesCardHighlight = function (mode) {
+        _old && _old(mode);
+        // re-wira (caso o DOM da grid tenha sido recolocado)
+        setTimeout(() => wirePickables(document.getElementById('codesPage')), 0);
+      };
+    })();
+  </script>
 
 </body>
 

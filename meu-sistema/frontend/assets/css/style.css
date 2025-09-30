@@ -383,21 +383,52 @@ td.col-actions {
 
 /* ícone redondo padrão */
 /* bolinhas de ação */
+/* ícone padronizado já existente */
 .btn-ico {
-  display: inline-grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 9999px;
-  transition: transform .12s ease;
 }
 
-.btn-ico:hover {
-  transform: translateY(-1px);
-}
-
-/* garante tamanho dos ícones */
 .btn-ico svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
+}
+
+/* versão compacta para listas apertadas */
+.btn-ico--sm {
+  width: 30px;
+  height: 30px;
+}
+
+.btn-ico--sm svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* reduz o espaçamento entre os botões na célula de ações */
+.actions-tight {
+  gap: 0.5rem;
+}
+
+/* cards clicáveis */
+[data-card] {
+  outline: none;
+}
+
+/* remove foco quando foi via mouse/toque 
+[data-card]:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}*/
+
+/* (opcional) se você NÃO quer foco visual nem para teclado, comente o bloco acima e use: */
+
+[data-card]:focus,
+[data-card]:active {
+  outline: none !important;
+  box-shadow: none !important;
 }
