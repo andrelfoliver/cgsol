@@ -418,16 +418,27 @@
     }
 
     // ---------- TABELA ----------
+    // ---------- TABELA ----------
     function renderTable(list) {
         const tbody = document.getElementById('sustentacaoTableBody');
         if (!tbody) return;
 
-        // 👉 mostra concluídos somente quando o filtro ativo pedir
-        const showConcluidos = /conclu/i.test(String(window.__sustActiveFilter || ''));
+        // Mostrar concluídos apenas quando o filtro ativo pedir
+        const active = String(window.__sustActiveFilter || '').toLowerCase();
+        const showConcluidos = /conclu/.test(active);
+        const showProducao = /produc/.test(active);
 
+        // Aplica corte final na lista para a tabela (aqui é só visual; gráficos usam outra base)
         const visible = (Array.isArray(list) ? list : []).filter(ch => {
-            const isConcluido = /conclu/i.test(String(ch.status || ''));
-            return showConcluidos ? true : !isConcluido;
+            const st = String(ch.status || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+            const isConcluido = /conclu/.test(st);
+            const isProducao = /produc/.test(st);
+
+            // regra: na visão geral de Sustentação NÃO aparecem Concluídos nem Em Produção,
+            // a menos que o card/filtro específico esteja ativo.
+            if (isConcluido && !showConcluidos) return false;
+            if (isProducao && !showProducao) return false;
+            return true;
         });
 
         sustCache = visible;
@@ -439,57 +450,66 @@
         }
 
         visible.forEach(ch => {
-            const concluded = /conclu/i.test(ch.status || '');
-            const checkBtn = concluded
+            const stRaw = String(ch.status || '');
+            const stKey = stRaw.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+            const isConcluido = /conclu/.test(stKey);
+
+            // Botões de ação:
+            // - Se NÃO concluído: ✔️ Concluir
+            // - Se Concluído: 🚀 Produção
+            const actions = isConcluido
                 ? `
-              <span class="btn-ico bg-gray-300 text-white opacity-70 cursor-not-allowed"
-                    aria-disabled="true" title="Concluído">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path d="M20 6 9 17l-5-5"/>
-                </svg>
-              </span>`
+          <button title="Enviar para Produção"
+                  class="btn-ico bg-amber-600 hover:bg-amber-700 text-white shadow-sm"
+                  onclick="window.enviarParaProducao('${esc(ch.numero)}')">
+            <!-- foguete -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M14 3l7 7-4 1-4 4-1 4-7-7 1-4 4-4 4-1z"/>
+              <path d="M5 15l-2 6 6-2"/>
+            </svg>
+          </button>`
                 : `
-              <a href="#"
-                 onclick="concluirChamado('${esc(ch.numero)}')"
-                 class="btn-ico bg-[#16a34a] hover:bg-[#15803d] text-white shadow-sm"
-                 aria-label="Concluir" title="Concluir">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path d="M20 6 9 17l-5-5"/>
-                </svg>
-              </a>`;
+          <a href="#"
+             onclick="concluirChamado('${esc(ch.numero)}')"
+             class="btn-ico bg-[#16a34a] hover:bg-[#15803d] text-white shadow-sm"
+             aria-label="Concluir" title="Concluir">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+          </a>`;
 
             tbody.insertAdjacentHTML('beforeend', `
-            <tr class="hover:bg-gray-50">
-              <td class="px-6 py-4 text-sm font-medium text-gray-900">${esc(ch.projeto)}</td>
-              <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.numero)}</td>
-              <td class="px-6 py-4 text-sm">
-                <span class="badge" style="background:${colorForStatus(ch.status)};color:#fff;border-radius:6px;">
-                  ${esc(ch.status)}
-                </span>
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.desenvolvedor)}</td>
-              <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.solicitante)}</td>
-              <td class="px-6 py-4 text-sm font-medium">
-                <div class="flex items-center gap-3">
-                  <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')"
-                     class="btn-ico bg-[#1555D6] hover:bg-[#0f42a8] text-white shadow-sm" aria-label="Ver" title="Ver">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                  </a>
-                  <a href="#" onclick="editarChamado('${esc(ch.numero)}')"
-                     class="btn-ico bg-white text-[#1555D6] ring-2 ring-[#1555D6]" aria-label="Editar" title="Editar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M12 20h9"/>
-                      <path d="M16.5 3.5 20.5 7.5 7 21H3v-4L16.5 3.5z"/>
-                    </svg>
-                  </a>
-                  ${checkBtn}
-                </div>
-              </td>
-            </tr>
-          `);
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 text-sm font-medium text-gray-900">${esc(ch.projeto)}</td>
+          <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.numero)}</td>
+          <td class="px-6 py-4 text-sm">
+            <span class="badge" style="background:${colorForStatus(stRaw)};color:#fff;border-radius:6px;">
+              ${esc(stRaw)}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.desenvolvedor)}</td>
+          <td class="px-6 py-4 text-sm text-gray-700">${esc(ch.solicitante)}</td>
+          <td class="px-6 py-4 text-sm font-medium">
+            <div class="flex items-center gap-3">
+              <a href="#" onclick="verChamadoByNumero('${esc(ch.numero)}')"
+                 class="btn-ico bg-[#1555D6] hover:bg-[#0f42a8] text-white shadow-sm" aria-label="Ver" title="Ver">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </a>
+              <a href="#" onclick="editarChamado('${esc(ch.numero)}')"
+                 class="btn-ico bg-white text-[#1555D6] ring-2 ring-[#1555D6]" aria-label="Editar" title="Editar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5 20.5 7.5 7 21H3v-4L16.5 3.5z"/>
+                </svg>
+              </a>
+              ${actions}
+            </div>
+          </td>
+        </tr>
+      `);
         });
     }
 
@@ -551,8 +571,13 @@
         const pN = norm(p), dN = norm(d), sN = norm(s);
 
         const filtered = (sustRaw || []).filter(ch => {
-            // 👇 exclui concluídos da tabela, sempre
-            if (/conclu/i.test(String(ch.status || ''))) return false;
+            const st = String(ch.status || '')
+                .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+                .toLowerCase();
+
+            // Na visão geral, não mostrar Concluídos nem Em Produção
+            if (/conclu/.test(st)) return false;
+            if (/produc/.test(st)) return false;
 
             const proj = norm(ch.projeto);
             const dev = norm(ch.desenvolvedor);
@@ -568,6 +593,7 @@
         sustCache = filtered;
         renderTable(filtered);
     }
+
 
     // abrir modal por número usando o cache
     window.verChamadoByNumero = function (numero) {
@@ -693,6 +719,51 @@
         }
     }
 
+    // Enviar chamado concluído para Produção
+    window.enviarParaProducao = function (numero) {
+        const ch = (sustCache || []).find(c => String(c.numero) === String(numero));
+        if (!ch) return;
+
+        const doSend = async () => {
+            try {
+                const resp = await fetch(`${API_ROOT}/sustentacao/${encodeURIComponent(numero)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'Em Produção',
+                        data_envio_producao: new Date().toISOString()
+                    })
+                });
+                if (!resp.ok) throw new Error(await resp.text());
+
+                // recarrega lista / gráficos / cards
+                await loadSustentacao();
+                (typeof toast === 'function') && toast('Sucesso', `Chamado ${numero} enviado para produção.`, 'success');
+            } catch (e) {
+                console.error(e);
+                (typeof toast === 'function') && toast('Erro', 'Não foi possível enviar para produção.', 'error');
+            }
+        };
+
+        // Usa modal global se existir; senão, confirm nativo
+        if (typeof window.showConfirm === 'function') {
+            window.showConfirm(
+                `Enviar o chamado ${numero} para Produção?`,
+                doSend,
+                () => { },
+                {
+                    title: 'Enviar para Produção',
+                    icon: '🚀',
+                    confirmText: 'Enviar',
+                    confirmClass: 'bg-amber-600 hover:bg-amber-700',
+                    barClass: 'bg-amber-600',
+                    cancelText: 'Cancelar'
+                }
+            );
+        } else {
+            if (confirm(`Enviar o chamado ${numero} para Produção?`)) doSend();
+        }
+    };
 
     // ligar o botão do modal (uma vez)
     document.addEventListener('DOMContentLoaded', () => {
@@ -770,15 +841,17 @@
         const el = document.getElementById('sustStatusChart');
         if (!el || !window.Chart) return;
 
+        // Agrupa usando o rótulo canônico
         const counts = {};
-        list.forEach(ch => {
-            const key = String(ch.status || '—').trim();
-            counts[key] = (counts[key] || 0) + 1;
+        (list || []).forEach(ch => {
+            const label = canonicalStatusLabel(ch.status);
+            counts[label] = (counts[label] || 0) + 1;
         });
 
         const labels = Object.keys(counts);
         const data = labels.map(l => counts[l]);
 
+        // Cores: usa sua tabela statusColors (chave sem acento) via normalização
         const colors = labels.map(l => {
             const k = l.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
             return statusColors[k] || '#6b7280';
@@ -787,7 +860,7 @@
         if (chartSustStatus) chartSustStatus.destroy();
 
         chartSustStatus = new Chart(el.getContext('2d'), {
-            type: 'bar',                 // 👈 de rosca para colunas
+            type: 'bar',
             data: {
                 labels,
                 datasets: [{
@@ -806,21 +879,13 @@
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1, precision: 0 },
-                        grid: { drawBorder: false }
-                    },
-                    x: {
-                        ticks: { maxRotation: 0, minRotation: 0 },
-                        display: false,
-                        grid: { display: false }
-                    }
+                    y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { drawBorder: false } },
+                    x: { ticks: { maxRotation: 0, minRotation: 0 }, display: false, grid: { display: false } }
                 }
             }
         });
 
-        // mantém a legenda customizada do card
+        // legenda customizada com os rótulos canônicos
         renderBulletsLegend('sustStatusLegend', labels, colors);
     }
 
@@ -900,6 +965,105 @@
             try { chartSustProjetos?.destroy(); chartSustProjetos = null; } catch { }
         }
     }
+    // Converte qualquer variação para um rótulo canônico de exibição
+    function canonicalStatusLabel(statusRaw) {
+        const s = String(statusRaw || '')
+            .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+            .toLowerCase().trim();
+
+        if (s.includes('produc')) return 'Em Produção';
+        if (s.includes('conclu')) return 'Concluído';
+        if (s.startsWith('a desenvol')) return 'A desenvolver';
+        if (s.includes('em desenvolvimento')) return 'Em desenvolvimento';
+        if (s.includes('homolog')) return 'Em homologação';
+        if (s.includes('testes')) return 'Em testes';
+        if (s.includes('suspens')) return 'Suspenso';
+        if (s.includes('pendente')) return 'Pendente';
+        return statusRaw || '—';
+    }
+    // --- CSS de fallback + helpers VISUAIS (hover-glow e ativo) ---
+    (function ensureGlowCSS() {
+        if (document.getElementById('sust-glow-style')) return;
+        const css = `
+    /* ---- GLOW APENAS NO HOVER ---- */
+    [data-card][data-glow="hover"]:hover .kpi-number,
+    [data-card][data-glow="hover"]:hover .count,
+    [data-card][data-glow="hover"]:hover .value,
+    [data-card][data-glow="hover"]:hover .metric-value {
+      text-shadow: 0 0 10px var(--kpi-accent, rgba(251,191,36,.85));
+      filter: drop-shadow(0 0 4px var(--kpi-accent, rgba(251,191,36,.65)));
+      transition: text-shadow .2s ease, filter .2s ease;
+    }
+    [data-card][data-glow="hover"]:hover {
+      --glow-color: var(--kpi-accent, rgba(251,191,36,.35));
+      box-shadow: 0 0 0 1px rgba(0,0,0,.03), 0 0 16px var(--glow-color);
+    }
+  
+    /* ---- (compat) brilho forçado, caso algum card use "on" em outra parte do sistema ---- */
+    [data-card][data-glow="on"] .kpi-number,
+    [data-card][data-glow="on"] .count,
+    [data-card][data-glow="on"] .value,
+    [data-card][data-glow="on"] .metric-value { 
+      text-shadow: 0 0 10px var(--kpi-accent, rgba(251,191,36,.85));
+      filter: drop-shadow(0 0 4px var(--kpi-accent, rgba(251,191,36,.65)));
+    }
+    [data-card][data-glow="on"] {
+      --glow-color: var(--kpi-accent, rgba(251,191,36,.35));
+      box-shadow: 0 0 0 1px rgba(0,0,0,.03), 0 0 16px var(--glow-color);
+    }
+  
+    /* ---- DESTAQUE ATIVO (barra lateral quando clica) ---- */
+    [data-card][data-active="on"] { position: relative; }
+    [data-card][data-active="on"]::before{
+      content:"";
+      position:absolute;
+      left:0; top:10%;
+      width:6px; height:80%;
+      border-radius:6px;
+      background: var(--kpi-accent, #f59e0b);
+      box-shadow: 0 0 8px var(--kpi-accent, rgba(245,158,11,.7));
+    }
+    `;
+        const tag = document.createElement('style');
+        tag.id = 'sust-glow-style';
+        tag.textContent = css;
+        document.head.appendChild(tag);
+    })();
+
+    /**
+     * Define o modo de glow de um conjunto de cards.
+     * mode: 'hover' (padrão), 'on' (sempre) ou 'off'
+     */
+    function setCardGlow(cardKeys = [], mode = 'hover', accentColor = '') {
+        (cardKeys || []).forEach(key => {
+            document.querySelectorAll(`[data-card="${key}"]`).forEach(el => {
+                if (accentColor) {
+                    el.style.setProperty('--kpi-accent', accentColor);
+                    el.style.setProperty('--accent', accentColor); // compat
+                }
+                if (mode === 'off') {
+                    el.removeAttribute('data-glow');
+                    el.classList.remove('kpi-hot');
+                } else {
+                    el.setAttribute('data-glow', mode);           // 'hover' ou 'on'
+                    if (mode === 'on') el.classList.add('kpi-hot');
+                    else el.classList.remove('kpi-hot');
+                }
+            });
+        });
+    }
+
+    /** Liga/desliga o estado ATIVO (barra lateral) de um conjunto de cards */
+    function setCardActive(cardKeys = [], on = true, accentColor = '') {
+        (cardKeys || []).forEach(key => {
+            document.querySelectorAll(`[data-card="${key}"]`).forEach(el => {
+                if (accentColor) el.style.setProperty('--kpi-accent', accentColor);
+                if (on) el.setAttribute('data-active', 'on');
+                else el.removeAttribute('data-active');
+            });
+        });
+    }
+
 
     // helper: tenta desenhar assim que o Chart estiver disponível
     function ensureCharts(list) {
@@ -956,33 +1120,36 @@
             .toLowerCase().trim();
 
         const wanted = norm(statusLike);
-        // toggle: clicar no mesmo card limpa o filtro
+
+        // Toggle: clicar no mesmo card limpa o filtro
         if (window.__sustActiveFilter === wanted) {
             window.__sustActiveFilter = '';
             sustCache = Array.from(sustRaw);
             renderTable(sustCache);
-            ensureCharts(sustCache); // gráficos seguem o filtro atual
+            ensureCharts(sustCache);
+            clearPickedVisuals();                    // 👈 limpa barra lateral/seleção
             return;
         }
+
         window.__sustActiveFilter = wanted;
 
-        if (!wanted) {
-            sustCache = Array.from(sustRaw);
-            renderTable(sustCache);
-            ensureCharts(sustCache);
-            return;
-        }
+        const filtered = wanted
+            ? (sustRaw || []).filter(ch => {
+                const st = norm(ch.status);
+                if (wanted.includes('producao')) return st.includes('producao');
+                return st.includes(wanted);
+            })
+            : Array.from(sustRaw);
 
-        const filtered = (sustRaw || []).filter(ch => {
-            const st = norm(ch.status);
-            // aceita qualquer variação contendo "producao"
-            if (wanted.includes('producao')) return st.includes('producao');
-            return st.includes(wanted);
-        });
         sustCache = filtered;
         renderTable(filtered);
-        ensureCharts(filtered);     // ⚠️ só gráficos/tabela, cards NÃO mudam
+        ensureCharts(filtered);
+
+        // Marca visualmente o card selecionado (inclui o TOP “Em Produção”)
+        markPickedCard(wanted);
     };
+
+
 
 
     // calcula e atualiza os 8 cards (IDs esperados — ajuste se seu HTML usar outros IDs)
@@ -995,7 +1162,7 @@
             pendente: 0,
             suspenso: 0,
             concluido: 0,
-            emProducao: 0        // 👈 novo
+            emProducao: 0
         };
 
         (list || []).forEach(ch => {
@@ -1005,7 +1172,7 @@
             else if (s.includes('em homolog') || s.includes('homolog')) counters.emHomologacao++;
             else if (s.includes('em testes') || s.includes('testes')) counters.emTestes++;
             else if (s.includes('suspens')) counters.suspenso++;
-            else if (s.includes('produc')) counters.emProducao++;                 // 👈 conta “produção”
+            else if (s.includes('produc')) counters.emProducao++;
             else if (s.includes('conclu')) counters.concluido++;
             else if (s.includes('pendente')) counters.pendente++;
             else counters.pendente++;
@@ -1020,20 +1187,19 @@
             pendente: 'sustPendente',
             suspenso: 'sustSuspenso',
             concluido: 'sustFechados',
-            emProducao: 'sustProducao'       // 👈 id do card “Em produção” na grade
+            emProducao: 'sustProducao'
         };
 
-        // data-card (Visão Geral / Home)
+        // data-card (Home/Visão geral/CODES)
         const cardKeys = {
-            aDesenvolver: ['codes:sustentação:a_desenvolver', 'codes:sust:a_desenvolver'],
-            emDesenvolvimento: ['codes:sustentação:em_desenvolvimento', 'codes:sust:em_desenvolvimento'],
-            emHomologacao: ['codes:sustentação:em_homologacao', 'codes:sust:em_homologacao'],
-            emTestes: ['codes:sustentação:em_testes', 'codes:sust:em_testes'],
+            aDesenvolver: ['codes:sustentação:a_desenvolver', 'codes:sust:a_desenvolver', 'codes:sust:adesenvolver'],
+            emDesenvolvimento: ['codes:sustentação:em_desenvolvimento', 'codes:sust:em_desenvolvimento', 'codes:sust:emdesenv'],
+            emHomologacao: ['codes:sustentação:em_homologacao', 'codes:sust:em_homologacao', 'codes:sust:homolog'],
+            emTestes: ['codes:sustentação:em_testes', 'codes:sust:em_testes', 'codes:sust:testes'],
             pendente: ['codes:sustentação:pendente', 'codes:sust:pendente'],
             suspenso: ['codes:sustentação:suspenso', 'codes:sust:suspenso'],
             concluido: ['codes:sustentação:fechados', 'codes:sust:fechados'],
-            emProducao: ['codes:sustentação:em_producao', 'codes:sust:em_producao', 'codes:producao-top'], // 👈 inclui o “top”
-            total: ['codes:sustentação', 'codes:sust:total', 'codes:sustentacao', 'codes:sust']
+            emProducao: ['codes:sustentação:em_producao', 'codes:sust:em_producao', 'codes:producao-top', 'codes:sust:em_producao']
         };
 
         function writeCardCount(cardKey, value) {
@@ -1060,10 +1226,16 @@
         const total = String((list || []).length);
         document.getElementById('sustTotal')?.replaceChildren(document.createTextNode(total));
         document.getElementById('sustentacaoCount')?.replaceChildren(document.createTextNode(total));
-        (cardKeys.total || []).forEach(key => writeCardCount(key, total));
+        (['codes:sustentação', 'codes:sust:total', 'codes:sustentacao', 'codes:sust']).forEach(key => writeCardCount(key, total));
+
+        // ⚠️ Importante: nada de brilho permanente aqui.
+        // Se quiser brilho no hover, deixe o CSS cuidar com :hover.
+        // Também não mexemos no “picked” aqui — isso fica a cargo do filtro/cli­que.
 
         return counters;
     }
+
+
 
     /* ============ HISTÓRICO DE ANDAMENTO (Sustentação) ============ */
     // >>> usa as rotas reais do backend:
@@ -1231,23 +1403,18 @@
             'sustPendente': 'pendente',
             'sustSuspenso': 'suspenso',
             'sustFechados': 'concluido',
-            'sustProducao': 'em producao'
-
+            'sustProducao': 'em producao' // se um dia existir subcard
         };
 
+        // Subcards (grid #codesKpisSustExtra)
         for (const id in map) {
             const numEl = document.getElementById(id);
             if (!numEl) continue;
 
-            // sobe para o container do card (aquele com data-card="codes:sust:*")
             const card = numEl.closest('[data-card^="codes:sust:"]') || numEl.parentElement;
-            if (!card) continue;
-
-            // evita múltiplos binds
-            if (card.__bound) continue;
+            if (!card || card.__bound) continue;
             card.__bound = true;
 
-            // acessibilidade + UX
             card.style.cursor = 'pointer';
             card.setAttribute('role', 'button');
             card.setAttribute('tabindex', '0');
@@ -1258,13 +1425,13 @@
             };
 
             card.addEventListener('click', run);
-            // permite Enter/Espaço ativarem também
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); run(e); }
             });
         }
-        // Card TOP “Em produção” (Home), se existir
-        const prodTop = document.querySelector('[data-card="codes:producao-top"]');
+
+        // TOP “Em Produção”
+        const prodTop = document.querySelector('#codesPage [data-card="codes:sust:em_producao"]');
         if (prodTop && !prodTop.__bound) {
             prodTop.__bound = true;
             prodTop.style.cursor = 'pointer';
@@ -1273,8 +1440,8 @@
 
             const runTop = (e) => {
                 e.preventDefault();
-                window.filterSustByStatus('em producao'); // usa o mesmo filtro normalizado
-                // se você quiser garantir que está na aba Sustentação:
+                window.filterSustByStatus('em producao'); // filtra e marca visual
+                // rola até a grade/tabela de Sustentação (opcional)
                 document.getElementById('codesSustentacaoWrapper')
                     ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             };
@@ -1284,8 +1451,8 @@
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); runTop(e); }
             });
         }
-
     }
+
 
 
     // tenta bind após o DOM estar pronto (e de novo em 300ms caso o HTML seja injetado dinamicamente)
@@ -1300,6 +1467,37 @@
         try { updateSustCards(sustRaw); } catch (e) { console.warn(e); }
         origEnsureCharts(list);
     };
+    // === COLAR (são novas) ===
+    function clearPickedVisuals() {
+        const scope = document.getElementById('codesPage') || document;
+        scope.querySelectorAll('.card-picked, .card-picked--amber').forEach(el => {
+            el.classList.remove('card-picked', 'card-picked--amber');
+        });
+    }
+
+    function markPickedCard(wantedKey) {
+        clearPickedVisuals();
+
+        const selMap = {
+            'a desenvolver': '#codesKpisSustExtra [data-card="codes:sust:adesenvolver"]',
+            'em desenvolvimento': '#codesKpisSustExtra [data-card="codes:sust:emdesenv"]',
+            'em homologacao': '#codesKpisSustExtra [data-card="codes:sust:homolog"]',
+            'em testes': '#codesKpisSustExtra [data-card="codes:sust:testes"]',
+            'pendente': '#codesKpisSustExtra [data-card="codes:sust:pendente"]',
+            'suspenso': '#codesKpisSustExtra [data-card="codes:sust:suspenso"]',
+            'concluido': '#codesKpisSustExtra [data-card="codes:sust:fechados"]',
+            'em producao': '#codesPage [data-card="codes:sust:em_producao"]'
+        };
+
+        const sel = selMap[wantedKey];
+        if (!sel) return;
+
+        const el = document.querySelector(sel);
+        if (!el) return;
+
+        // Seleção com barra lateral (tema âmbar para Sustentação)
+        el.classList.add('card-picked', 'card-picked--amber');
+    }
 
     // helper simples para main.js: mostra todos os chamados (sem filtro)
     window.showAllSust = function () { window.filterSustByStatus(''); };

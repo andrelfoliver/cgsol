@@ -165,6 +165,18 @@
       box-shadow: inherit;
       /* não troca a sombra quando recebe foco */
     }
+
+    /* Hover âmbar igual aos subcards para o TOP “Em Produção” */
+    #codesKpisTop [data-card="codes:sust:em_producao"]:hover {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
+    }
+
+    /* (opcional) foco por teclado com o mesmo realce */
+    #codesKpisTop [data-card="codes:sust:em_producao"]:focus-visible {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
+    }
   </style>
 
 
