@@ -1,0 +1,2810 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <title>SigSOL - Sistema de Gestão e Monitoramento da CGSOL</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+
+  <link rel="stylesheet" href="assets/css/style.css?v=2">
+  <style id="cardHiStyles">
+    /* base do destaque: glow suave + leve escala */
+    .card-hi {
+      position: relative;
+      transform: translateZ(0);
+      transition: box-shadow .25s ease, transform .15s ease, background .25s ease;
+      z-index: 0;
+      /* garante plano base */
+    }
+
+    .card-hi::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      pointer-events: none;
+      z-index: -1;
+      /* 👈 fica atrás do card */
+    }
+
+    /* Fábrica */
+    .card-hi--fabrica {
+      background: linear-gradient(180deg, #f8fbff, #fff);
+      box-shadow: 0 8px 28px rgba(21, 85, 214, .15);
+      transform: translateZ(0) scale(1.005);
+    }
+
+    .card-hi--fabrica:hover {
+      box-shadow: 0 14px 40px rgba(21, 85, 214, .22);
+      /* sombra mais forte no hover */
+    }
+
+    /* Sustentação */
+    .card-hi--sust {
+      background: linear-gradient(180deg, #fffaf0, #fff);
+      box-shadow: 0 8px 28px rgba(245, 158, 11, .18);
+      transform: translateZ(0) scale(1.005);
+    }
+
+    .card-hi--sust:hover {
+      box-shadow: 0 14px 40px rgba(245, 158, 11, .26);
+    }
+
+    /* barra lateral */
+    .card-hi--fabrica::before {
+      border-left: 6px solid #1555D6;
+    }
+
+    .card-hi--sust::before {
+      border-left: 6px solid #f59e0b;
+    }
+
+    /* cards clicáveis */
+    .card-pickable:focus {
+      outline: none;
+    }
+
+    .card-picked {
+      position: relative;
+      background: linear-gradient(180deg, #f8fbff, #fff);
+      box-shadow: 0 12px 28px rgba(59, 130, 246, .20), inset 0 0 0 1px rgba(59, 130, 246, .18);
+      transform: translateY(-1px);
+      transition: box-shadow .25s ease, transform .15s ease, background .25s ease;
+    }
+
+    .card-picked::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      /* barra lateral */
+      box-shadow: inset 6px 0 0 0 #3b82f6;
+      pointer-events: none;
+    }
+
+    /* hover consistente para todos os cards “pickables” */
+    .card-pickable:hover {
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .06);
+      transform: translateY(-1px);
+    }
+
+    /* === seleção (clique) com tema âmbar para Sustentação === */
+    .card-picked--amber {
+      position: relative;
+      background: linear-gradient(180deg, #fffaf0, #fff);
+      box-shadow: 0 12px 28px rgba(245, 158, 11, .22), inset 0 0 0 1px rgba(245, 158, 11, .22);
+      transform: translateY(-1px);
+      transition: box-shadow .25s ease, transform .15s ease, background .25s ease;
+    }
+
+    .card-picked--amber::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      box-shadow: inset 6px 0 0 0 #f59e0b;
+      /* barra lateral âmbar */
+      pointer-events: none;
+    }
+
+    /* ========= Card selecionado (picked) por contexto ========= */
+    /* FÁBRICA / DESENVOLVIMENTO (grid #codesKpisFabExtra) */
+    #codesKpisFabExtra .card-picked {
+      background: linear-gradient(180deg, #f8fbff, #fff);
+      box-shadow: 0 12px 28px rgba(59, 130, 246, .20),
+        inset 0 0 0 1px rgba(59, 130, 246, .18);
+    }
+
+    #codesKpisFabExtra .card-picked::after {
+      box-shadow: inset 6px 0 0 0 #3b82f6;
+      /* azul */
+    }
+
+    /* SUSTENTAÇÃO (grid #codesKpisSustExtra) */
+    #codesKpisSustExtra .card-picked {
+      background: linear-gradient(180deg, #fff9ec, #fff);
+      box-shadow: 0 12px 28px rgba(245, 158, 11, .22),
+        inset 0 0 0 1px rgba(245, 158, 11, .20);
+    }
+
+    #codesKpisSustExtra .card-picked::after {
+      box-shadow: inset 6px 0 0 0 #f59e0b;
+      /* amarelo/laranja */
+    }
+
+    /* (opcional) hover com cor coerente em cada grid */
+    #codesKpisFabExtra [data-card]:hover {
+      box-shadow: 0 10px 24px rgba(59, 130, 246, .16);
+    }
+
+    #codesKpisSustExtra [data-card]:hover {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18);
+    }
+
+    /* 1) Hover neutro nos subcards de DESENVOLVIMENTO (Fábrica) */
+    #codesKpisFabExtra [data-card]:hover {
+      /* era: rgba(59,130,246,.16) (azulado) */
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .08);
+    }
+
+    /* 2) Zera qualquer contorno/focus visual nos subcards (ambos os grids) */
+    #codesKpisFabExtra [data-card],
+    #codesKpisSustExtra [data-card] {
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+      /* iOS/Safari */
+    }
+
+    #codesKpisFabExtra [data-card]:focus,
+    #codesKpisFabExtra [data-card]:focus-visible,
+    #codesKpisSustExtra [data-card]:focus,
+    #codesKpisSustExtra [data-card]:focus-visible {
+      outline: none;
+      box-shadow: inherit;
+      /* não troca a sombra quando recebe foco */
+    }
+
+    /* Hover âmbar igual aos subcards para o TOP “Em Produção” */
+    #codesKpisTop [data-card="codes:sust:em_producao"]:hover {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
+    }
+
+    /* (opcional) foco por teclado com o mesmo realce */
+    #codesKpisTop [data-card="codes:sust:em_producao"]:focus-visible {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
+    }
+
+    /* — Subcards de DESENVOLVIMENTO (CODES) com brilho AZUL — */
+    #codesPage [data-card="codes:desenvolvimento"]:hover,
+    #codesPage [data-card="codes:em-andamento"]:hover,
+    #codesPage [data-card="codes:ativos"]:hover,
+    #codesPage [data-card="codes:fora-prazo"]:hover,
+    #codesPage [data-card="codes:planejado"]:hover,
+    #codesPage [data-card="codes:pausado"]:hover,
+    #codesPage [data-card="codes:concluido"]:hover,
+    #codesPage [data-card="codes:concluído"]:hover {
+      box-shadow: 0 12px 28px rgba(37, 99, 235, .22) !important;
+      transform: translateY(-1px);
+    }
+
+    /* Acessibilidade: foco via teclado */
+    #codesPage [data-card="codes:desenvolvimento"]:focus-visible,
+    #codesPage [data-card="codes:em-andamento"]:focus-visible,
+    #codesPage [data-card="codes:ativos"]:focus-visible,
+    #codesPage [data-card="codes:fora-prazo"]:focus-visible,
+    #codesPage [data-card="codes:planejado"]:focus-visible,
+    #codesPage [data-card="codes:pausado"]:focus-visible,
+    #codesPage [data-card="codes:concluido"]:focus-visible,
+    #codesPage [data-card="codes:concluído"]:focus-visible {
+      box-shadow: 0 12px 28px rgba(37, 99, 235, .22) !important;
+      transform: translateY(-1px);
+    }
+
+    /* transição suave (opcional) */
+    #codesPage [data-card^="codes:"] {
+      transition: box-shadow .18s ease, transform .18s ease;
+    }
+
+    /* — Barra azul lateral no "Fora do Prazo" APENAS quando estiver selecionado — */
+    /* Cobre tanto a aba #codesPage quanto o grid #codesKpisFabExtra */
+    #codesPage [data-card="codes:fora-prazo"],
+    #codesKpisFabExtra [data-card="codes:fora-prazo"] {
+      position: relative;
+      /* ancora o pseudo-elemento */
+      z-index: 0;
+    }
+
+    /* aparece só quando o JS marcou o card como selecionado (ring azul) */
+    #codesPage [data-card="codes:fora-prazo"].ring-blue-500::after,
+    #codesKpisFabExtra [data-card="codes:fora-prazo"].ring-blue-500::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      /* acompanha seus cantos */
+      pointer-events: none;
+      box-shadow: inset 6px 0 0 0 #2563eb;
+      /* a barrinha azul */
+    }
+
+    /* (opcional) se em algum fluxo você usar .card-picked, mantém o mesmo efeito */
+    #codesPage [data-card="codes:fora-prazo"].card-picked::after,
+    #codesKpisFabExtra [data-card="codes:fora-prazo"].card-picked::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: .75rem;
+      pointer-events: none;
+      box-shadow: inset 6px 0 0 0 #2563eb;
+    }
+
+    /* Hover âmbar para o CARD PAI “Sustentação” (mesmo efeito dos subcards) */
+    #codesPage [data-card="codes:sustentação"]:hover,
+    #codesPage [data-card="codes:sustentacao"]:hover,
+    #codesPage [data-card="codes:sust"]:hover,
+    #codesPage [data-card="codes:sust:total"]:hover {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
+    }
+
+    /* Acessibilidade: foco via teclado com o mesmo realce */
+    #codesPage [data-card="codes:sustentação"]:focus-visible,
+    #codesPage [data-card="codes:sustentacao"]:focus-visible,
+    #codesPage [data-card="codes:sust"]:focus-visible,
+    #codesPage [data-card="codes:sust:total"]:focus-visible {
+      box-shadow: 0 10px 24px rgba(245, 158, 11, .18) !important;
+      transform: translateY(-1px);
+    }
+  </style>
+
+
+
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- TOP BRAND -->
+  <div class="bg-[#0b1e3b] text-white text-xs">
+    <div class="container mx-auto px-4 h-8 flex items-center justify-between">
+      <span class="tracking-wide font-medium">MINISTÉRIO DO TRABALHO E EMPREGO</span>
+      <span class="opacity-80">CGSOL · Coordenação Geral de Soluções</span>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="bg-blue-900 text-white shadow">
+    <div class="container mx-auto px-4 py-3 flex items-center gap-4">
+      <!-- 1) LOGO à ESQUERDA -->
+      <img src="assets/img/mte-logo-azul-transp.png" alt="Governo Federal"
+        class="h-10 md:h-16 w-auto object-contain shrink-0" />
+
+      <!-- 2) TÍTULO (ocupa o meio e alinha à direita) -->
+      <div class="flex-1 text-center">
+        <span class="text-2xl font-extrabold tracking-tight">SIGSOL · Sistema de Gestão e Monitoramento</span>
+      </div>
+
+      <!-- 3) ADMIN no CANTO MAIS À DIREITA -->
+      <span class="text-blue-200 hidden md:inline whitespace-nowrap">👤 Admin</span>
+    </div>
+
+
+    <!-- NAV -->
+    <nav class="bg-white border-t border-blue-800/20">
+      <div class="container mx-auto px-4">
+        <div class="flex space-x-8">
+          <button class="nav-btn py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium"
+            onclick="showPage('home', this)">🏠 Visão Geral</button>
+          <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
+            onclick="showPage('codes', this)">💻 CODES</button>
+          <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
+            onclick="showPage('coset', this)">🏗️ COSET</button>
+          <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
+            onclick="showPage('cgod', this)">📊 CGOD</button>
+          <button class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
+            onclick="showPage('pdti', this)">📋 PDTI</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- MAIN -->
+  <main class="container mx-auto px-4 py-6">
+
+    <!-- ========================== HOME ========================== -->
+    <div class="page-content" id="homePage">
+      <div class="mb-8">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-1">Dashboard</h2>
+            <p class="text-gray-600">Visão consolidada das três subcoordenações</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-gray-500">Última atualização</p>
+            <p class="text-sm font-medium text-gray-700" id="lastUpdateTop"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs linha 1 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 mt-4">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">📋</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Total de Projetos</p>
+              <p class="text-2xl font-bold text-gray-900" id="totalProjetos">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="showPage('codes', document.querySelector('nav .nav-btn:nth-child(2)'))">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">💻</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">CODES</p>
+              <p class="text-2xl font-bold text-gray-900" id="projetosCodes">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="showPage('coset', document.querySelector('nav .nav-btn:nth-child(3)'))">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600">🏗️</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">COSET</p>
+              <p class="text-2xl font-bold text-gray-900" id="projetosCoset">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="showPage('cgod', document.querySelector('nav .nav-btn:nth-child(4)'))">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-orange-100 text-orange-600">📊</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">CGOD</p>
+              <p class="text-2xl font-bold text-gray-900" id="projetosCgod">0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs linha 2 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 mt-4">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">✅</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Concluídos no Mês</p>
+              <p class="text-2xl font-bold text-gray-900" id="kpiConcluidosMes">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Fora do Prazo</p>
+              <p class="text-2xl font-bold text-gray-900" id="kpiForaPrazo">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">📈</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Progresso Médio</p>
+              <p class="text-2xl font-bold text-gray-900" id="kpiProgressoMedio">0%</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🚀</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Projetos Ativos</p>
+              <p class="text-2xl font-bold text-gray-900" id="kpiProjetosAtivos">0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        <!-- Donut -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Projetos por Coordenação</h3>
+          <div class="chart-wrapper h-56">
+            <canvas id="coordenacaoChart"></canvas>
+          </div>
+          <div id="coordenacaoLegend" class="legend-bullets mt-3 flex justify-center gap-4"></div>
+        </div>
+
+        <!-- Barras -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Status dos Projetos</h3>
+          <div class="chart-wrapper">
+            <canvas id="statusChart"></canvas>
+          </div>
+        </div>
+
+
+
+      </div>
+
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribuição de Status</h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="statusDistribChart"></canvas>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Farol de entregas</h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="ragChart"></canvas>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Evolução Temporal</h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="timelineChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+
+
+      <!-- Cards por Coordenação -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Detalhamento por Coordenação</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          <!-- CODES -->
+          <div data-card="codes:desenvolvimento-home"
+            class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+            onclick="showFabrica()">
+
+            <div class="flex items-center mb-4">
+              <div class="p-2 rounded-lg bg-blue-100 text-blue-600 mr-3">💻</div>
+              <h4 class="text-lg font-semibold text-gray-800">CODES</h4>
+            </div>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg
+              cursor-pointer hover:bg-gray-100 transition-colors">
+                <div>
+                  <p class="font-medium text-gray-900">Desenvolvimento</p>
+                  <p class="text-xs text-gray-600">Em Andamento</p>
+                </div>
+                <span id="homeDevCount" class="text-lg font-bold text-blue-600">0</span>
+              </div>
+              <div
+                class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                onclick="showSustentacao(); event.stopPropagation();">
+                <div>
+                  <p class="font-medium text-gray-900">Sustentação</p>
+                  <p class="text-xs text-gray-600">Sistemas em produção</p>
+                </div>
+                <span id="homeSustentacaoCount" class="text-lg font-bold text-yellow-600">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- COSET -->
+          <div data-card="coset:infraestrutura"
+            class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+            onclick="filterProjects('coset','infraestrutura')">
+            <div class="flex items-center mb-4">
+              <div class="p-2 rounded-lg bg-purple-100 text-purple-600 mr-3">🏗️</div>
+              <h4 class="text-lg font-semibold text-gray-800">COSET</h4>
+            </div>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p class="font-medium text-gray-900">Infraestrutura</p>
+                  <p class="text-xs text-gray-600">Sistemas estruturantes</p>
+                </div>
+                <span class="text-lg font-bold text-purple-600">0</span>
+              </div>
+              <div data-card="coset:integracao"
+                class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                onclick="filterProjects('coset','integracao')">
+                <div>
+                  <p class="font-medium text-gray-900">Integração</p>
+                  <p class="text-xs text-gray-600">Conectividade entre sistemas</p>
+                </div>
+                <span class="text-lg font-bold text-green-600">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CGOD -->
+          <div data-card="cgod:analytics"
+            class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+            onclick="filterProjects('cgod','analytics')">
+            <div class="flex items-center mb-4">
+              <div class="p-2 rounded-lg bg-orange-100 text-orange-600 mr-3">📊</div>
+              <h4 class="text-lg font-semibold text-gray-800">CGOD</h4>
+            </div>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p class="font-medium text-gray-900">Analytics</p>
+                  <p class="text-xs text-gray-600">Dashboards e relatórios</p>
+                </div>
+                <span class="text-lg font-bold text-orange-600">0</span>
+              </div>
+              <div data-card="cgod:datalake"
+                class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                onclick="filterProjects('cgod','datalake')">
+                <div>
+                  <p class="font-medium text-gray-900">Data Lake</p>
+                  <p class="text-xs text-gray-600">Catálogos e metadados</p>
+                </div>
+                <span class="text-lg font-bold text-blue-600">0</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Projetos Recentes -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-gray-800">Projetos Recentes</h3>
+          <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
+            onclick="exportData('csv')">📊 Exportar CSV</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coordenação
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-progresso">
+                  Progresso
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-sprints">
+                  Sprints
+                </th>
+                <th class="px-6 py-3 text-left  text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável
+                </th>
+
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider col-actions">
+                  Ações</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200" id="projectsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /HOME -->
+
+    <!-- ========================== CODES ========================== -->
+    <div class="page-content hidden" id="codesPage">
+      <div class="mb-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">CODES</h2>
+            <p class="text-gray-600">Coordenação de Desenvolvimento e Arquitetura de Soluções</p>
+          </div>
+          <button onclick="syncSustentacao()" class="px-4 py-2 bg-green-600 text-white rounded">🔄 Carregar
+            Sustentação</button>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+            onclick="openNewProject('CODES')">➕ Novo Projeto</button>
+
+        </div>
+      </div>
+
+
+      <!-- KPIs CODES -->
+      <!-- TOP (fixo): sempre visível -->
+      <!-- KPIs CODES -->
+      <div id="codesKpisTop" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 mt-4">
+
+        <!-- Desenvolvimento (CODES) -->
+        <div data-card="codes:desenvolvimento"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="showFabrica()">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">💻</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Desenvolvimento</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sustentação -->
+        <div data-card="codes:sustentacao"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="showSustentacao()">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🔧</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Sustentação</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustentacaoCount">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Total de Projetos -->
+        <div data-card="codes:total" class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-gray-100 text-gray-600">📊</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Total de Projetos</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+        <!-- Em produção (TOP) — aparece só no modo Sustentação -->
+        <div data-card="codes:sust:em_producao"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🚀</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Produção</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustProducao" data-count>0</p>
+            </div>
+          </div>
+        </div>
+
+
+
+        <!-- Em andamento -->
+        <!-- Fora do Prazo (no TOP) -->
+        <div data-card="codes:fora-prazo" class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Fora do Prazo</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+
+
+      <!-- EXTRA (muda conforme o modo) -->
+      <!-- Fábrica: 4 cards -->
+      <!-- EXTRA (muda conforme o modo) -->
+      <!-- Fábrica: 4 cards -->
+      <div id="codesKpisFabExtra" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 mt-2">
+
+        <!-- Em andamento (agora no bloco extra da Fábrica) -->
+        <div data-card="codes:ativos" class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">🚀</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em andamento</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:planejado" class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-gray-100 text-gray-600">📅</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Planejado</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:pausado" class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600">⏸️</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Pausado</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:concluido" class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">✅</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Concluído</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sustentação: 8 cards (começa oculto) -->
+      <div id="codesKpisSustExtra"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 mb-4 mt-2 hidden">
+
+        <!-- Fora do Prazo (substitui o antigo "Total de Chamados") -->
+        <div data-card="codes:sust:fora-prazo"
+          class="bg-white rounded-lg shadow-md  p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 text-red-600">⏰</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Fora do Prazo</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustForaPrazo">0</p>
+            </div>
+          </div>
+        </div>
+
+
+        <div data-card="codes:sust:adesenvolver"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">📝</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">A Desenvolver</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustADevs">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:emdesenv"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">⚙️</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Dev.</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustEmDev">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:homolog"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🧪</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Homologação</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustHomolog">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:testes"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🔍</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Testes</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustTestes">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:pendente"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">⏳</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Pendente</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustPendente">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:suspenso"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">🛑</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Suspenso</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustSuspenso">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-card="codes:sust:fechados"
+          class=" bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-700">✅</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Fechados</p>
+              <p class="text-2xl font-bold text-gray-900" id="sustFechados">0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <script>
+        // alterna o modo e re-renderiza a página CODES
+        window.showSustentacao = function () {
+          window.__codesView = 'sustentacao';
+          showPage('codes', getNavButtonFor && getNavButtonFor('codes'));
+        };
+
+        // opcional: atalho pra voltar ao modo Fábrica
+        window.showFabrica = function () {
+          window.__codesView = 'fabrica';
+          // 👇 garante o hide imediato do card TOP “Em produção”
+          document.querySelector('#codesPage [data-card="codes:sust:em_producao"]')?.classList.add('hidden');
+          showPage('codes', getNavButtonFor && getNavButtonFor('codes'));
+        };
+
+      </script>
+
+
+      <!-- Gráficos CODES -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Gráfico Na Fábrica -->
+        <div id="codesSprintsWrapper" class="bg-white rounded-lg shadow-md p-6 hidden">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Sprints Concluídas por Projeto</h3>
+          <div class="h-80 flex items-center justify-center">
+            <canvas id="codesSprintsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico Internalização -->
+        <div id="codesInternWrapper" class="bg-white rounded-lg shadow-md p-6 hidden">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Prazo Previsto — Internalização</h3>
+          <div class="h-80">
+            <canvas id="codesInternChart"></canvas>
+          </div>
+          <div id="codesInternLegend" class="custom-legend text-xs text-gray-600 mt-2 flex justify-center gap-6"></div>
+        </div>
+
+      </div>
+
+      <!-- Gráfico Sustentação -->
+      <!-- Wrapper CODES -->
+      <div id="codesWrapper">
+
+        <!-- Sustentação -->
+        <div id="codesSustentacaoWrapper" class="mt-6">
+
+          <!-- TOPO: 2 gráficos lado a lado -->
+          <div class="grid lg:grid-cols-2 gap-6 mb-6 mt-4">
+            <div class="bg-white rounded-lg shadow p-6">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">Status dos Chamados</h3>
+              <div class="h-72">
+                <canvas id="sustStatusChart" class="w-full h-full"></canvas>
+              </div>
+              <div id="sustStatusLegend" class="mt-3 w-full flex flex-wrap items-center justify-center gap-4 text-sm">
+              </div>
+
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">Chamados por Projeto</h3>
+              <div class="h-72">
+                <canvas id="sustProjetosChart" class="w-full h-full"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div id="sustFilters" class="flex flex-wrap gap-3 mb-4">
+            <input id="fProjeto" class="border rounded px-3 py-2 text-sm" placeholder="Filtrar por Projeto">
+            <input id="fDev" class="border rounded px-3 py-2 text-sm" placeholder="Filtrar por Desenvolvedor">
+            <input id="fSolic" class="border rounded px-3 py-2 text-sm" placeholder="Filtrar por Solicitante">
+            <button id="fClear" class="px-3 py-2 text-sm rounded bg-gray-200 hover:bg-gray-300">Limpar</button>
+          </div>
+
+          <!-- LISTA: container independente dos gráficos -->
+          <div class="bg-white rounded-lg shadow mt-6">
+            <div class="p-6 border-b">
+              <h3 class="text-lg font-semibold text-gray-800">Chamados de Sustentação</h3>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Projeto</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Número</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Desenvolvedor</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Solicitante</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="sustentacaoTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+
+        <!-- Fábrica (tabela principal) — FORA do wrapper de Sustentação -->
+        <div id="tableView" class="bg-white rounded-lg shadow-md mt-6">
+          <div class="overflow-x-auto">
+            <table class="min-w-full table-auto">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Projeto</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Farol de entrega</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Progresso</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sprints</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Responsável</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="codesTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+
+
+      <!-- Modal de Sustentação -->
+      <div id="sustentacaoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+          <div class="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+            <h3 class="text-lg font-semibold mb-4">Novo Projeto de Sustentação</h3>
+            <form id="sustentacaoForm" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Nome do Projeto</label>
+                <input type="text" id="sustentacaoNome" class="w-full border rounded px-3 py-2" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Descrição</label>
+                <textarea id="sustentacaoDescricao" rows="3" class="w-full border rounded px-3 py-2"></textarea>
+              </div>
+              <div class="flex justify-end gap-3">
+                <button type="button" onclick="hideModal('sustentacaoModal')"
+                  class="px-4 py-2 border rounded-lg">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Salvar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- ✅ FECHA codesPage AQUI -->
+
+
+    <!-- ========================== COSET ========================== -->
+    <div class="page-content hidden" id="cosetPage">
+      <div class="mb-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">COSET</h2>
+            <p class="text-gray-600">Coordenação de Sistemas Estruturantes</p>
+          </div>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+            onclick="openNewProject('COSET')">➕ Novo Projeto</button>
+        </div>
+      </div>
+
+      <!-- KPIs COSET -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-4">
+        <div data-card="coset:sistemas-integrados"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('coset','sistemas-integrados')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">🔗</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Sistemas Integrados</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+        <div data-card="coset:modernizacao"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('coset','modernizacao')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">🔄</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Modernização</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+        <div data-card="coset:infraestrutura"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('coset','infraestrutura')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600">🏗️</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Infraestrutura</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+        <div data-card="coset:compliance"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('coset','compliance')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-orange-100 text-orange-600">✅</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Compliance</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Projetos COSET</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Farol de
+                  entrega</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progresso
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Responsável
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200" id="cosetTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /COSET -->
+
+
+    <!-- ========================== CGOD ========================== -->
+    <div class="page-content hidden" id="cgodPage">
+      <div class="mb-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">CGOD</h2>
+            <p class="text-gray-600">Coordenação de Governança de Dados</p>
+          </div>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+            onclick="openNewProject('CGOD')">➕ Novo Projeto</button>
+        </div>
+      </div>
+
+      <!-- KPIs CGOD -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-4">
+        <div data-card="cgod:catalogos"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('cgod','catalogos')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">📚</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Catálogos de Dados</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+        <div data-card="cgod:analytics"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('cgod','analytics')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">📊</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Analytics &amp; BI</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+        <div data-card="cgod:qualidade"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('cgod','qualidade')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600">🎯</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Qualidade de Dados</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+        <div data-card="cgod:governanca"
+          class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterProjects('cgod','governanca')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-orange-100 text-orange-600">🛡️</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Governança</p>
+              <p class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Projetos CGOD</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projeto
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Farol de
+                  entrega</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progresso
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Responsável
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200" id="cgodTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /CGOD -->
+
+
+    <!-- PDTI Page -->
+    <div id="pdtiPage" class="page-content hidden">
+      <div class="mb-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Plano Diretor de TI: 2025 - 2027</h2>
+            <p class="text-gray-600">Monitoramento das ações de Soluções Digitais</p>
+          </div>
+          <div class="flex space-x-3">
+            <button onclick="exportPDTI('excel')"
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">
+              📊 Exportar Excel
+            </button>
+            <button onclick="showPDTIModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+              ➕ Nova Ação
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs PDTI -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total -->
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterPDTIByStatus('')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">📋</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Total de Ações</p>
+              <p class="text-2xl font-bold text-gray-900" id="totalAcoes">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Concluídas -->
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterPDTIByStatus('Concluída')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">✅</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Concluídas</p>
+              <p class="text-2xl font-bold text-gray-900" id="acoesConcluidas">0</p>
+              <p class="text-xs text-green-600 font-medium">0%</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Em Andamento -->
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterPDTIByStatus('Em andamento')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">🔄</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Em Andamento</p>
+              <p class="text-2xl font-bold text-gray-900" id="acoesAndamento">0</p>
+              <p class="text-xs text-yellow-600 font-medium">0%</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Não Iniciadas -->
+        <div class="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onclick="filterPDTIByStatus('Não iniciada')">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 text-red-600">⏸️</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Não Iniciadas</p>
+              <p class="text-2xl font-bold text-gray-900" id="acoesNaoIniciadas">0</p>
+              <p class="text-xs text-red-600 font-medium">0%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Chart -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Progresso Geral do PDTI</h3>
+        <div class="w-full bg-gray-200 rounded-full h-6 mb-4">
+          <div id="pdtiProgressBar"
+            class="bg-gradient-to-r from-green-500 to-blue-500 h-6 rounded-full flex items-center justify-center text-white text-sm font-medium"
+            style="width: 0%">
+            0% Concluído
+          </div>
+        </div>
+      </div>
+      <!-- Novos Gráficos PDTI -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Donut por Tipo -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            Distribuição por Tipo
+          </h3>
+
+          <div class="h-72 flex items-center justify-center">
+            <canvas id="pdtiTipoChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Linha do Tempo Concluídas -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Evolução de Ações Concluídas</h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="pdtiTimelineChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <select id="pdtiStatusFilter" class="border border-gray-300 rounded-lg px-3 py-2" onchange="filterPDTI()">
+            <option value="">Todas as Situações</option>
+            <option value="Concluída">Concluída</option>
+            <option value="Em andamento">Em Andamento</option>
+            <option value="Não iniciada">Não Iniciada</option>
+            <option value="-">Sem Status</option>
+          </select>
+          <select id="pdtiTipoFilter" class="border border-gray-300 rounded-lg px-3 py-2" onchange="filterPDTI()">
+            <option value="">Todos os Tipos</option>
+            <option value="SDF">Soluções Digitais (SDF)</option>
+            <option value="SDD">Soluções de Dados (SDD)</option>
+            <option value="SDS">Soluções de Sistemas (SDS)</option>
+          </select>
+          <input type="text" id="pdtiSearchFilter" placeholder="Buscar por descrição..."
+            class="border border-gray-300 rounded-lg px-3 py-2" onkeyup="filterPDTI()">
+          <button onclick="clearPDTIFilters()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+            🔄 Limpar Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- PDTI Actions Table -->
+      <div class="bg-white rounded-lg shadow-md">
+        <div class="p-6 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-800">Ações do PDTI - Soluções Digitais</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onclick="sortPDTI('id')">
+                  ID AÇÃO ↕️
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onclick="sortPDTI('descricao')">
+                  DESCRIÇÃO ↕️
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onclick="sortPDTI('situacao')">
+                  SITUAÇÃO ↕️
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  TIPO
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  AÇÕES
+                </th>
+              </tr>
+            </thead>
+            <tbody id="pdtiTableBody" class="bg-white divide-y divide-gray-200">
+              <!-- Table content will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+  </main>
+
+  <!-- ========================== MODAIS ========================== -->
+  <!-- Project Modal -->
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="projectModal">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Novo Projeto</h3>
+            <button class="text-gray-400 hover:text-gray-600" onclick="hideModal('projectModal')">✕</button>
+          </div>
+          <form class="space-y-6" id="projectForm">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Nome do Projeto</label>
+                <input id="projectName" type="text"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required>
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Tipo do Projeto</label>
+                <select id="projectTipo"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required>
+                  <option value="">Selecione...</option>
+                  <option value="Sistema Web">Sistema Web</option>
+                  <option value="Chatbot IA">Chatbot IA</option>
+                  <option value="Sistema de Dados">Sistema de Dados</option>
+                  <option value="Dashboard">Dashboard</option>
+                  <option value="BI Dashboard">BI Dashboard</option>
+                  <option value="Infraestrutura">Infraestrutura</option>
+                  <option value="Sistema Integrado">Sistema Integrado</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Coordenação</label>
+                <select id="projectCoord"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required>
+                  <option value="">Selecione...</option>
+                  <option value="CODES">CODES</option>
+                  <option value="COSET">COSET</option>
+                  <option value="CGOD">CGOD</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Status</label>
+                <select id="projectStatus"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required>
+                  <option value="Planejado">Planejado</option>
+                  <option value="Em Andamento">Em Andamento</option>
+                  <option value="Em Risco">Em Risco</option>
+                  <option value="Concluído">Concluído</option>
+                  <option value="Pausado">Pausado</option>
+                  <option value="Sustentação">Sustentação</option>
+                </select>
+              </div>
+
+              <!-- Progresso -->
+              <div class="col-span-1 md:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Progresso (%)</label>
+                <div class="space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <input id="projectProgressoSlider" type="range" min="0" max="100" value="0"
+                    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    oninput="updateProgressDisplay()" />
+
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500">0%</span>
+                    <div class="flex items-center space-x-2">
+                      <span id="progressDisplay" class="text-lg font-bold text-blue-600">0%</span>
+                      <input id="projectProgresso" type="number" min="0" max="100" value="0"
+                        class="w-16 border border-gray-300 rounded px-2 py-1 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        oninput="updateProgressSlider()" />
+                    </div>
+                    <span class="text-sm text-gray-500">100%</span>
+                  </div>
+
+                  <!-- Mantido para o JS não quebrar, mas invisível -->
+                  <div id="progressBar" class="hidden"></div>
+                </div>
+              </div>
+
+
+              <!-- Campos CODES -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Total de Sprints</label>
+                <input id="projectTotalSprints" type="number" min="1"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Sprints Concluídas</label>
+                <input id="projectSprintsConcluidas" type="number" min="0"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div class="flex items-center space-x-2">
+                <input id="projectInternalizacao" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                <label for="projectInternalizacao" class="text-sm text-gray-700">
+                  Este projeto é de Internalização
+                </label>
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Responsável</label>
+                <input id="projectResponsavel" type="text"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Data de Início</label>
+                <input id="projectInicio" type="date"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Fim Previsto</label>
+                <input id="projectFim" type="date"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required>
+              </div>
+            </div>
+
+            <!-- Descrição -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição</label>
+              <textarea id="projectDescricao" rows="3"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required></textarea>
+            </div>
+
+            <!-- Outros campos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Orçamento (R$)</label>
+                <input id="projectOrcamento" type="number" min="0" step="0.01"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Equipe</label>
+                <input id="projectEquipe" type="text" placeholder="Nomes separados por vírgula"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Farol de entrega</label>
+                <select id="projectRag"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">Selecione...</option>
+                  <option value="Verde">Verde</option>
+                  <option value="Amarelo">Amarelo</option>
+                  <option value="Vermelho">Vermelho</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Riscos</label>
+                <textarea id="projectRisco" rows="2"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+              </div>
+            </div>
+
+            <!-- Botões -->
+            <div class="flex justify-end space-x-3 pt-4">
+              <button type="button"
+                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm"
+                onclick="hideModal('projectModal')">Cancelar</button>
+              <button id="submitProjectBtn" type="submit"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition">Salvar
+                Projeto</button>
+            </div>
+          </form>
+
+
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalhe do Projeto -->
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="projectDetailModal">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-900" id="detailProjectName">—</h3>
+            <button class="text-gray-400 hover:text-gray-600" onclick="hideModal('projectDetailModal')">✕</button>
+          </div>
+
+          <div class="mb-6">
+            <div class="bg-blue-50 rounded-lg p-4">
+              <h4 class="text-lg font-semibold text-blue-800" id="detailProjectType">—</h4>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-4">
+            <div class="bg-gray-50 rounded-lg p-4">
+              <h4 class="font-semibold text-gray-700 mb-2">Farol de entrega</h4>
+              <div class="w-full h-8 rounded flex items-center justify-center text-white font-medium rag-verde"
+                id="detailRagStatus">—</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <h4 class="font-semibold text-gray-700 mb-2">Prioridade</h4>
+              <div class="w-full h-8 rounded flex items-center justify-center text-white font-medium bg-gray-500"
+                id="detailPrioridade">—</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <h4 class="font-semibold text-gray-700 mb-2">Progresso</h4>
+              <div class="flex items-center">
+                <div class="flex-1 bg-gray-200 rounded-full h-4 mr-3">
+                  <div class="bg-blue-600 h-4 rounded-full" id="detailProgress" style="width:0%"></div>
+                </div>
+                <span class="text-sm font-medium text-gray-700" id="detailProgressText">—</span>
+              </div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <h4 class="font-semibold text-gray-700 mb-2">Sprints</h4>
+              <p class="text-2xl font-bold text-blue-600" id="detailSprints">—</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="space-y-6">
+              <div class="bg-white border rounded-lg p-4">
+                <h4 class="font-semibold text-gray-700 mb-3">Informações do Projeto</h4>
+                <div class="space-y-2 text-sm">
+                  <p><span class="font-medium">Coordenação:</span> <span id="detailCoordenacao">—</span></p>
+                  <p><span class="font-medium">Responsável:</span> <span id="detailResponsavel">—</span></p>
+                  <p><span class="font-medium">Status:</span> <span id="detailStatus">—</span></p>
+                  <p><span class="font-medium">Início:</span> <span id="detailInicio">—</span></p>
+                  <p><span class="font-medium">Fim Previsto:</span> <span id="detailFim">—</span></p>
+                </div>
+              </div>
+              <div class="bg-white border rounded-lg p-4">
+                <h4 class="font-semibold text-gray-700 mb-3">Equipe do Projeto</h4>
+                <div class="space-y-2 text-sm" id="detailEquipe"></div>
+              </div>
+            </div>
+            <div class="space-y-6">
+              <div class="bg-white border rounded-lg p-4">
+                <h4 class="font-semibold text-gray-700 mb-3">Orçamento</h4>
+                <div class="space-y-3">
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium">Orçamento Total:</span>
+                    <span class="text-lg font-bold text-blue-600" id="detailOrcamento">—</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-green-500 h-3 rounded-full" id="detailOrcamentoProgress" style="width:0%"></div>
+                  </div>
+                  <div class="flex justify-between text-xs text-gray-600">
+                    <span>Executado</span><span>Disponível</span>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white border rounded-lg p-4">
+                <h4 class="font-semibold text-gray-700 mb-3">Descrição</h4>
+                <p class="text-sm text-gray-600" id="detailDescricao">—</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white border rounded-lg p-4">
+            <h4 class="font-semibold text-gray-700 mb-3">Riscos e Dependências</h4>
+            <div class="text-sm text-gray-600" id="detailRiscos">—</div>
+          </div>
+          <div class="bg-white border rounded-lg p-4 mt-6">
+            <h4 class="font-semibold text-gray-700 mb-3">Histórico de Andamento</h4>
+            <div id="detailAndamentos" class="space-y-2 text-sm text-gray-600">
+              <p>Nenhum andamento registrado.</p>
+            </div>
+            <div class="mt-3 flex gap-2">
+              <input id="newAndamento" type="text" placeholder="Descreva andamento..."
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2" />
+              <button onclick="addAndamento()" class="px-4 py-2 bg-blue-600 text-white rounded-lg">➕</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDTI Action Modal -->
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="pdtiActionModal">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Nova Ação PDTI</h3>
+            <button class="text-gray-400 hover:text-gray-600" onclick="hideModal('pdtiActionModal')">✕</button>
+          </div>
+          <form class="space-y-4" id="pdtiActionForm">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ID da Ação</label>
+              <input class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionId" type="text"
+                placeholder="Ex: AC.SDF.46" required />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+              <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionDesc" rows="3"
+                placeholder="Descreva a ação..." required></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Situação</label>
+              <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionSituacao" required>
+                <option value="">Selecione...</option>
+                <option value="Não iniciada">Não Iniciada</option>
+                <option value="Em andamento">Em Andamento</option>
+                <option value="Concluída">Concluída</option>
+                <option value="-">Sem Status</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+              <select class="w-full border border-gray-300 rounded-lg px-3 py-2" id="pdtiActionTipo" required>
+                <option value="">Selecione...</option>
+                <option value="SDF">Soluções Digitais (SDF)</option>
+                <option value="SDD">Soluções de Dados (SDD)</option>
+                <option value="SDS">Soluções de Sistemas (SDS)</option>
+              </select>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4">
+              <button type="button" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                onclick="hideModal('pdtiActionModal')">Cancelar</button>
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar
+                Ação</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 🔁 Modal genérico de confirmação (único!) -->
+  <div id="confirmModal" class="fixed inset-0 z-[1000] hidden" role="dialog" aria-modal="true"
+    aria-labelledby="confirmTitle">
+    <div class="absolute inset-0 bg-black/50"></div>
+    <div class="relative mx-auto max-w-md mt-24 bg-white rounded-xl shadow-2xl overflow-hidden">
+      <!-- barra de topo: cor será ajustada via JS -->
+      <div id="confirmBar" class="h-1 bg-blue-600"></div>
+
+      <div class="p-6">
+        <div class="flex items-start gap-3">
+          <div id="confirmIcon" class="text-2xl">❓</div>
+          <div class="flex-1">
+            <h4 id="confirmTitle" class="text-lg font-semibold text-gray-900">Confirmar ação</h4>
+            <p id="confirmMessage" class="text-sm text-gray-600 mt-1">Tem certeza?</p>
+          </div>
+          <button class="text-gray-400 hover:text-gray-600" onclick="window.cancelDelete()"
+            aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-3">
+          <button id="confirmCancel" type="button"
+            class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+            onclick="window.cancelDelete()">Cancelar</button>
+          <button id="confirmPrimary" type="button"
+            class="px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+            onclick="window.confirmDelete()">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- FOOTER -->
+  <footer class="mt-10 text-blue-100 bg-gradient-to-br from-blue-900 to-blue-950" role="contentinfo">
+    <div class="container mx-auto px-4 py-10">
+      <div class="md:flex md:divide-x md:divide-blue-800">
+        <section class="md:w-5/12 md:pr-8 mb-8 md:mb-0">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="h-9 w-9 rounded bg-blue-800/60 grid place-items-center text-xl">⚙️</div>
+            <div>
+              <h4 class="text-sm tracking-widest font-semibold text-blue-200">CGSOL • MTE</h4>
+              <p class="text-xl font-bold leading-tight text-white">Coordenação Geral de Soluções</p>
+            </div>
+          </div>
+          <p class="text-sm text-blue-200/90 leading-relaxed">
+            Painel unificado de projetos e indicadores das coordenações CODES, COSET e CGOD.
+          </p>
+        </section>
+
+        <nav class="md:w-3/12 md:px-8 mb-8 md:mb-0">
+          <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Navegação</h5>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#" onclick="showPage('home',  getNavButtonFor && getNavButtonFor('home'))"
+                class="group inline-flex items-center gap-2 hover:text-white"><span
+                  class="opacity-60 group-hover:opacity-100">Visão Geral</span><span
+                  class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
+            <li><a href="#" onclick="showPage('codes', getNavButtonFor && getNavButtonFor('codes'))"
+                class="group inline-flex items-center gap-2 hover:text-white"><span
+                  class="opacity-60 group-hover:opacity-100">CODES</span><span
+                  class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
+            <li><a href="#" onclick="showPage('coset', getNavButtonFor && getNavButtonFor('coset'))"
+                class="group inline-flex items-center gap-2 hover:text-white"><span
+                  class="opacity-60 group-hover:opacity-100">COSET</span><span
+                  class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
+            <li><a href="#" onclick="showPage('cgod',  getNavButtonFor && getNavButtonFor('cgod'))"
+                class="group inline-flex items-center gap-2 hover:text-white"><span
+                  class="opacity-60 group-hover:opacity-100">CGOD</span><span
+                  class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
+            <li><a href="#" onclick="showPage('pdti',  getNavButtonFor && getNavButtonFor('pdti'))"
+                class="group inline-flex items-center gap-2 hover:text-white"><span
+                  class="opacity-60 group-hover:opacity-100">PDTI</span><span
+                  class="text-xs opacity-40 group-hover:opacity-80">→</span></a></li>
+          </ul>
+        </nav>
+
+        <section class="md:w-2/12 md:px-8 mb-8 md:mb-0">
+          <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Contato</h5>
+          <ul class="space-y-2 text-sm">
+            <li class="opacity-80 block max-w-full truncate" title="atendimento.cgsol@trabalho.gov.br">
+              <a href="mailto:atendimento.cgsol@trabalho.gov.br" class="hover:underline">
+                atendimento.cgsol@trabalho.gov.br
+              </a>
+            </li>
+
+            <li class="opacity-80">Seg–Sex • 9h–18h</li>
+          </ul>
+        </section>
+
+        <section class="md:w-2/12 md:pl-8">
+          <h5 class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-3">Status</h5>
+          <p class="text-sm opacity-80">
+            Última atualização:<br>
+            <span id="lastUpdateFooter" class="font-semibold text-white">—</span>
+          </p>
+          <button type="button"
+            class="mt-4 text-sm inline-flex items-center gap-2 px-3 py-2 rounded border border-blue-800/60 hover:border-blue-700 hover:bg-blue-900/30 transition"
+            onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" aria-label="Voltar ao topo">↑ Voltar ao
+            topo</button>
+        </section>
+      </div>
+    </div>
+
+    <div class="border-t border-blue-800/60">
+      <div
+        class="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between text-xs text-blue-300">
+        <p>© <span id="footerYear"></span> Ministério do Trabalho e Emprego — CGSOL</p>
+        <ul class="flex items-center gap-4 mt-2 md:mt-0">
+          <li><a href="#" class="hover:text-white">Acessibilidade</a></li>
+          <li><a href="#" class="hover:text-white">Privacidade</a></li>
+          <li><a href="#" class="hover:text-white">LGPD</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+  <!-- NOTIFY MODAL -->
+  <div id="notifyModal" class="fixed inset-0 z-[999] hidden">
+    <div class="absolute inset-0 bg-black/50"></div>
+    <div class="relative mx-auto max-w-md mt-24 bg-white rounded-xl shadow-2xl overflow-hidden">
+      <div id="notifyBar" class="h-1 bg-blue-600"></div>
+      <div class="p-5">
+        <div class="flex items-start gap-3">
+          <div id="notifyIcon" class="text-2xl">ℹ️</div>
+          <div class="flex-1">
+            <h4 id="notifyTitle" class="text-lg font-semibold text-gray-900">Aviso</h4>
+            <p id="notifyMessage" class="text-sm text-gray-600 mt-1">...</p>
+          </div>
+          <button class="text-gray-400 hover:text-gray-600" onclick="window.hideNotify()">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal PDTI -->
+  <div id="pdtiModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
+      <h3 class="text-xl font-semibold mb-4">Nova Ação PDTI</h3>
+      <form id="pdtiForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ID da Ação</label>
+          <input id="pdtiId" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+          <textarea id="pdtiDescricao" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+            required></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Situação</label>
+            <select id="pdtiSituacao" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
+              <option value="Não iniciada">Não iniciada</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Concluída">Concluída</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+            <select id="pdtiTipo" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
+              <option value="SDF">Soluções Digitais</option>
+              <option value="SDD">Soluções de Dados</option>
+              <option value="SDS">Soluções de Sistemas</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="hidePDTIModal()"
+            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancelar</button>
+          <button id="submitPDTIBtn" type="submit"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar Ação</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script>
+    // ✅ Filtra por coordenação e (opcional) categoria do card
+    window.filterProjects = function (coord, sub) {
+      const goto = (pid) => showPage(pid, (typeof getNavButtonFor === 'function') && getNavButtonFor(pid));
+      const c = String(coord || '').toLowerCase();
+      const s = String(sub || '').toLowerCase();
+
+      // guarda filtro global que as tabelas vão usar
+      window.__tableFilter = { coord: c, categoria: s };
+
+      if (c === 'codes') {
+        // Alterna a visão da CODES
+        window.__codesView = (s === 'sustentacao') ? 'sustentacao' : 'fabrica';
+        goto('codes');
+
+        // destaca após a troca de página
+        setTimeout(() => {
+          if (typeof window.setCodesCardHighlight === 'function') {
+            window.setCodesCardHighlight(window.__codesView === 'sustentacao' ? 'sust' : 'fabrica');
+          }
+          // foca na tabela/grids
+          document.getElementById(window.__codesView === 'sustentacao' ? 'codesSustentacaoWrapper' : 'tableView')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0);
+        return;
+      }
+
+      if (c === 'coset') {
+        goto('coset'); setTimeout(() => {
+          document.getElementById('cosetPage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0); return;
+      }
+
+      if (c === 'cgod') {
+        goto('cgod'); setTimeout(() => {
+          document.getElementById('cgodPage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0); return;
+      }
+
+      goto('home'); // fallback
+    };
+  </script>
+
+
+  <!-- HELPERS + NAV -->
+  <script>
+    const NAV_INDEX = { home: 1, codes: 2, coset: 3, cgod: 4, pdti: 5 };
+    window.__codesView = 'fabrica'; // 'fabrica' | 'sustentacao'
+
+    function getNavButtonFor(page) {
+      const idx = NAV_INDEX[page] || 1;
+      return document.querySelector(`nav .nav-btn:nth-child(${idx})`);
+    }
+
+    function showPage(pageId, el) {
+      // 1) Aceita 'home' ou 'homePage'
+      const pid = pageId?.endsWith('Page') ? pageId : (pageId + 'Page');
+
+      // 2) Esconde todas e mostra a alvo
+      document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+      const target = document.getElementById(pid);
+      if (target) target.classList.remove('hidden');
+
+      // 3) Se não veio botão, deduz automaticamente
+      if (!el && typeof getNavButtonFor === 'function') {
+        const key = pageId?.replace(/Page$/, '');
+        el = getNavButtonFor(key);
+      }
+
+      // 4) Normaliza TODOS os botões do nav antes de ativar um
+      const navBtns = document.querySelectorAll('nav .nav-btn');
+      navBtns.forEach(btn => {
+        btn.classList.remove('border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent');
+
+        // remove cinzas possivelmente acumuladas
+        btn.classList.remove('text-gray-900', 'text-gray-800', 'text-gray-700', 'text-gray-600', 'text-gray-500', 'text-gray-400');
+        btn.classList.add('text-gray-600');
+      });
+
+      // 5) Marca o ativo (se houver)
+      if (el && el.classList) {
+        el.classList.remove('border-transparent', 'text-gray-600');
+        el.classList.add('border-blue-500', 'text-blue-600');
+      }
+
+      // 6) Redesenho seguro (seu código original, sem mudanças de lógica)
+      const tryRedraw = () => {
+        if (!window.__appsReady) window.__appsReady = { tries: 0 };
+        if (window.__appsReady.tries >= 4) window.__appsReady.tries = 0;
+        window.__appsReady.tries++;
+
+        try {
+          const data = Array.isArray(window.cacheProjetos) ? window.cacheProjetos : [];
+
+          const shortId = pid.replace(/Page$/, '');
+
+          // HOME
+          if (shortId === 'home') {
+            if (typeof drawCharts === 'function' && data.length) drawCharts(data);
+            try { chartCoordenacao?.resize?.(); chartCoordenacao?.update?.(); } catch { }
+            try { chartStatus?.resize?.(); chartStatus?.update?.(); } catch { }
+            try { chartStatusDistrib?.resize?.(); chartStatusDistrib?.update?.(); } catch { }
+            try { chartRag?.resize?.(); chartRag?.update?.(); } catch { }
+            try { chartTimeline?.resize?.(); chartTimeline?.update?.(); } catch { }
+          }
+
+          // CODES
+          if (shortId === 'codes') {
+            const isSust = (window.__codesView === 'sustentacao');
+            // 👇 força o toggle do card "Em produção (TOP)"
+            const prodTop = document.querySelector('#codesPage [data-card="codes:sust:em_producao"]');
+            if (prodTop) prodTop.classList.toggle('hidden', !isSust);
+            const sustWrap = document.getElementById('codesSustentacaoWrapper');
+            const tableView = document.getElementById('tableView');
+            const sprintsWrap = document.getElementById('codesSprintsWrapper');
+            const internWrap = document.getElementById('codesInternWrapper');
+            const fabExtra = document.getElementById('codesKpisFabExtra');
+            const sustExtra = document.getElementById('codesKpisSustExtra');
+
+            if (isSust) {
+              sustWrap?.classList.remove('hidden');
+              tableView?.classList.add('hidden');
+              sprintsWrap?.classList.add('hidden');
+              internWrap?.classList.add('hidden');
+              fabExtra?.classList.add('hidden');
+              sustExtra?.classList.remove('hidden');
+              if (typeof loadSustentacao === 'function') setTimeout(() => loadSustentacao(), 0);
+            } else {
+              sustWrap?.classList.add('hidden');
+              tableView?.classList.remove('hidden');
+              sprintsWrap?.classList.remove('hidden');
+              internWrap?.classList.remove('hidden');
+              sustExtra?.classList.add('hidden');
+              fabExtra?.classList.remove('hidden');
+              if (typeof drawCodesSprintsChart === 'function' && data.length) drawCodesSprintsChart(data);
+              if (typeof drawCodesInternChart === 'function' && data.length) drawCodesInternChart(data);
+            }
+
+            if (typeof window.setCodesCardHighlight === 'function') {
+              window.setCodesCardHighlight(isSust ? 'sust' : 'fabrica');
+            }
+          }
+
+          // COSET
+          if (shortId === 'coset') {
+            if (typeof renderAllCoordTables === 'function') renderAllCoordTables(data);
+            else {
+              const tbody = document.getElementById('cosetTableBody');
+              if (tbody && data.length) {
+                tbody.innerHTML = data
+                  .filter(p => (p.coordenacao || '').toString().toLowerCase().includes('coset'))
+                  .map(p => `<tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
+                </tr>`).join('');
+              }
+            }
+            if (typeof drawCosetTiposChart === 'function') drawCosetTiposChart(data);
+            try { chartCoset?.resize?.(); chartCoset?.update?.(); } catch { }
+          }
+
+          // CGOD
+          if (shortId === 'cgod') {
+            if (typeof renderAllCoordTables === 'function') renderAllCoordTables(data);
+            else {
+              const tbody = document.getElementById('cgodTableBody');
+              if (tbody && data.length) {
+                tbody.innerHTML = data
+                  .filter(p => (p.coordenacao || '').toString().toLowerCase().includes('cgod'))
+                  .map(p => `<tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.nome || p.projeto || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.status || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.rag || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.progresso || 0}%</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.responsavel || '—'}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
+                </tr>`).join('');
+              }
+            }
+            if (typeof drawCgodChart === 'function') drawCgodChart(data);
+            try { chartCgod?.resize?.(); chartCgod?.update?.(); } catch { }
+          }
+
+          // PDTI
+          if (shortId === 'pdti') {
+            if (typeof loadPDTITable === 'function') loadPDTITable();
+            if (typeof filterPDTI === 'function') filterPDTI();
+            if (typeof renderPDTICharts === 'function') renderPDTICharts();
+            if (typeof updatePDTIProgress === 'function') updatePDTIProgress();
+            try { chartPdtiTipo?.resize?.(); chartPdtiTipo?.update?.(); } catch { }
+            try { chartPdtiTimeline?.resize?.(); chartPdtiTimeline?.update?.(); } catch { }
+          }
+
+          if (typeof updateKPIs === 'function') updateKPIs(data);
+          if (typeof renderRecentTable === 'function') renderRecentTable(data);
+
+          window.__appsReady.tries = 0;
+        } catch (err) {
+          console.warn('Erro ao redesenhar charts em showPage:', err);
+          if (window.__appsReady.tries < 4) setTimeout(tryRedraw, 150);
+        }
+      };
+      setTimeout(tryRedraw, 80);
+    }
+    function hideModal(id) { const el = document.getElementById(id); if (el) el.classList.add('hidden'); }
+    window.showModal = function (id) { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); };
+    window.hideNotify = function () { const el = document.getElementById('notifyModal'); if (el) el.classList.add('hidden'); };
+
+    function updateProgressDisplay() {
+      const slider = document.getElementById('projectProgressoSlider');
+      const display = document.getElementById('progressDisplay');
+      const input = document.getElementById('projectProgresso');
+      const bar = document.getElementById('progressBar');
+      const value = Number(slider?.value) || 0;
+      display.textContent = value + '%';
+      if (input) input.value = value;
+      if (bar) bar.style.width = value + '%';
+      const pct = (value / (slider?.max || 100)) * 100;
+      if (slider) slider.style.background = `linear-gradient(to right,#3b82f6 0%,#3b82f6 ${pct}%,#e5e7eb ${pct}%,#e5e7eb 100%)`;
+    }
+
+    function updateProgressSlider() {
+      const input = document.getElementById('projectProgresso');
+      const slider = document.getElementById('projectProgressoSlider');
+      const display = document.getElementById('progressDisplay');
+      const bar = document.getElementById('progressBar');
+      let value = parseInt(input?.value) || 0;
+      if (value < 0) value = 0; if (value > 100) value = 100;
+      if (input) input.value = value; if (slider) slider.value = value; if (display) display.textContent = value + '%';
+      if (bar) bar.style.width = value + '%';
+      const pct = (value / (slider?.max || 100)) * 100;
+      if (slider) slider.style.background = `linear-gradient(to right,#3b82f6 0%,#3b82f6 ${pct}%,#e5e7eb ${pct}%,#e5e7eb 100%)`;
+    }
+
+    // Placeholders
+    function sortTable() { alert('Ordenação será implementada.'); }
+    function exportData(fmt) { alert('Exportação ' + fmt.toUpperCase() + ' será implementada.'); }
+    function exportPDTI(fmt) { alert('Exportação PDTI ' + fmt.toUpperCase() + ' será implementada.'); }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const firstBtn = document.querySelector('nav .nav-btn:first-child');
+      showPage('home', firstBtn);
+
+      // garante o visual correto na primeira ida à CODES
+      if (typeof window.setCodesCardHighlight === 'function') {
+        window.setCodesCardHighlight(window.__codesView === 'sustentacao' ? 'sust' : 'fabrica');
+      }
+    });
+  </script>
+
+
+
+
+  <script>
+    // Garante que todas as páginas (#homePage, #codesPage, #cosetPage, #cgodPage, #pdtiPage)
+    // sejam filhas diretas de <main>. Isso corrige casos de aninhamento acidental.
+    (function ensurePageSiblings() {
+      const main = document.querySelector('main.container') || document.querySelector('main');
+      if (!main) return;
+      ['home', 'codes', 'coset', 'cgod', 'pdti'].forEach(id => {
+        const page = document.getElementById(id + 'Page');
+        if (page && page.parentElement !== main) {
+          main.appendChild(page); // move para ser filho direto de <main>
+        }
+      });
+    })();
+
+    // Opcional: chame no começo do showPage para garantir em cada clique
+    (function wrapShowPageOnce() {
+      if (window.__showPageWrapped) return;
+      window.__showPageWrapped = true;
+      const _orig = window.showPage;
+      window.showPage = function (pageId, el) {
+        // garante estrutura correta antes de mostrar
+        (function ensurePageSiblings() {
+          const main = document.querySelector('main.container') || document.querySelector('main');
+          if (!main) return;
+          ['home', 'codes', 'coset', 'cgod', 'pdti'].forEach(id => {
+            const page = document.getElementById(id + 'Page');
+            if (page && page.parentElement !== main) main.appendChild(page);
+          });
+        })();
+        return _orig(pageId, el);
+      };
+    })();
+  </script>
+
+
+  <script>
+    // Mapeia "sub" dos cards para tipos/padrões de busca
+    function matchesCategoria(p, coord, sub) {
+      if (!sub) return true; // sem subcategoria = somente coordenação
+      const nome = (p.nome || p.projeto || '').toLowerCase();
+      const desc = (p.descricao || '').toLowerCase();
+      const tipo = (p.tipo || p.projectTipo || p['tipo do projeto'] || '').toLowerCase();
+      const txt = nome + ' ' + desc + ' ' + tipo;
+
+      if (coord === 'coset') {
+        if (sub === 'infraestrutura') return /infraestrutura/.test(txt);
+        if (sub === 'integracao' || sub === 'sistemas-integrados') return /(integra(ç|c)ão|integrad[oa])/.test(txt) || /sistema\s+integrado/.test(txt);
+        if (sub === 'modernizacao') return /moderniza/.test(txt);
+        if (sub === 'compliance') return /(compliance|conformidade|lgpd)/.test(txt);
+        return true;
+      }
+
+      if (coord === 'cgod') {
+        if (sub === 'catalogos') return /(cat[aá]logo|cat[aá]logos|metadado|sistema de dados)/.test(txt);
+        if (sub === 'analytics') return /(analytics|bi\b|dashboard)/.test(txt);
+        if (sub === 'qualidade') return /(qualidade|qualidade de dado[s]?)/.test(txt);
+        if (sub === 'governanca') return /(governan[çc]a|lgpd|seguran[çc]a)/.test(txt);
+        return true;
+      }
+
+      // CODES (extra, caso queira usar no futuro)
+      if (coord === 'codes') {
+        if (sub === 'desenvolvimento') return !/sustenta(ç|c)[aã]o/.test(txt);
+        if (sub === 'sustentacao') return /sustenta(ç|c)[aã]o/.test(txt);
+        return true;
+      }
+
+      return true;
+    }
+
+    // Mostra um "badge" de filtro ativo (opcional)
+    function renderFiltroBadge(tbodyEl, label) {
+      if (!tbodyEl || !label) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+      <td colspan="6" class="px-6 py-3 bg-blue-50 text-sm text-blue-800">
+        Filtro ativo: <strong>${label}</strong>
+        <button class="ml-2 text-blue-700 underline" onclick="(function(){
+          window.__tableFilter = { coord: (window.__tableFilter?.coord || ''), categoria: '' };
+          if (typeof renderAllCoordTables === 'function') renderAllCoordTables(window.cacheProjetos || []);
+        })()">limpar</button>
+      </td>`;
+      tbodyEl.prepend(tr);
+    }
+  </script>
+
+  <script>
+    /* ==== Espelha o número de Sustentação (CODES -> HOME) ==== */
+
+    (function () {
+      // Localiza (ou cria) a referência ao span do número na HOME
+      function getHomeSustEl() {
+        // 1) Se já tiver id, usa
+        let el = document.getElementById('homeSustentacaoCount');
+        if (el) return el;
+
+        // 2) Encontra o bloco CODES na HOME (o cartão grande “CODES”)
+        const codesHomeCard = document.querySelector(
+          '#homePage [data-card="codes:desenvolvimento-home"]'
+        );
+        if (!codesHomeCard) return null;
+
+        // 3) Dentro dele, acha a linha que tem o onclick para "sustentacao"
+        const sustRow = codesHomeCard.querySelector(
+          '[onclick*="sustentacao"]'
+        );
+        if (!sustRow) return null;
+
+        // 4) O número é o <span> mais “forte” (o da direita)
+        el = sustRow.querySelector('span.text-lg, span.font-bold, span');
+        if (el) {
+          el.id = 'homeSustentacaoCount'; // cria id p/ facilitar próximas execuções
+          return el;
+        }
+        return null;
+      }
+
+      // Fonte: número exibido no topo da aba CODES
+      function getCodesSustEl() {
+        return document.getElementById('sustentacaoCount');
+      }
+
+      // Copia o texto (ex.: "12") da CODES -> HOME
+      function syncSustCount() {
+        const src = getCodesSustEl();
+        const dst = getHomeSustEl();
+        if (!src || !dst) return;
+
+        // Normaliza (tira espaços) e aplica
+        const val = (src.textContent || '0').trim();
+        if (dst.textContent !== val) dst.textContent = val;
+      }
+
+      // Observa mudanças no #sustentacaoCount (quando sua lógica atualizar)
+      function attachObserver() {
+        const src = getCodesSustEl();
+        if (!src || window.__sustMirrorObs) return;
+
+        const obs = new MutationObserver(syncSustCount);
+        obs.observe(src, { characterData: true, childList: true, subtree: true });
+        window.__sustMirrorObs = obs;
+      }
+
+      // Dispara em navegação entre abas (caso você troque para CODES e o número mude)
+      function hookShowPage() {
+        if (window.__showPageHooked) return;
+        window.__showPageHooked = true;
+
+        const orig = window.showPage;
+        if (typeof orig === 'function') {
+          window.showPage = function (pageId, el) {
+            const r = orig.apply(this, arguments);
+            // dá um micro tempo para o DOM da página alvo montar
+            setTimeout(() => { attachObserver(); syncSustCount(); }, 50);
+            return r;
+          };
+        }
+      }
+
+      // Integra com sua função já existente (se houver)
+      const prevUpdateCodesTotals = window.updateCodesTotals;
+      window.updateCodesTotals = function () {
+        try { if (typeof prevUpdateCodesTotals === 'function') prevUpdateCodesTotals(); }
+        finally { attachObserver(); syncSustCount(); }
+      };
+
+      // Primeira carga
+      document.addEventListener('DOMContentLoaded', () => {
+        hookShowPage();
+        // roda algumas tentativas rápidas para pegar quando os cards carregam
+        let tries = 0;
+        const t = setInterval(() => {
+          tries++;
+          attachObserver();
+          syncSustCount();
+          if (tries >= 12 || (getCodesSustEl() && getHomeSustEl())) clearInterval(t);
+        }, 120);
+      });
+    })();
+  </script>
+  <!-- ... fim do script de “Espelha Sustentação” -->
+  </script>
+
+  <!-- ⬇️ COLE ESTE BLOCO AQUI -->
+  <script>
+    (function () {
+      function computeHomeDevCount(data) {
+        if (!Array.isArray(data)) return 0;
+        return data.filter(p => {
+          const coord = (p.coordenacao || '').toLowerCase();
+          const status = (p.status || '').toLowerCase();
+          const nomeDescTipo = [
+            p.nome || p.projeto || '',
+            p.descricao || '',
+            p.tipo || p.projectTipo || p['tipo do projeto'] || ''
+          ].join(' ').toLowerCase();
+
+          const isCodes = coord.includes('codes');
+          const isSust = /sustenta(ç|c)[aã]o/.test(nomeDescTipo) || status === 'sustentação';
+          const emAndamento = status === 'em andamento'; // troque por "true" se quiser contar tudo exceto Sustentação
+          return isCodes && !isSust && emAndamento;
+        }).length;
+      }
+
+      function setHomeDevCount(data) {
+        const el = document.getElementById('homeDevCount');
+        if (!el) return;
+        const val = computeHomeDevCount(data);
+        if (el.textContent.trim() !== String(val)) el.textContent = val;
+      }
+
+      // roda sempre que os KPIs forem atualizados
+      const prevUpdateKPIs = window.updateKPIs;
+      window.updateKPIs = function (data) {
+        try { if (typeof prevUpdateKPIs === 'function') prevUpdateKPIs(data); }
+        finally { setHomeDevCount(data || window.cacheProjetos || []); }
+      };
+
+      // garante atualização ao trocar de aba
+      const prevShowPage = window.showPage;
+      if (typeof prevShowPage === 'function') {
+        window.showPage = function (pageId, el) {
+          const r = prevShowPage.apply(this, arguments);
+          setTimeout(() => setHomeDevCount(window.cacheProjetos || []), 50);
+          return r;
+        };
+      }
+
+      // primeira carga
+      document.addEventListener('DOMContentLoaded', () => {
+        let tries = 0;
+        const t = setInterval(() => {
+          setHomeDevCount(window.cacheProjetos || []);
+          tries++;
+          if (tries > 12 || document.getElementById('homeDevCount')) clearInterval(t);
+        }, 120);
+      });
+    })();
+  </script>
+
+  <!-- imports do Chart.js (deixe como já estão) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+
+  <script>
+    if (window['chartjs-plugin-annotation'] && window.Chart) {
+      Chart.register(window['chartjs-plugin-annotation']);
+    }
+  </script>
+
+  <!-- Lógica dinâmica (main.js) -->
+  <script src="assets/js/main.js?v=10" defer></script>
+  <script src="assets/js/pdti.js"></script>
+  <script src="assets/js/sustentacao.js?v=7"></script>
+
+
+  <!-- Modal: Ver Chamado (estilo igual ao modal de projetos) -->
+  <div id="verChamadoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-screen overflow-y-auto">
+        <!-- Header -->
+        <div class="p-6 border-b">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="text-2xl font-bold text-gray-900">Chamado de Sustentação</h3>
+              <p class="text-sm text-gray-500">Número <span id="verNumero" class="font-semibold">—</span></p>
+            </div>
+            <button class="text-gray-400 hover:text-gray-600" onclick="hideModal('verChamadoModal')">✕</button>
+          </div>
+          <!-- Linha com datas -->
+          <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-500">Abertura</label>
+              <div id="verAbertura" class="text-sm font-medium text-gray-800">—</div>
+            </div>
+            <div class="mt-2">
+              <span class="text-xs text-gray-500">Dias em aberto</span>
+              <div id="verDiasAberto" class="text-sm font-medium">—</div>
+            </div>
+
+            <div>
+              <label class="block text-sm text-gray-500">Fechamento/Conclusão</label>
+              <input id="verFechamento" type="datetime-local"
+                class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+          </div>
+
+          <!-- Rodapé do modal -->
+          <div class="mt-6 flex items-center justify-end gap-2">
+            <button type="button" class="px-3 py-2 text-sm text-gray-600 hover:text-gray-800"
+              onclick="hideModal('verChamadoModal')">Fechar</button>
+
+            <!-- novo concluir -->
+            <button id="btnConcluirChamado" type="button"
+              class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700">
+              ✔️ <span>Concluir</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- KPIs/Cartões (mesmo grid do modal de projetos) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6 pt-4">
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-700 mb-2">Projeto</h4>
+            <p id="verProjeto" class="text-sm font-medium text-gray-900">—</p>
+          </div>
+
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-700 mb-2">Status</h4>
+            <span id="verStatus"
+              class="inline-flex items-center text-sm font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-700">—</span>
+          </div>
+
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-700 mb-2">Desenvolvedor</h4>
+            <p id="verDev" class="text-sm font-medium text-gray-900">—</p>
+          </div>
+
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-700 mb-2">Solicitante</h4>
+            <p id="verSolicitante" class="text-sm font-medium text-gray-900">—</p>
+          </div>
+        </div>
+
+        <!-- Histórico de Andamento (Sustentação — igual ao de Desenvolvimento) -->
+        <div class="px-6 pb-6">
+          <div class="bg-white border rounded-lg p-4">
+            <h4 class="font-semibold text-gray-700 mb-3">Histórico de Andamento</h4>
+
+            <!-- Lista de itens -->
+            <div id="sustHistoricoList" class="space-y-2">
+              <!-- itens serão renderizados via JS (renderSustHistorico) -->
+              <p class="text-sm text-gray-500">Nenhum andamento registrado.</p>
+            </div>
+
+            <!-- Editor inline: input + botão “+” -->
+            <div class="mt-3 flex gap-2">
+              <input id="sustNovoAndamento" type="text" placeholder="Descreva andamento..."
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2" />
+              <button id="btnAddSustObs" type="button"
+                class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">+</button>
+            </div>
+          </div>
+        </div>
+
+
+
+        <!-- Rodapé (botões iguais) -->
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3">
+          <button type="button" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            onclick="hideModal('verChamadoModal')">Fechar</button>
+          <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onclick="(function(){
+                  const n = document.getElementById('verNumero')?.textContent?.trim();
+                  if(n) window.editarChamado && window.editarChamado(n);
+                })()">✏️ Editar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // popula a área de observação quando o modal abre
+      window.fillObsChamado = function (obsTexto) {
+        const view = document.getElementById('verObs');
+        const input = document.getElementById('verObsInput');
+        if (!view || !input) return;
+        const t = (obsTexto ?? '—');
+        view.textContent = t || '—';
+        input.value = (t === '—') ? '' : t;
+        // estado padrão: leitura
+        window.toggleObsEditor(false, true);
+      };
+
+      // alterna visual de edição/leitura
+      window.toggleObsEditor = function (editing, silent) {
+        const view = document.getElementById('verObs');
+        const input = document.getElementById('verObsInput');
+        const btnEdit = document.getElementById('btnEditarObs');
+        const btnSave = document.getElementById('btnSalvarObs');
+        const btnCancel = document.getElementById('btnCancelarObs');
+        const hint = document.getElementById('verObsHint');
+        if (!view || !input || !btnEdit || !btnSave || !btnCancel) return;
+
+        if (editing) {
+          view.classList.add('hidden');
+          input.classList.remove('hidden');
+          btnEdit.classList.add('hidden');
+          btnSave.classList.remove('hidden');
+          btnCancel.classList.remove('hidden');
+          hint?.classList.remove('hidden');
+          if (!silent) input.focus();
+        } else {
+          view.classList.remove('hidden');
+          input.classList.add('hidden');
+          btnEdit.classList.remove('hidden');
+          btnSave.classList.add('hidden');
+          btnCancel.classList.add('hidden');
+          hint?.classList.add('hidden');
+        }
+      };
+
+      // salva a observação (usa hook se existir; senão, fallback)
+      window.saveObsEditor = function () {
+        const numero = document.getElementById('verNumero')?.textContent?.trim();
+        const input = document.getElementById('verObsInput');
+        const view = document.getElementById('verObs');
+        const texto = (input?.value || '').trim();
+
+        if (!numero) return window.alert('Não foi possível identificar o número do chamado.');
+        if (!view) return;
+
+        const applyUI = () => {
+          view.textContent = texto || '—';
+          window.toggleObsEditor(false);
+        };
+
+        // Hook oficial (se você tiver no sustentacao.js)
+        if (typeof window.saveObservacaoChamado === 'function') {
+          try {
+            const r = window.saveObservacaoChamado(numero, texto);
+            // aceita tanto sync quanto Promise
+            if (r && typeof r.then === 'function') {
+              r.then(applyUI).catch(err => alert('Erro ao salvar observação: ' + (err?.message || err)));
+            } else {
+              applyUI();
+            }
+          } catch (e) {
+            alert('Erro ao salvar observação: ' + (e?.message || e));
+          }
+          return;
+        }
+
+        // Fallback: tenta atualizar no array em memória e re-renderizar a lista
+        try {
+          const arr = (window.__sustChamados || []);
+          const idx = arr.findIndex(ch => String(ch.numero) === String(numero));
+          if (idx >= 0) {
+            arr[idx].observacoes = texto;
+            // se houver função para re-render da tabela:
+            if (typeof window.renderSustentacaoTable === 'function') {
+              window.renderSustentacaoTable(arr);
+            }
+          }
+        } catch { /* noop */ }
+
+        applyUI();
+      };
+
+      // Integra com a abertura do modal: quando você chamar a função que abre “Ver Chamado”,
+      // chame fillObsChamado(passando a string de observações do chamado).
+      // Se já tiver uma função showVerChamado, fazemos um wrap leve:
+      (function wrapOpenModal() {
+        const modalId = 'verChamadoModal';
+        // se existir um ponto único de abertura que já popula campos:
+        const oldOpen = window.openVerChamado;
+        window.openVerChamado = function (chamado) {
+          // chamado: objeto { numero, abertura, ..., observacoes }
+          if (typeof oldOpen === 'function') oldOpen(chamado);
+          window.fillObsChamado(chamado?.observacoes || chamado?.obs || '');
+          // garante que o input de data/hora e o botão concluir já estavam como antes
+          window.showModal && window.showModal(modalId);
+        };
+
+        // caso você não use openVerChamado(obj), mas popula manualmente,
+        // pode apenas chamar window.fillObsChamado(obs) logo após setar #verNumero etc.
+      })();
+
+      // Quando clicar em “Concluir”, inclui a observação atual no fluxo (se houver hook)
+      (function wireConcluirWithObs() {
+        const btn = document.getElementById('btnConcluirChamado');
+        if (!btn || btn.__wiredWithObs) return;
+        btn.__wiredWithObs = true;
+
+        btn.addEventListener('click', () => {
+          const numero = document.getElementById('verNumero')?.textContent?.trim();
+          const fechamento = document.getElementById('verFechamento')?.value || '';
+          const obsAtual = document.getElementById('verObsInput')?.classList.contains('hidden')
+            ? (document.getElementById('verObs')?.textContent || '')
+            : (document.getElementById('verObsInput')?.value || '');
+
+          // Se existir um finalizador oficial, passe a observação junto
+          if (typeof window.concluirChamado === 'function') {
+            try { window.concluirChamado(numero, fechamento, obsAtual?.trim()); return; }
+            catch { /* continua no fallback */ }
+          }
+
+          // Fallback simples: salva observação e fecha
+          if (typeof window.saveObservacaoChamado === 'function') {
+            try { window.saveObservacaoChamado(numero, (obsAtual || '').trim()); } catch { }
+          }
+          window.hideModal && window.hideModal('verChamadoModal');
+        }, { passive: true });
+      })();
+    })();
+  </script>
+
+  <!-- Modal Editar Chamado -->
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50" id="editChamadoModal">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-xl w-full">
+        <form id="editChamadoForm" class="p-6 space-y-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-lg font-semibold text-gray-900">Editar Chamado</h3>
+            <button type="button" class="text-gray-400 hover:text-gray-600"
+              onclick="hideModal('editChamadoModal')">✕</button>
+          </div>
+
+          <input type="hidden" id="editHiddenId">
+          <input type="hidden" id="editHiddenNumero">
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Projeto</label>
+              <input id="editProjeto" type="text" class="w-full border rounded px-3 py-2">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Número</label>
+              <input id="editNumero" type="text" class="w-full border rounded px-3 py-2" disabled>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Status</label>
+              <select id="editStatus" class="w-full border rounded px-3 py-2">
+                <option>A desenvolver</option>
+                <option>Em desenvolvimento</option>
+                <option>Em homologação</option>
+                <option>Pendente</option>
+                <option>Suspenso</option>
+                <option>Em testes</option>
+                <option>Aberto</option>
+                <option>Fechado</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Desenvolvedor</label>
+              <input id="editDev" type="text" class="w-full border rounded px-3 py-2">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Solicitante</label>
+              <input id="editSolic" type="text" class="w-full border rounded px-3 py-2">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Observações</label>
+              <textarea id="editObs" rows="3" class="w-full border rounded px-3 py-2"></textarea>
+            </div>
+          </div>
+
+          <div class="pt-4 flex justify-end gap-3">
+            <button type="button" class="px-4 py-2 border rounded-lg"
+              onclick="hideModal('editChamadoModal')">Cancelar</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Confirmar Edição -->
+  <div id="confirmEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Confirmar alteração</h3>
+          <p class="text-sm text-gray-600" id="confirmEditMessage">
+            Deseja salvar as alterações deste chamado?
+          </p>
+
+          <div class="mt-6 flex justify-end gap-3">
+            <button type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              onclick="window.cancelEdit()">Cancelar</button>
+            <button type="button" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              onclick="window.confirmEdit()">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    /* ======= UTIL: limpa o "selecionado" de todos os subcards ======= */
+    function clearSubcardSelection() {
+      const scope = document.getElementById('codesPage');
+      if (!scope) return;
+      scope
+        .querySelectorAll('#codesKpisFabExtra .card-picked, #codesKpisSustExtra .card-picked')
+        .forEach(el => el.classList.remove('card-picked'));
+    }
+
+    /* ======= Torna subcards "selecionáveis" com destaque único ======= */
+    function wirePickables(scope = document) {
+      scope
+        .querySelectorAll('#codesKpisFabExtra [data-card], #codesKpisSustExtra [data-card]')
+        .forEach(card => {
+          card.classList.add('card-pickable');
+          card.addEventListener(
+            'click',
+            () => {
+              const grid = card.closest('#codesKpisFabExtra, #codesKpisSustExtra');
+              grid?.querySelectorAll('.card-picked').forEach(el => el.classList.remove('card-picked'));
+              card.classList.add('card-picked');
+            },
+            { passive: true }
+          );
+        });
+    }
+
+    /* ======= Destaque do PAI + troca entre Fábrica/Sustentação ======= */
+    /*  mode: 'sust' | 'fabrica'  */
+    window.setCodesCardHighlight = function (mode) {
+      const scope = document.getElementById('codesPage');
+      if (!scope) return;
+
+      const fabExtra = scope.querySelector('#codesKpisFabExtra');
+      const sustExtra = scope.querySelector('#codesKpisSustExtra');
+
+      const devCard = scope.querySelector('[data-card="codes:desenvolvimento"]');
+      const sustCard = scope.querySelector('[data-card="codes:sustentacao"]');
+
+      const prodTop = scope.querySelector('[data-card="codes:sust:em_producao"]');
+
+      if (!fabExtra || !sustExtra || !devCard || !sustCard) return;
+
+      // 1) Limpa qualquer seleção de subcards sempre que o PAI mudar
+      clearSubcardSelection();
+
+      // 2) Remove o "glow" dos pais
+      devCard.classList.remove('card-hi', 'card-hi--fabrica');
+      sustCard.classList.remove('card-hi', 'card-hi--sust');
+
+      if (mode === 'sust') {
+        // 3) Mostrar/ocultar grids e o card "Em produção (TOP)"
+        fabExtra.classList.add('hidden');
+        sustExtra.classList.remove('hidden');
+        if (prodTop) prodTop.classList.remove('hidden');
+
+        // 4) Normaliza subcards (sem glow e sem picked)
+        sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
+          el.classList.remove('card-hi', 'card-hi--sust', 'card-picked');
+          el.style.removeProperty('display');
+          el.style.removeProperty('visibility');
+          el.style.removeProperty('opacity');
+        });
+
+        // 5) Destaque somente no PAI "Sustentação"
+        sustCard.classList.add('card-hi', 'card-hi--sust');
+        return;
+      }
+
+      // ===== modo FÁBRICA =====
+      sustExtra.classList.add('hidden');
+      fabExtra.classList.remove('hidden');
+      if (prodTop) prodTop.classList.add('hidden');
+
+      // Garante que os cards do grid extra de fábrica estão visíveis e "limpos"
+      fabExtra.style.removeProperty('display');
+      if (getComputedStyle(fabExtra).display === 'none') fabExtra.style.display = 'grid';
+      fabExtra.querySelectorAll('[data-card]').forEach(el => {
+        el.classList.remove('hidden', 'invisible', 'sr-only', 'card-picked');
+        el.style.removeProperty('display');
+        el.style.removeProperty('visibility');
+        el.style.removeProperty('opacity');
+      });
+
+      sustExtra.querySelectorAll('[data-card^="codes:sust:"]').forEach(el => {
+        el.classList.remove('card-hi', 'card-hi--sust', 'card-picked');
+      });
+
+      // Destaque somente no PAI "Desenvolvimento"
+      devCard.classList.add('card-hi', 'card-hi--fabrica');
+    };
+
+    /* ======= Inicialização ======= */
+    document.addEventListener('DOMContentLoaded', () => {
+      // ativa comportamento dos subcards
+      wirePickables();
+
+      // clicar no PAI limpa o destaque dos subcards
+      const scope = document.getElementById('codesPage');
+      const devCard = scope?.querySelector('[data-card="codes:desenvolvimento"]');
+      const sustCard = scope?.querySelector('[data-card="codes:sustentacao"]');
+
+      devCard?.addEventListener('click', clearSubcardSelection, { passive: true });
+      sustCard?.addEventListener('click', clearSubcardSelection, { passive: true });
+      devCard?.addEventListener('click', () => {
+        document.querySelector('#codesPage [data-card="codes:sust:em_producao"]')?.classList.add('hidden');
+      }, { passive: true });
+
+    });
+
+    /* ======= Se algum código externo chamar setCodesCardHighlight,
+               garantimos que os subcards continuam "clicáveis" ======= */
+    (function ensurePickablesAfterHighlight() {
+      const _old = window.setCodesCardHighlight;
+      window.setCodesCardHighlight = function (mode) {
+        _old && _old(mode);
+        // re-wira (caso o DOM da grid tenha sido recolocado)
+        setTimeout(() => wirePickables(document.getElementById('codesPage')), 0);
+      };
+    })();
+  </script>
+
+</body>
+
+</html>
