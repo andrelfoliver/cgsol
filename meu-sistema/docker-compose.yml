@@ -22,6 +22,16 @@ services:
     ports:
       - "5001:5001"
 
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8081:80"
+    # se quiser mapear seus arquivos para desenvolvimento ao vivo:
+    # volumes:
+    #   - ./frontend:/usr/local/apache2/htdocs:ro
+
   pgadmin:
     image: dpage/pgadmin4
     environment:
